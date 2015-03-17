@@ -14,16 +14,12 @@
         http://www.springframework.org/schema/aop   
         http://www.springframework.org/schema/aop/spring-aop.xsd">
 
-    <!-- Hibernate4 -->
-    <!-- 加载资源文件  其中包含变量信息，必须在Spring配置文件的最前面加载，即第一个加载-->
-    
     <bean id="sessionFactory" 
         class="org.springframework.orm.hibernate4.LocalSessionFactoryBean">
         <property name="dataSource" ref="dataSource" />
-        
+
         <property name="packagesToScan">
             <list>
-				<value>me.gall.sgp.node.pojo.app</value>
                 <value>com.zhanglong.sg.entity</value>
             </list>
         </property>
@@ -52,14 +48,12 @@
     <!-- 配置Hibernate事务管理器 -->
   	<bean id="transactionManager" class="org.springframework.orm.hibernate4.HibernateTransactionManager">
 		<property name="sessionFactory" ref="sessionFactory" />
-		
 	</bean>  
-   
-	
+
    <!-- 配置事务异常封装 -->
 <!-- 	<bean id="persistenceExceptionTranslationPostProcessor" 
        class="org.springframework.dao.annotation.PersistenceExceptionTranslationPostProcessor" /> -->
-    
+
      <tx:advice id="txAdvice" transaction-manager="transactionManager">
         <tx:attributes>
             <tx:method name="*" propagation="REQUIRED" />
@@ -75,14 +69,13 @@
         <aop:pointcut id="txPointcut" expression="execution(* com.zhanglong.sg.service..*.*(..))" />
         <aop:advisor pointcut-ref="txPointcut" advice-ref="txAdvice"/>
     </aop:config> 
-    
-  
+
     <bean id="jedisConnectionFactory" class="org.springframework.data.redis.connection.jedis.JedisConnectionFactory">  
-		<property name="hostName" value="localhost"/>  
-		<property name="port" value="6379"/>  
+	<property name="hostName" value="localhost"/>  
+	<property name="port" value="6379"/>  
     </bean>  
-      
+
     <bean id="redisTemplate" class="org.springframework.data.redis.core.RedisTemplate">  
-		<property name="connectionFactory" ref="jedisConnectionFactory"/> 
-    </bean>  
+	<property name="connectionFactory" ref="jedisConnectionFactory"/> 
+    </bean>
   </beans>
