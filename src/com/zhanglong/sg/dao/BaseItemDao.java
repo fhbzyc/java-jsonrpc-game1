@@ -23,7 +23,7 @@ public class BaseItemDao extends BaseDao {
 		return items;
     }
 
-	public BaseItem findOne(int itemId) throws Throwable {
+	public BaseItem findOne(int itemId) throws Exception {
 
 		List<BaseItem> list = findAll();
 
@@ -33,6 +33,6 @@ public class BaseItemDao extends BaseDao {
 			}
 		}
 
-		throw new Throwable("不存在的道具,id->" + itemId);
+		throw new Exception("不存在的道具,id->" + itemId);
 	}
 }

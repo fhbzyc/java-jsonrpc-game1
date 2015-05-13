@@ -4,6 +4,7 @@ import java.util.List;
 
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
+import org.hibernate.criterion.Restrictions;
 import org.springframework.stereotype.Repository;
 
 import com.zhanglong.sg.entity.Server;
@@ -13,7 +14,7 @@ public class ServerDao extends BaseDao {
 
 	public List<Server> findAll() {
 		Session session = this.getSessionFactory().getCurrentSession();
-		return session.createCriteria(Server.class).list();
+		return session.createCriteria(Server.class).add(Restrictions.eq("enable", true)).list();
 	}
 
 	public Server findOne(int serverId) {

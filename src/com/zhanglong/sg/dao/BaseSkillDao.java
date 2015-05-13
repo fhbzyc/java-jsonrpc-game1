@@ -6,24 +6,20 @@ import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.springframework.stereotype.Repository;
 
+import com.zhanglong.sg.entity.BaseItem;
 import com.zhanglong.sg.entity.BaseSkill;
 
 @Repository
-public class BaseSkillDao {
+public class BaseSkillDao extends BaseDao {
 
-	private SessionFactory sessionFactory;
-
-	public SessionFactory getSessionFactory() {
-		return sessionFactory;
-	}
-
-	public void setSessionFactory(SessionFactory sessionFactory) {
-		this.sessionFactory = sessionFactory;
-	}
+	private static List<BaseSkill> skills;
 
 	public List<BaseSkill> findAll() {
 
-		Session session = this.getSessionFactory().getCurrentSession();
-		return session.createCriteria(BaseSkill.class).list();
+		if (skills == null) {
+			Session session = this.getSessionFactory().getCurrentSession();
+			skills = session.createCriteria(BaseSkill.class).list();
+		}
+		return skills;
     }
 }

@@ -6,8 +6,6 @@ import org.hibernate.Session;
 import org.springframework.stereotype.Repository;
 
 import com.zhanglong.sg.entity.BaseHero;
-import com.zhanglong.sg.entity.BaseItem;
-import com.zhanglong.sg.utils.Utils;
 
 @Repository
 public class BaseHeroDao extends BaseDao {
@@ -25,13 +23,13 @@ public class BaseHeroDao extends BaseDao {
 		return heros;
     }
 
-	public BaseHero findOne(int heroId) throws Throwable {
+	public BaseHero findOne(int heroId) throws Exception {
 
 		for (BaseHero baseHero : this.findAll()) {
 			if (baseHero.getId() == heroId) {
 				return baseHero;
 			}
 		}
-		throw new Throwable("不存在的英雄 :  "+ heroId);
+		throw new Exception("不存在的英雄 :  "+ heroId);
 	}
 }

@@ -18,7 +18,7 @@ public class BaseMakeItem implements Serializable {
 	@EmbeddedId
     private BaseMakeItemPK pk;
 
-	@Column(name = "item_num" , nullable = false , columnDefinition = "int(11) default 0")
+	@Column(name = "item_num" , nullable = false , columnDefinition = "int default 0")
 	private Integer num;
 
     public void setPk(BaseMakeItemPK pk) {

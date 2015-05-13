@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.hibernate.Session;
+import org.hibernate.criterion.Order;
 import org.springframework.stereotype.Repository;
 
 import com.zhanglong.sg.entity.BaseHeroEquip;
@@ -18,7 +19,7 @@ public class BaseHeroEquipDao extends BaseDao {
 
 		if (heroEquips == null) {
 			Session session = this.getSessionFactory().getCurrentSession();
-			heroEquips = session.createCriteria(BaseHeroEquip.class).list();
+			heroEquips = session.createCriteria(BaseHeroEquip.class).addOrder(Order.asc("pk")).list();
 		}
 
 		return heroEquips;

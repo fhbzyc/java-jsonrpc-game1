@@ -1,6 +1,7 @@
 package com.zhanglong.sg.entity;
 
 import java.io.Serializable;
+import java.sql.Timestamp;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
@@ -24,92 +25,124 @@ public class Order implements Serializable {
     @Column(name = "order_id")
     private Integer id;
 
-    @Column(name = "role_id")
-    private Integer roleId;
+    @Column(name = "role_id" , nullable = false , columnDefinition = "int default 0")
+    private int roleId;
 
-    @Column(name = "order_type" , nullable = false , columnDefinition = "varchar(255) default ''")
-    private String type;
+    @Column(name = "user_id" , nullable = false , columnDefinition = "int default 0")
+    private int userId;
 
-    @Column(name = "order_gold" , nullable = false , columnDefinition = "int(11) default 0")
-    private Integer gold;
+    @Column(name = "server_id" , nullable = false , columnDefinition = "int default 0")
+    private int serverId;
 
-    @Column(name = "order_add_gold" , nullable = false , columnDefinition = "int(11) default 0")
-    private Integer addGold;
+    @Column(name = "order_type" , nullable = false , columnDefinition = "smallint default 0")
+	private int type;
 
-    @Column(name = "order_money" , nullable = false , columnDefinition = "int(11) default 0")
-    private Integer money;
+    @Column(name = "order_gold" , nullable = false , columnDefinition = "int default 0")
+    private int gold;
 
-    @Column(name = "order_status" , nullable = false , columnDefinition = "tinyint(4) default 0")
-    private Integer status;
+    @Column(name = "order_add_gold" , nullable = false , columnDefinition = "int default 0")
+    private int addGold;
 
-    @Column(name = "order_time" , columnDefinition = "timestamp default CURRENT_TIMESTAMP")
-    private String time;
+    @Column(name = "order_money" , nullable = false , columnDefinition = "int default 0")
+    private int money;
+
+    @Column(name = "order_status" , nullable = false , columnDefinition = "smallint default 0")
+    private int status;
+
+    @Column(name = "platform_id" , nullable = false , columnDefinition = "int default 0")
+    private int platformId;
+
+    @Column(name = "order_time" , columnDefinition = "timestamp")
+    private Timestamp time;
 
     public Order() {
-        
     }
 
-    public void setId(Integer id) {
-        this.id = id;
-    }
+	public Integer getId() {
+		return id;
+	}
 
-    public void setRoleId(Integer roleId) {
-        this.roleId = roleId;
-    }
+	public void setId(Integer id) {
+		this.id = id;
+	}
 
-    public void setType(String type) {
-        this.type = type;
-    }
+	public int getRoleId() {
+		return roleId;
+	}
 
-    public void setGold(Integer gold) {
-        this.gold = gold;
-    }
+	public void setRoleId(int roleId) {
+		this.roleId = roleId;
+	}
 
-    public void setAddGold(Integer addGold) {
-        this.addGold = addGold;
-    }
+	public int getUserId() {
+		return userId;
+	}
 
-    public void setMoney(Integer money) {
-        this.money = money;
-    }
+	public void setUserId(int userId) {
+		this.userId = userId;
+	}
 
-    public void setStatus(Integer status) {
-        this.status = status;
-    }
+	public int getServerId() {
+		return serverId;
+	}
 
-    public void setTime(String time) {
-        this.time = time;
-    }
+	public void setServerId(int serverId) {
+		this.serverId = serverId;
+	}
 
-    public Integer getId() {
-        return this.id;
-    }
+	public int getType() {
+		return type;
+	}
 
-    public Integer getRoleId() {
-        return this.roleId;
-    }
+	public void setType(int type) {
+		this.type = type;
+	}
 
-    public String getType() {
-        return this.type;
-    }
+	public int getGold() {
+		return gold;
+	}
 
-    public Integer getGold() {
-        return this.gold;
-    }
+	public void setGold(int gold) {
+		this.gold = gold;
+	}
 
-    public Integer getAddGold() {
-        return this.addGold;
-    }
+	public int getAddGold() {
+		return addGold;
+	}
 
-    public Integer getMoney() {
-        return this.money;
-    }
+	public void setAddGold(int addGold) {
+		this.addGold = addGold;
+	}
 
-    public Integer getStatus() {
-        return this.status;
-    }
+	public int getMoney() {
+		return money;
+	}
 
-    public String getTime() {
-        return this.time;
-    }
+	public void setMoney(int money) {
+		this.money = money;
+	}
+
+	public int getStatus() {
+		return status;
+	}
+
+	public void setStatus(int status) {
+		this.status = status;
+	}
+
+	public int getPlatformId() {
+		return platformId;
+	}
+
+	public void setPlatformId(int platformId) {
+		this.platformId = platformId;
+	}
+
+	public Timestamp getTime() {
+		return time;
+	}
+
+	public void setTime(Timestamp time) {
+		this.time = time;
+	}
 }

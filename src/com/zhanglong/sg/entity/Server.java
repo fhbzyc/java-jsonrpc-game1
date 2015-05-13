@@ -8,48 +8,34 @@ import javax.persistence.Id;
 import javax.persistence.Table;
 import javax.persistence.Transient;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 @Entity
 @Table(name = "servers")
 public class Server implements Serializable {
 
-    /**
-	 * 
-	 */
 	private static final long serialVersionUID = -576571978958265390L;
 
 	@Id
-	@Column(name = "server_id")
+	@Column(name = "server_id" , nullable = false , columnDefinition = "int default 0")
 	private Integer id;
 
-    @Column(name = "server_code")
-    private String code;
-
-	@Column(name = "server_name")
+	@Column(name = "server_name" , nullable = false , columnDefinition = "varchar(255) default ''" , length = 255)
 	private String name;
 
-	@Column(name = "server_address")
+	@Column(name = "server_address" , nullable = false , columnDefinition = "varchar(255) default ''" , length = 255)
 	private String address;
 
-	@Column(name = "appid")
-	private String appId;
-
-	@Column(name = "state")
+	@Column(name = "server_state" , nullable = false , columnDefinition = "smallint default 0")
 	private Integer state;
 
-	@Column(name = "server_enable")
-	private Integer enable;
-
-	@Column(name = "server_time")
-	private Long time;
+	@Column(name = "server_enable" , nullable = false , columnDefinition = "boolean default FALSE")
+	private Boolean enable;
 
 	@Transient
 	private boolean havePlayer;
 
     public Server() {
-    }
-
-    public void setCode(String code) {
-        this.code = code;
     }
 
     public void setId(Integer id) {
@@ -64,20 +50,12 @@ public class Server implements Serializable {
         this.address = address;
     }
 
-    public void setAppId(String appId) {
-        this.appId = appId;
-    }
-
     public void setState(Integer state) {
         this.state = state;
     }
 
-    public void setEnable(Integer enable) {
+    public void setEnable(Boolean enable) {
         this.enable = enable;
-    }
-
-    public String getCode() {
-        return this.code;
     }
 
     public Integer getId() {
@@ -92,32 +70,12 @@ public class Server implements Serializable {
     	return this.address;
     }
 
-    public String getAppId() {
-    	return this.appId;
-    }
-
     public Integer getState() {
     	return this.state;
     }
 
-    public Integer getEnable() {
+    @JsonIgnore
+    public Boolean getEnable() {
     	return this.enable;
     }
-
-	public Long getTime() {
-		return time;
-	}
-
-	public void setTime(Long time) {
-		this.time = time;
-	}
-
-	public boolean getHavePlayer() {
-		return havePlayer;
-	}
-
-	public void setHavePlayer(boolean havePlayer) {
-		this.havePlayer = havePlayer;
-	}
-	
 }

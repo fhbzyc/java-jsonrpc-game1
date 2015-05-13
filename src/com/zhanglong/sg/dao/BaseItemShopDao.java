@@ -7,6 +7,7 @@ import org.hibernate.Session;
 import org.springframework.stereotype.Repository;
 
 import com.zhanglong.sg.entity.BaseItemShop;
+import com.zhanglong.sg.entity.BaseShopDiscount;
 
 @Repository
 public class BaseItemShopDao extends BaseDao {
@@ -34,5 +35,18 @@ public class BaseItemShopDao extends BaseDao {
 			}
 		}
 		return result;
+	}
+
+	public int getDiscount(int type) {
+
+        String sql = String.format("SELECT * FROM base_shop_discount WHERE shop_type = %d AND NOW() BETWEEN begin_time AND end_time", type);
+        @SuppressWarnings("unchecked")
+		List<BaseShopDiscount> list = this.getSessionFactory().getCurrentSession().createSQLQuery(sql).list();
+        
+        if (list.size() == 0) {
+        	return 10;
+        } else {
+        	return list.get(0).getDiscount();
+        }
 	}
 }

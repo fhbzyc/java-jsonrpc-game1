@@ -13,15 +13,17 @@ import org.springframework.stereotype.Service;
 import com.zhanglong.sg.result.*;
 import com.zhanglong.sg.dao.BaseStoryDao;
 import com.zhanglong.sg.dao.BattleLogDao;
-import com.zhanglong.sg.dao.ItemDao;
+import com.zhanglong.sg.dao.CopyStarDao;
 import com.zhanglong.sg.dao.StoryDao;
 import com.zhanglong.sg.entity.BaseStory;
 import com.zhanglong.sg.entity.BattleLog;
+import com.zhanglong.sg.entity.CopyStar;
 import com.zhanglong.sg.entity.FinanceLog;
 import com.zhanglong.sg.entity.Hero;
-import com.zhanglong.sg.entity.ItemTable;
+import com.zhanglong.sg.entity.Item;
 import com.zhanglong.sg.entity.Role;
 import com.zhanglong.sg.entity.Story;
+import com.zhanglong.sg.model.CopyStarModel;
 import com.zhanglong.sg.model.DateNumModel;
 import com.zhanglong.sg.utils.Utils;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -30,7 +32,7 @@ import com.googlecode.jsonrpc4j.JsonRpcService;
 
 @Service
 @JsonRpcService("/story")
-public class StoryService extends BaseClass {
+public class StoryService extends BaseService {
 
 	@Resource
 	private StoryDao storyDao;
@@ -41,7 +43,10 @@ public class StoryService extends BaseClass {
 	@Resource
 	private BattleLogDao battleLogDao;
 
-	public HashMap<String, Object> list() throws Throwable {
+	@Resource
+	private CopyStarDao copyStarDao;
+
+	public Object list() throws Throwable {
 
         int roleId = this.roleId();
 
@@ -53,10 +58,17 @@ public class StoryService extends BaseClass {
             result.addCopy(story);
         }
 
-        return result.toMap();
+        return this.success(result.toMap());
     }
 
+	/**
+	 * 
+	 * @return
+	 * @throws Throwable
+	 */
     public Object items() throws Throwable {
+
+    	int roleId = this.roleId();
 
     	List<BaseStory> list1 = this.baseStoryDao.copys();
     	List<BaseStory> list2 = this.baseStoryDao.heroCopys();
@@ -90,34 +102,122 @@ public class StoryService extends BaseClass {
     		heroCopyList.add(ite);
 		}
 
+    	List<ArrayList<Object>> star1 = new ArrayList<ArrayList<Object>>();
+    	List<ArrayList<Object>> star2 = new ArrayList<ArrayList<Object>>();
+
     	Result result = new Result();
-    	HashMap<String, Object> r = result.toMap();
 
-    	r.put("story", copyList);
-    	r.put("hero_story", heroCopyList);
+    	List<CopyStarModel> stars = this.copyStarDao.configs();
 
-    	return r;
+    	for (CopyStarModel copyStar : stars) {
+			if (copyStar.getType() == 1) {
+				if (star1.size() < copyStar.getChapter()) {
+					star1.add(new ArrayList<Object>());
+				}
+				ArrayList<Object> arrayList = star1.get(star1.size() - 1);
+				arrayList.add(copyStar.getItems());
+			} else {
+				if (star2.size() < copyStar.getChapter()) {
+					star2.add(new ArrayList<Object>());
+				}
+				ArrayList<Object> arrayList = star2.get(star2.size() - 1);
+				arrayList.add(copyStar.getItems());
+			}
+		}
+
+    	List<ArrayList<Boolean>> get1 = new ArrayList<ArrayList<Boolean>>();
+    	List<ArrayList<Boolean>> get2 = new ArrayList<ArrayList<Boolean>>();
+
+    	List<CopyStar> list = this.copyStarDao.findAll(roleId);
+
+    	for (int i = 0 ; i < star1.size() ; i++) {
+    		if (get1.size() <= i) {
+    			get1.add(new ArrayList<Boolean>());
+    		}
+			ArrayList<Boolean> array = get1.get(i);
+			
+			boolean find1 = false;
+			boolean find2 = false;
+			boolean find3 = false;
+
+			for (CopyStar copyStar : list) {
+				if (copyStar.getType() == 1 && copyStar.getChapter() == i + 1) {
+					if (copyStar.getStar() == 18) {
+						find1 = true;
+					}
+					if (copyStar.getStar() == 36) {
+						find2 = true;
+					}
+					if (copyStar.getStar() == 54) {
+						find3 = true;
+					}
+				}
+			}
+			array.add(find1);
+			array.add(find2);
+			array.add(find3);
+    	}
+
+    	for (int i = 0 ; i < star2.size() ; i++) {
+    		if (get2.size() <= i) {
+    			get2.add(new ArrayList<Boolean>());
+    		}
+			ArrayList<Boolean> array = get2.get(i);
+			
+			boolean find1 = false;
+			boolean find2 = false;
+			boolean find3 = false;
+
+			for (CopyStar copyStar : list) {
+				if (copyStar.getType() == 2 && copyStar.getChapter() == i + 1) {
+					if (copyStar.getStar() == 6) {
+						find1 = true;
+					}
+					if (copyStar.getStar() == 12) {
+						find2 = true;
+					}
+					if (copyStar.getStar() == 18) {
+						find3 = true;
+					}
+				}
+			}
+			array.add(find1);
+			array.add(find2);
+			array.add(find3);
+    	}
+
+    	result.setValue("story", copyList);
+    	result.setValue("hero_story", heroCopyList);
+    	result.setValue("star1", star1);
+    	result.setValue("star2", star2);
+    	result.setValue("get1", get1);
+    	result.setValue("get2", get2);
+
+    	return this.success(result.toMap());
     }
 
     /**
-     * 战斗开始
-     * @param tokenS
+     * 
      * @param storyId
      * @param storyType
-     * @param generalIds
+     * @param heroId1
+     * @param heroId2
+     * @param heroId3
+     * @param heroId4
+     * @param power
      * @return
      * @throws Throwable
      */
-    public HashMap<String, Object> battleBegin(int storyId, int storyType, int[] generalIds, int power) throws Throwable {
+    public Object beginBattle(int storyId, int storyType, int heroId1, int heroId2, int heroId3, int heroId4, int power) throws Throwable  {
 
     	int roleId = this.roleId();
 
         if (storyId <= 0) {
-            throw new Throwable("参数出错,关卡ID无效");
+            return this.returnError(this.lineNum(), "参数出错,关卡ID无效");
         }
 
         if (storyType != Story.COPY_TYPE && storyType != Story.HERO_COPY_TYPE) {
-            throw new Throwable("参数出错,关卡类型无效");
+            return this.returnError(this.lineNum(), "参数出错,关卡类型无效");
         }
 
         List<BaseStory> baseStoryList;
@@ -128,7 +228,7 @@ public class StoryService extends BaseClass {
         }
 
         if (storyId >= baseStoryList.size() + 1) {
-            throw new Throwable("参数出错,关卡ID超过最大值");
+            return this.returnError(this.lineNum(), "参数出错,关卡ID超过最大值");
         }
 
         Role role = roleDao.findOne(roleId);
@@ -138,22 +238,22 @@ public class StoryService extends BaseClass {
         } else if (storyId == 1) {
             Story story = this.storyDao.findOne(roleId, storyId, storyType - 1);
             if(story == null) {
-                throw new Throwable("出错,你还不能攻打精英关卡");
+                return this.returnError(this.lineNum(), "出错,你还不能攻打精英关卡");
             }
             if (story.getStar() <= 0) {
-                throw new Throwable("出错,你还不能攻打精英关卡");
+                return this.returnError(this.lineNum(), "出错,你还不能攻打精英关卡");
             }
         } else {
             Story story = this.storyDao.findOne(roleId, storyId - 1, storyType);
             if(story == null) {
-                throw new Throwable("出错,你还不能攻打这个关卡");
+                return this.returnError(this.lineNum(), "出错,你还不能攻打这个关卡");
             }
         }
 
         if (storyType == BaseStory.HERO_COPY_TYPE) {
             Story story = this.storyDao.findOne(roleId, storyId, storyType);
             if (story.getNum() >= 3) {
-                throw new Throwable("挑战次数不足");
+                return this.returnError(this.lineNum(), "挑战次数不足");
             }
         }
 
@@ -161,7 +261,7 @@ public class StoryService extends BaseClass {
         
         int physicalStrength = role.getPhysicalStrength();
         if (physicalStrength < baseStory.getTeamExp()) {
-            throw new Throwable("体力不足,不能攻打");
+            return this.returnError(this.lineNum(), "体力不足,不能攻打");
         }
 
         int unixTime = (int)(System.currentTimeMillis() / 1000);
@@ -175,10 +275,10 @@ public class StoryService extends BaseClass {
         battleLogTable.setEndTime(unixTime);
         battleLogTable.setStoryId(storyId);
         battleLogTable.setStoryType(storyType);
-        battleLogTable.setGeneralBaseId1(generalIds[0]);
-        battleLogTable.setGeneralBaseId2(generalIds[1]);
-        battleLogTable.setGeneralBaseId3(generalIds[2]);
-        battleLogTable.setGeneralBaseId4(generalIds[3]);
+        battleLogTable.setHeroId1(heroId1);
+        battleLogTable.setHeroId2(heroId2);
+        battleLogTable.setHeroId3(heroId3);
+        battleLogTable.setHeroId4(heroId4);
         battleLogTable.setData("");
 
         this.battleLogDao.create(battleLogTable);
@@ -190,59 +290,45 @@ public class StoryService extends BaseClass {
         List<int[]> rand = this.baseStoryDao.randomItems(roleId, baseStory, 1).get(0);
         List<int[]> items = new ArrayList<int[]>();
         for (int[] is : rand) {
-            items.add(new int[]{is[0],is[1],100});
+            items.add(new int[]{is[0] , is[1] , 100});
         }
+        
+        if (items.size() == 0) {
+        	items.add(new int[]{300 , 1 , 100});
+        }
+
         result.setValue("items", items);
         result.setValue("coin", baseStory.getCoin());
-        return result.toMap();
+        return this.success(result.toMap());
     }
 
     /**
-     * 提交战斗结果
-     * @param tokenS
+     * 
      * @param battleId
      * @param win
      * @param coin
-     * @param itemBaseIds
+     * @param itemIds
      * @param itemNum
-     * @param sign
+     * @param star
      * @return
      * @throws Throwable
      */
-    public Object battleEnd(int battleId, boolean win, int coin, int[] itemBaseIds, int[] itemNum, String sign) throws Throwable {
+    public Object endBattle(int battleId, boolean win, int coin, int[] itemIds, int[] itemNum, int star) throws Throwable {
 
         int roleId = this.roleId();
 
         /********************************** 数据效验 **********************************/
-//        String string = tokenS + battleId + String.valueOf(win) + coin;
-//
-//        if (itemBaseIds == null) {
-//            itemBaseIds = new int[]{};
-//        }
-//        for (int i : itemBaseIds) {
-//            string += i;
-//        }
-//
-//        if (itemNum == null) {
-//            itemNum = new int[]{};
-//        }
-//        for (int i : itemNum) {
-//            string += i;
-//        }
 
-//        if (!MD5.digest(string + "cd538900-2494-4833-9a31-8f00fdb4e582").equals(sign)) {
-//            throw new Throwable("战斗数据效验失败!");
-//        }
         /********************************** 数据效验 **********************************/
 
-        BattleLog battleLog = battleLogDao.findOne(battleId);
+        BattleLog battleLog = this.battleLogDao.findOne(battleId);
         if (battleLog == null) {
-            throw new Throwable("参数出错,没有此战斗");
+            return this.returnError(this.lineNum(), "参数出错,没有此战斗");
         }
 
         if (battleLog.getBattleResult() != 0) {
             if (battleLog.getData().equals("")) {
-            	throw new Throwable("战斗已提交");
+            	return this.returnError(this.lineNum(), "战斗已提交");
             } else {
             	ObjectMapper objectMapper = new ObjectMapper();
             	HashMap<String, Object> object = objectMapper.readValue(battleLog.getData(), new TypeReference<Map<String, Object>>(){});
@@ -267,7 +353,7 @@ public class StoryService extends BaseClass {
         } else if (storyType == Story.HERO_COPY_TYPE) {
             baseStoryList = baseStoryDao.heroCopys();
         } else {
-            throw new Throwable("出错,战斗记录异常");
+            return this.returnError(this.lineNum(), "出错,战斗记录异常");
         }
 
         BaseStory baseStory = baseStoryList.get(storyId - 1);
@@ -277,7 +363,7 @@ public class StoryService extends BaseClass {
         Result result = new Result();
         if (!win) {
 
-            role.setPhysicalStrength(role.getPhysicalStrength() - 1);
+        	this.roleDao.subAp(role, 1, result);
 
             roleDao.update(role, result);
       
@@ -294,26 +380,25 @@ public class StoryService extends BaseClass {
         int teamExp = baseStory.getTeamExp();
 
         // 先扣体力
-        role.setPhysicalStrength(role.getPhysicalStrength() - teamExp);
+        this.roleDao.subAp(role, teamExp, result);
+        this.roleDao.addExp(role, teamExp, result);
 
-        roleDao.addExp(role, teamExp, result);
-
-        roleDao.addCoin(role, coin, "关卡<" + storyId + ">掉落金币", FinanceLog.STATUS_STORY_GET_COIN, result);
-        roleDao.update(role, result);
+        this.roleDao.addCoin(role, coin, "关卡<" + storyId + ">掉落金币", FinanceLog.STATUS_STORY_GET_COIN, result);
+        this.roleDao.update(role, result);
 
         // 上阵武将发经验
         List<Hero> battleGeneralList = new ArrayList<Hero>();
-        if (battleLog.getGeneralBaseId1() != 0) {
-            battleGeneralList.add(this.heroDao.findOne(roleId, battleLog.getGeneralBaseId1()));
+        if (battleLog.getHeroId1() != 0) {
+            battleGeneralList.add(this.heroDao.findOne(roleId, battleLog.getHeroId1()));
         }
-        if (battleLog.getGeneralBaseId2() != 0) {
-            battleGeneralList.add(this.heroDao.findOne(roleId, battleLog.getGeneralBaseId2()));
+        if (battleLog.getHeroId2() != 0) {
+            battleGeneralList.add(this.heroDao.findOne(roleId, battleLog.getHeroId2()));
         }
-        if (battleLog.getGeneralBaseId3() != 0) {
-            battleGeneralList.add(this.heroDao.findOne(roleId, battleLog.getGeneralBaseId3()));
+        if (battleLog.getHeroId3() != 0) {
+            battleGeneralList.add(this.heroDao.findOne(roleId, battleLog.getHeroId3()));
         }
-        if (battleLog.getGeneralBaseId4() != 0) {
-            battleGeneralList.add(this.heroDao.findOne(roleId, battleLog.getGeneralBaseId4()));
+        if (battleLog.getHeroId4() != 0) {
+            battleGeneralList.add(this.heroDao.findOne(roleId, battleLog.getHeroId4()));
         }
 
         int exp = baseStory.getExp() / battleGeneralList.size();
@@ -325,19 +410,12 @@ public class StoryService extends BaseClass {
         	this.heroDao.addExp(general, role.level(), exp, result);
         }
 
-        ItemDao Item = new ItemDao();
-        for(int i = 0 ; i < itemBaseIds.length ; i++) {
-            int itemBaseId = itemBaseIds[i];
-            int num = itemNum[i];
-            Item.addItem(roleId, itemBaseId, num, result);
-        }
-
-        int star = 1;
-        int battleTime = battleLog.getEndTime() - battleLog.getBeginTime();
-        if (battleTime <= 100) {
-            star = 3;
-        } else if (battleTime <= 160) {
-            star = 2;
+        if (itemIds != null) {
+            for(int i = 0 ; i < itemIds.length ; i++) {
+                int itemBaseId = itemIds[i];
+                int num = itemNum[i];
+                this.itemDao.addItem(roleId, itemBaseId, num, result);
+            }
         }
 
         Story story = this.storyDao.findOne(roleId, storyId, storyType);
@@ -367,7 +445,7 @@ public class StoryService extends BaseClass {
                 story = this.storyDao.findOne(roleId, next.getId(), next.getType());
                 if (story == null) {
 
-                	this.storyDao.create(roleId, next.getId(), next.getType());
+                	result.addCopy(this.storyDao.create(roleId, next.getId(), next.getType()));
                 }
             }
         }
@@ -380,7 +458,7 @@ public class StoryService extends BaseClass {
         battleLog.setData(objectMapper.writeValueAsString(result.toMap()));
         this.battleLogDao.update(battleLog);
 
-        return result.toMap();
+        return this.success(result.toMap());
     }
 
     /**
@@ -395,7 +473,7 @@ public class StoryService extends BaseClass {
     public Object wipeOut(int storyId, int type, int times) throws Throwable {
 
         if (times != 1 && times != 10 && times != 3 && times != 2) {
-            throw new Throwable("Illegal operation !");
+            return this.returnError(this.lineNum(), "Illegal operation !");
         }
 
         int roleId = this.roleId();
@@ -408,20 +486,20 @@ public class StoryService extends BaseClass {
 //        }
 //
 //        if (list == null) {
-//            throw new Throwable("参数出错");
+//            return this.returnError(this.lineNum(), "参数出错");
 //        }
 
         Story story = this.storyDao.findOne(roleId, storyId, type);
 
         if (story == null || story.getStar() < 3) {
-            throw new Throwable("不是三星不能扫荡");
+            return this.returnError(this.lineNum(), "不是三星不能扫荡");
         }
 
         Role role = roleDao.findOne(roleId);
 
         if (type == BaseStory.HERO_COPY_TYPE) {
             if (3 - story.getNum() < times) {
-                throw new Throwable("今日可用扫荡次数不足");
+                return this.returnError(this.lineNum(), "今日可用扫荡次数不足");
             }
         }
 
@@ -437,16 +515,14 @@ public class StoryService extends BaseClass {
 
         int exp = baseStory.getTeamExp() * times;
         if (role.getPhysicalStrength() < exp) {
-            throw new Throwable("体力不足");
+            return this.returnError(this.lineNum(), "体力不足");
         } else {
-        	role.setPhysicalStrength(role.getPhysicalStrength() - exp);
+        	this.roleDao.subAp(role, exp, result);
         }
 
-        ItemDao Item = new ItemDao();
-
-        List<ItemTable> itemList = Item.findAll(roleId);
-        ItemTable item = null;
-        for (ItemTable itemTable : itemList) {
+        List<Item> itemList = this.itemDao.findAll(roleId);
+        Item item = null;
+        for (Item itemTable : itemList) {
             if (itemTable.getItemId() == 4208) {
                 // 有剿匪令
                 item = itemTable;
@@ -455,7 +531,7 @@ public class StoryService extends BaseClass {
         }
 
         if (item != null && item.getNum() >= times) {
-            Item.subItem(item, times, result);
+        	this.itemDao.subItem(item, times, result);
         } else {
 
             if (role.getVip() < 1) {
@@ -503,34 +579,33 @@ public class StoryService extends BaseClass {
         }
         desc += ">";
 
-        roleDao.addExp(role, exp, result);
+        this.roleDao.addExp(role, exp, result);
 
-        roleDao.addCoin(role, baseStory.getCoin() * times, desc, FinanceLog.STATUS_WIPE_OUT_GET, result);
-        roleDao.update(role, result);
+        this.roleDao.addCoin(role, baseStory.getCoin() * times, desc, FinanceLog.STATUS_WIPE_OUT_GET, result);
+        this.roleDao.update(role, result);
 
         for (Iterator<Map.Entry<Integer, Integer>> iter = map.entrySet().iterator(); iter.hasNext();) {
             Map.Entry<Integer, Integer> entry = iter.next();
-            Item.addItem(roleId, entry.getKey(), entry.getValue(), result);
+            this.itemDao.addItem(roleId, entry.getKey(), entry.getValue(), result);
         }
 
         int[][] expBook = this.baseStoryDao.decodeWipeOutItems(baseStory);
         int[][] expRes = new int[expBook.length][];
         for (int i = 0 ; i < expBook.length ; i++) {
             expRes[i] = new int[]{expBook[i][0] , expBook[i][1] * times};
-            Item.addItem(roleId, expRes[i][0], expRes[i][1], result);
+            this.itemDao.addItem(roleId, expRes[i][0], expRes[i][1], result);
         }
 
-        HashMap<String, Object> r = result.toMap();
-        r.put("coin", baseStory.getCoin() * times);
-        r.put("random_item", item_result);
-        r.put("other_item", expRes);
+        result.setValue("coin", baseStory.getCoin() * times);
+        result.setValue("random_item", item_result);
+        result.setValue("other_item", expRes);
         if (type == BaseStory.HERO_COPY_TYPE) {
 
             int n = 3;
-            r.put("wipeout_times", n > 0 ? n : 0);
+            result.setValue("wipeout_times", n > 0 ? n : 0);
         }
 
-        return r;
+        return this.success(result.toMap());
     }
 
     /**
@@ -550,7 +625,7 @@ public class StoryService extends BaseClass {
             error.setCode(com.zhanglong.sg.result.Error.ERROR_BUY_OVER_NUM);
             error.setMessage("购买体力次数已用完，提升VIP等级，可增加购买体力次数，前去充值？");
             ErrorResult result = new ErrorResult(error);
-            return result;
+            return this.success(result);
         }
 
         int gold = dateNumModel.buyApNeedGold();
@@ -560,19 +635,18 @@ public class StoryService extends BaseClass {
         if (role.getGold() < gold) {
             return ErrorResult.NotEnoughGold;
         } else {
-        	role.setPhysicalStrength(role.getPhysicalStrength() + 120);
-        	
+        	this.roleDao.addAp(role, 120, result);
+
         	dateNumModel.setBuyApNum(dateNumModel.getBuyApNum() + 1);
         	
-        	roleDao.subGold(role, gold, "购买体力第<" + dateNumModel.getBuyApNum()  + ">次", FinanceLog.STATUS_BUY_PHYSICAL_STRENGTHP);
-        	roleDao.update(role, result);
+        	this.roleDao.subGold(role, gold, "购买体力第<" + dateNumModel.getBuyApNum()  + ">次", FinanceLog.STATUS_BUY_PHYSICAL_STRENGTHP);
+        	this.roleDao.update(role, result);
         }
 
         this.dateNumDao.save(roleId, dateNumModel);
 
-        HashMap<String, Object> r = result.toMap();
-        r.put("buy_mp", new int[]{dateNumModel.getBuyApNum(), role.maxBuyPsNum(), dateNumModel.buyApNeedGold()});
-        return r;
+        result.setValue("buy_mp", new int[]{dateNumModel.getBuyApNum(), role.maxBuyPsNum(), dateNumModel.buyApNeedGold()});
+        return this.success(result.toMap());
     }
 
     /**
@@ -588,14 +662,14 @@ public class StoryService extends BaseClass {
 
         Story story = this.storyDao.findOne(roleId, storyId, BaseStory.HERO_COPY_TYPE);
         if (story == null) {
-        	throw new Throwable("未开启这个关卡");
+        	return this.returnError(this.lineNum(), "未开启这个关卡");
         }
 
         int dayNum = story.getBuyNum();
 
     	int gold = story.needGold();
 
-        Role role = roleDao.findOne(roleId);
+        Role role = this.roleDao.findOne(roleId);
 
         if (role.getVip() < dayNum + 2) {
             return new ErrorResult(new com.zhanglong.sg.result.Error(com.zhanglong.sg.result.Error.ERROR_BUY_OVER_NUM, "购买次数不足"));
@@ -606,14 +680,101 @@ public class StoryService extends BaseClass {
         if (role.getGold() < gold) {
         	return ErrorResult.NotEnoughGold;
         } else {
-        	roleDao.subGold(role, gold, "购买扫荡次数,第<" + storyId + ">关," + this.baseStoryDao.findOne(storyId, BaseStory.HERO_COPY_TYPE).getName(), FinanceLog.STATUS_BUY_WIPE_OUT);
-        	roleDao.update(role, result);
+        	this.roleDao.subGold(role, gold, "购买扫荡次数,第<" + storyId + ">关," + this.baseStoryDao.findOne(storyId, BaseStory.HERO_COPY_TYPE).getName(), FinanceLog.STATUS_BUY_WIPE_OUT);
+        	this.roleDao.update(role, result);
         }
 
         story.setNum(0);
         story.setBuyNum(story.getBuyNum() + 1);
         this.storyDao.update(story, result);
 
-        return result.toMap();
+        return this.success(result.toMap());
+    }
+    
+
+    /**
+     * 
+     * @param type
+     * @param chapter
+     * @param star
+     * @return
+     * @throws Throwable
+     */
+    public Object starReward(int type, int chapter, int star) throws Throwable {
+
+    	if (chapter < 0) {
+    		return this.returnError(this.lineNum(), "参数错误");
+    	}
+
+    	int n = 0;
+    	if (type == BaseStory.COPY_TYPE) {
+
+    		if (star != 18 && star != 36 && star != 54) {
+    			return this.returnError(this.lineNum(), "参数错误");
+    		}
+
+    		n = 18;
+    	} else if (type == BaseStory.HERO_COPY_TYPE) {
+    		
+    		if (star != 6 && star != 12 && star != 18) {
+    			return this.returnError(this.lineNum(), "参数错误");
+    		}
+
+    		n = 6;
+    	} else {
+    		return this.returnError(this.lineNum(), "参数错误");
+    	}
+
+		int start = (chapter - 1) * n + 1;
+		int end = chapter * n;
+
+    	int roleId = this.roleId();
+
+    	List<Story> list = this.storyDao.findAll(roleId);
+
+    	int countStar = 0;
+
+    	for (Story story : list) {
+			if (story.getType() == type && story.getStoryId() >= start && story.getStoryId() <= end) {
+				countStar += story.getStar();
+			}
+		}
+
+    	if (countStar < star) {
+    		return this.returnError(this.lineNum(), "星星不够不能领奖");
+    	}
+
+    	List<CopyStar> copyStars = copyStarDao.findAll(roleId);
+    	for (CopyStar copyStar : copyStars) {
+			if (copyStar.getChapter() == chapter && copyStar.getType() == type && copyStar.getStar() == star) {
+				return this.returnError(this.lineNum(), "奖励已领取");
+			}
+		}
+    	
+    	CopyStar copyStar = new CopyStar();
+    	copyStar.setChapter(chapter);
+    	copyStar.setRoleId(roleId);
+    	copyStar.setStar(star);
+    	copyStar.setType(type);
+    	
+    	this.copyStarDao.save(copyStar);
+
+    	copyStars.add(copyStar);
+
+
+    	List<CopyStarModel> stars = this.copyStarDao.configs();
+
+    	Result result = new Result();
+    	
+    	for (CopyStarModel copyStar2 : stars) {
+			if (copyStar2.getType() == type && copyStar2.getChapter() == chapter && copyStar2.getStar() == star) {
+
+				for (int[] baseItem : copyStar2.getItems()) {
+					this.itemDao.addItem(roleId, baseItem[0], baseItem[1], result);
+				}
+			}
+		}
+
+    	return this.success(result.toMap());
     }
 }

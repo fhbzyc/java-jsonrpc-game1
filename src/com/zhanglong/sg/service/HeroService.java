@@ -18,26 +18,23 @@ import com.zhanglong.sg.model.DateNumModel;
 import com.zhanglong.sg.result.ErrorResult;
 import com.zhanglong.sg.dao.BaseHeroEquipDao;
 import com.zhanglong.sg.dao.BaseHeroShopDao;
-import com.zhanglong.sg.dao.BaseItemDao;
-import com.zhanglong.sg.dao.ItemDao;
+import com.zhanglong.sg.dao.BaseMakeItemDao;
 import com.zhanglong.sg.entity.BaseHero;
 import com.zhanglong.sg.entity.BaseHeroEquip;
 import com.zhanglong.sg.entity.BaseHeroShop;
 import com.zhanglong.sg.entity.BaseItem;
+import com.zhanglong.sg.entity.BaseMakeItem;
 import com.zhanglong.sg.entity.BaseSkill;
 import com.zhanglong.sg.entity.FinanceLog;
 import com.zhanglong.sg.entity.Hero;
-import com.zhanglong.sg.entity.ItemTable;
+import com.zhanglong.sg.entity.Item;
 import com.zhanglong.sg.entity.Role;
 import com.zhanglong.sg.result.Result;
 import com.zhanglong.sg.utils.Utils;
 
 @Service
 @JsonRpcService("/hero")
-public class HeroService extends BaseClass {
-
-    @Resource
-    private BaseItemDao baseItemDao;
+public class HeroService extends BaseService {
 
     @Resource
     private BaseHeroShopDao baseHeroShopDao;
@@ -45,6 +42,10 @@ public class HeroService extends BaseClass {
     @Resource
     private BaseHeroEquipDao baseHeroEquipDao;
 
+    @Resource
+    private BaseMakeItemDao baseMakeItemDao;
+
+    
     public static int TYPE_COIN_RANDOM = 1;
     public static int TYPE_GOLD_RANDOM = 2;
 
@@ -53,7 +54,7 @@ public class HeroService extends BaseClass {
      * @return
      * @throws Throwable
      */
-    public HashMap<String, Object> list() throws Throwable {
+    public Object list() throws Throwable {
 
         int roleId = this.roleId();
 
@@ -65,7 +66,7 @@ public class HeroService extends BaseClass {
             result.addHero(hero);
         }
 
-        return result.toMap();
+        return this.success(result.toMap());
     }
 
     /**
@@ -80,19 +81,19 @@ public class HeroService extends BaseClass {
     	int roleId = this.roleId();
 
         if (skillIndex < 1 || skillIndex > 4) {
-            throw new Throwable("参数出错, skillIndex 出错");
+            return this.returnError(this.lineNum(), "参数出错, skillIndex 出错");
         }
 
         BaseHero baselGeneral = this.baseHeroDao.findOne(heroId);
 
         Hero hero = this.heroDao.findOne(roleId, heroId);
         if (hero == null) {
-            throw new Throwable("未拥有这个英雄  generalId: " + heroId);
+            return this.returnError(this.lineNum(), "未拥有这个英雄  generalId: " + heroId);
         }
 
         // 这里还要验证一个技能点数   // 1级两个技能点 
         if (hero.getAvailableSkillPoint() <= 0) {
-            throw new Throwable("技能点不足");
+            return this.returnError(this.lineNum(), "技能点不足");
         }
 
         BaseSkill baselSkill = null;
@@ -103,7 +104,7 @@ public class HeroService extends BaseClass {
         } else if(skillIndex == 2) {
 
         	if (hero.getCLASS() < 1) {
-        		throw new Throwable("英雄 阶级不够");
+        		return this.returnError(this.lineNum(), "英雄 阶级不够");
         	} else {
         		baselSkill = baselGeneral.getSkill2();
         	}
@@ -111,7 +112,7 @@ public class HeroService extends BaseClass {
         } else if(skillIndex == 3) {
 
         	if (hero.getCLASS() < 3) {
-        		throw new Throwable("英雄 阶级不够");
+        		return this.returnError(this.lineNum(), "英雄 阶级不够");
         	} else {
         		baselSkill = baselGeneral.getSkill3();
         	}
@@ -119,14 +120,14 @@ public class HeroService extends BaseClass {
         } else if(skillIndex == 4) {
 
         	if (hero.getCLASS() < 6) {
-        		throw new Throwable("英雄 阶级不够");
+        		return this.returnError(this.lineNum(), "英雄 阶级不够");
         	} else {
         		baselSkill = baselGeneral.getSkill4();
         	}
         }
 
         if (baselSkill == null) {
-            throw new Throwable("参数出错, baselSkill 不存在");
+            return this.returnError(this.lineNum(), "参数出错, baselSkill 不存在");
         }
 
         int skillLevel = 0;
@@ -148,11 +149,11 @@ public class HeroService extends BaseClass {
         }
 
         if (skillLevel >= hero.getLevel()) {
-            throw new Throwable("技能等级不能高于角色等级");
+            return this.returnError(this.lineNum(), "技能等级不能高于角色等级");
         }
 
         if (skillLevel >= baselSkill.getMaxLevel()) {
-            throw new Throwable("技能已是最大等级");
+            return this.returnError(this.lineNum(), "技能已是最大等级");
         }
 
         int coin = baselSkill.getBaseCoin() + (skillLevel - 1) * baselSkill.getLevelupCoin();
@@ -162,7 +163,7 @@ public class HeroService extends BaseClass {
         Role role = this.roleDao.findOne(roleId);
 
         if (role.getCoin() < coin) {
-        	throw new Throwable("铜钱不足");
+        	return this.returnError(this.lineNum(), "铜钱不足");
         } else {
         	this.roleDao.subCoin(role, coin, baselGeneral.getName() + ">升级技能<" + skillIndex + ">, level(" + skillLevel + " -> " + (skillLevel + 1) +")", FinanceLog.STATUS_GEN_SKILL_LEVELUP);
         	this.roleDao.update(role, result);
@@ -173,7 +174,7 @@ public class HeroService extends BaseClass {
         // 升级技能日常任务
         dailyTaskDao.addSkill(role, result);
 
-        return result.toMap();
+        return this.success(result.toMap());
     }
 
     /**
@@ -184,28 +185,28 @@ public class HeroService extends BaseClass {
      * @return
      * @throws Throwable
      */
-    public HashMap<String, Object> addPoint(int heroId, int[] points) throws Throwable {
+    public Object addPoint(int heroId, int[] points) throws Throwable {
 
     	int roleId = this.roleId();
 
         if (points.length != 3) {
-            throw new Throwable("Invalid argument");
+            return this.returnError(this.lineNum(), "Invalid argument");
         }
         int STR = points[0];
         int INT = points[1];
         int DEX = points[2];
 
         if (STR < 0 || INT < 0 || DEX < 0) {
-        	throw new Throwable("Invalid argument");
+        	return this.returnError(this.lineNum(), "Invalid argument");
         }
 
         Hero hero = this.heroDao.findOne(roleId, heroId);
         if (hero == null) {
-            throw new Throwable("未拥有这个英雄  heroId: " + heroId);
+            return this.returnError(this.lineNum(), "未拥有这个英雄  heroId: " + heroId);
         }
 
         if (STR + INT + DEX > hero.getAvailablePoint()) {
-            throw new Throwable("参数出错 ,属性点超过最大值");
+            return this.returnError(this.lineNum(), "参数出错 ,属性点超过最大值");
         }
 
         hero.setStr(hero.getStr() + STR);
@@ -214,7 +215,7 @@ public class HeroService extends BaseClass {
 
         Result result = new Result();
         this.heroDao.update(hero, result);
-        return result.toMap();
+        return this.success(result.toMap());
     }
 
     /**
@@ -228,11 +229,11 @@ public class HeroService extends BaseClass {
 
         Hero general = this.heroDao.findOne(roleId, heroId);
         if (general == null) {
-            throw new Throwable("未拥有这个英雄  heroId: " + heroId);
+            return this.returnError(this.lineNum(), "未拥有这个英雄  heroId: " + heroId);
         }
 
         if (general.getStar() >= 5) {
-            throw new Throwable("已经最大星");
+            return this.returnError(this.lineNum(), "已经最大星");
         }
 
         int coin = 0;
@@ -257,13 +258,13 @@ public class HeroService extends BaseClass {
         	return returnError(lineNum(), "铜钱不足");
         }
 
-        ItemTable item = this.itemDao.findOneByItemId(roleId, heroId - 6000);
+        Item item = this.itemDao.findOneByItemId(roleId, heroId - 6000);
 
         if (item == null) {
-            throw new Throwable("灵魂石数量不足 数量为 0");
+            return this.returnError(this.lineNum(), "灵魂石数量不足 数量为 0");
         }
         if (item.getNum() < num) {
-            throw new Throwable("灵魂石数量不足 当前数量: " + item.getNum() + " , 还差: " + (num - item.getNum()));
+            return this.returnError(this.lineNum(), "灵魂石数量不足 当前数量: " + item.getNum() + " , 还差: " + (num - item.getNum()));
         }
 
         Result result = new Result();
@@ -275,7 +276,7 @@ public class HeroService extends BaseClass {
 
         general.setStar(general.getStar() + 1);
         this.heroDao.update(general, result);
-        return result.toMap();
+        return this.success(result.toMap());
     }
 
     /**
@@ -284,41 +285,41 @@ public class HeroService extends BaseClass {
      * @return
      * @throws Throwable
      */
-    public HashMap<String, Object> classUp(int heroId) throws Throwable {
+    public Object classUp(int heroId) throws Throwable {
 
     	int roleId = this.roleId();
 
         Hero general = this.heroDao.findOne(roleId, heroId);
         if (general == null) {
-            throw new Throwable("未拥有这个英雄  generalId: " + heroId);
+            return this.returnError(this.lineNum(), "未拥有这个英雄  generalId: " + heroId);
         }
 
         if (general.getCLASS() >= baseHeroEquipDao.findByHeroId(heroId).size()) {
-            throw new Throwable("已经是最高阶了");
+            return this.returnError(this.lineNum(), "已经是最高阶了");
         }
 
-        if (general.getEquip1() != 1) {
-            throw new Throwable("身上装备数量不够不能升阶");
-        } else if (general.getEquip2() != 1) {
-            throw new Throwable("身上装备数量不够不能升阶");
-        } else if (general.getEquip3() != 1) {
-            throw new Throwable("身上装备数量不够不能升阶");
-        } else if (general.getEquip4() != 1) {
-            throw new Throwable("身上装备数量不够不能升阶");
-        } else if (general.getEquip5() != 1) {
-            throw new Throwable("身上装备数量不够不能升阶");
-        } else if (general.getEquip6() != 1) {
-            throw new Throwable("身上装备数量不够不能升阶");
+        if (!general.getEquip1()) {
+            return this.returnError(this.lineNum(), "身上装备数量不够不能升阶");
+        } else if (!general.getEquip2()) {
+            return this.returnError(this.lineNum(), "身上装备数量不够不能升阶");
+        } else if (!general.getEquip3()) {
+            return this.returnError(this.lineNum(), "身上装备数量不够不能升阶");
+        } else if (!general.getEquip4()) {
+            return this.returnError(this.lineNum(), "身上装备数量不够不能升阶");
+        } else if (!general.getEquip5()) {
+            return this.returnError(this.lineNum(), "身上装备数量不够不能升阶");
+        } else if (!general.getEquip6()) {
+            return this.returnError(this.lineNum(), "身上装备数量不够不能升阶");
         }
 
         int newClass = general.getCLASS() + 1;
 
-        general.setEquip1(0);
-        general.setEquip2(0);
-        general.setEquip3(0);
-        general.setEquip4(0);
-        general.setEquip5(0);
-        general.setEquip6(0);
+        general.setEquip1(false);
+        general.setEquip2(false);
+        general.setEquip3(false);
+        general.setEquip4(false);
+        general.setEquip5(false);
+        general.setEquip6(false);
         general.setCLASS(newClass);
 
         Result result = new Result();
@@ -329,35 +330,34 @@ public class HeroService extends BaseClass {
         // 进阶主线任务
         missionDao.checkHeroClass(role, newClass, 1, result);
 
-        return result.toMap();
+        return this.success(result.toMap());
     }
 
     /**
      * 更换装备
-     * @param generalId
+     * @param heroId
      * @param equipId
      * @param index
      * @return
      * @throws Throwable
      */
     @Transactional(rollbackFor = Throwable.class)
-    public HashMap<String, Object> equipment(int heroId, int equipId, int index) throws Throwable {
+    public Object equipment(int heroId, int equipId, int index) throws Throwable {
 
     	int roleId = this.roleId();
 
         if (index < 1 || index > 6) {
-            throw new Throwable("装备位置参数不正确");
+            return this.returnError(this.lineNum(), "装备位置参数不正确");
         }
 
         Hero hero = this.heroDao.findOne(roleId, heroId);
         if (hero == null) {
-            throw new Throwable("未拥有这个英雄  generalId: " + heroId);
+            return this.returnError(this.lineNum(), "未拥有这个英雄  generalId: " + heroId);
         }
 
-        ItemDao Item = new ItemDao();
-        ItemTable equip = Item.findOne(equipId);
+        Item equip = this.itemDao.findOne(equipId);
         if (equip == null) {
-            throw new Throwable("未拥有这个道具 itemId: " + equipId);
+            return this.returnError(this.lineNum(), "未拥有这个道具 itemId: " + equipId);
         }
 
         BaseHeroEquip equips = this.baseHeroEquipDao.findByHeroId(heroId).get(hero.getCLASS());
@@ -365,60 +365,59 @@ public class HeroService extends BaseClass {
         BaseItem baseEquip = this.baseItemDao.findOne(equip.getItemId());
 
         if (index == 1) {
-            if (hero.getEquip1() == 1) {
-                throw new Throwable("位置已有装备");
+            if (hero.getEquip1()) {
+                return this.returnError(this.lineNum(), "位置已有装备");
             } else if ((int)equips.getEquip1().getBaseId() != (int)baseEquip.getBaseId()) {
-            	throw new Throwable("装备不匹配");
+            	return this.returnError(this.lineNum(), "装备不匹配");
             }
-            hero.setEquip1(1);
+            hero.setEquip1(true);
         } else if (index == 2) {
-            if (hero.getEquip2() == 1) {
-                throw new Throwable("位置已有装备");
+            if (hero.getEquip2()) {
+                return this.returnError(this.lineNum(), "位置已有装备");
             } else if ((int)equips.getEquip2().getBaseId() != (int)baseEquip.getBaseId()) {
-            	throw new Throwable("装备不匹配");
+            	return this.returnError(this.lineNum(), "装备不匹配");
             }
-            hero.setEquip2(1);
+            hero.setEquip2(true);
         } else if (index == 3) {
-            if (hero.getEquip3() == 1) {
-                throw new Throwable("位置已有装备");
+            if (hero.getEquip3()) {
+                return this.returnError(this.lineNum(), "位置已有装备");
             } else if ((int)equips.getEquip3().getBaseId() != (int)baseEquip.getBaseId()) {
-            	throw new Throwable("装备不匹配");
+            	return this.returnError(this.lineNum(), "装备不匹配");
             }
-            hero.setEquip3(1);
+            hero.setEquip3(true);
         } else if (index == 4) {
-            if (hero.getEquip4() == 1) {
-                throw new Throwable("位置已有装备");
+            if (hero.getEquip4()) {
+                return this.returnError(this.lineNum(), "位置已有装备");
             } else if ((int)equips.getEquip4().getBaseId() != (int)baseEquip.getBaseId()) {
-            	throw new Throwable("装备不匹配");
+            	return this.returnError(this.lineNum(), "装备不匹配");
             }
-            hero.setEquip4(1);
+            hero.setEquip4(true);
         } else if (index == 5) {
-            if (hero.getEquip5() == 1) {
-                throw new Throwable("位置已有装备");
+            if (hero.getEquip5()) {
+                return this.returnError(this.lineNum(), "位置已有装备");
             } else if ((int)equips.getEquip5().getBaseId() != (int)baseEquip.getBaseId()) {
-            	throw new Throwable("装备不匹配");
+            	return this.returnError(this.lineNum(), "装备不匹配");
             }
-            hero.setEquip5(1);
+            hero.setEquip5(true);
         } else if (index == 6) {
-            if (hero.getEquip6() == 1) {
-                throw new Throwable("位置已有装备");
+            if (hero.getEquip6()) {
+                return this.returnError(this.lineNum(), "位置已有装备");
             } else if ((int)equips.getEquip6().getBaseId() != (int)baseEquip.getBaseId()) {
-            	throw new Throwable("装备不匹配");
+            	return this.returnError(this.lineNum(), "装备不匹配");
             }
-            hero.setEquip6(1);
+            hero.setEquip6(true);
         }
 
         Result result = new Result();
 
-        Item.subItem(equip, 1, result);
+        this.itemDao.subItem(equip, 1, result);
         this.heroDao.update(hero, result);
 
-        return result.toMap();
+        return this.success(result.toMap());
     }
 
     /**
      * 酒馆随机一次武将
-     * @param tokenS
      * @return
      * @throws Throwable
      */
@@ -428,7 +427,7 @@ public class HeroService extends BaseClass {
     	int roleId = this.roleId();
 
         if (type != TYPE_COIN_RANDOM && type != TYPE_GOLD_RANDOM) {
-            throw new Throwable("参数出错");
+            return this.returnError(this.lineNum(), "参数出错");
         }
 
         int coin = 10000;
@@ -474,7 +473,7 @@ public class HeroService extends BaseClass {
 
         if (type == TYPE_COIN_RANDOM) {
 
-        	if (dateNumModel.getBarCoinNum() >= 6 || role.getBarCoinTime() > System.currentTimeMillis()) {
+        	if (dateNumModel.getBarCoinNum() >= 6 || dateNumModel.barTime > System.currentTimeMillis()) {
                 if (role.getCoin() < coin) {
                 	return returnError(lineNum(), "铜钱不足");
                 } else {
@@ -483,33 +482,33 @@ public class HeroService extends BaseClass {
         	} else {
         		// 酒馆每日免费刷新次数加一
         		dateNumModel.setBarCoinNum(dateNumModel.getBarCoinNum() + 1);
-        		this.dateNumDao.save(roleId, dateNumModel);
 
         		if (dateNumModel.getBarCoinNum() >= 6) {
         	        Date date = new SimpleDateFormat("yyyyMMdd").parse(Utils.date());
-        	        role.setBarCoinTime(date.getTime() + 24l * 3600l * 1000l);
+        	        dateNumModel.barTime = date.getTime() + 24l * 3600l * 1000l;
         		} else {
-        			role.setBarCoinTime(System.currentTimeMillis() + 60l * 5l * 1000l);
+        			dateNumModel.barTime = System.currentTimeMillis() + 60l * 5l * 1000l;
         		}
+
+        		this.dateNumDao.save(roleId, dateNumModel);
         	}
         } else {
 
-        	if (System.currentTimeMillis() < role.getBarGoldTime()) {
+        	if (System.currentTimeMillis() / 1000 < role.getBarGoldTime()) {
                 if (role.getGold() < gold) {
-                	return ErrorResult.NotEnoughGold;
+                	return this.success(ErrorResult.NotEnoughGold);
                 } else {
-                	roleDao.subGold(role, gold, desc, FinanceLog.STATUS_RANDOM_GEN_ONE_TIMES_GOLD);
+                	this.roleDao.subGold(role, gold, desc, FinanceLog.STATUS_RANDOM_GEN_ONE_TIMES_GOLD);
 
                 }
         	} else {
-            	// 酒馆免费元宝刷新冷却时间重置为2天
-        		role.setBarGoldTime(System.currentTimeMillis() + 1l * 86400l * 1000l);
-
+            	// 酒馆免费元宝刷新冷却时间重置为1天
+        		role.barGoldTime = (int)(System.currentTimeMillis() / 1000l + 86400l);
         	}
         }
 
         Result result = new Result();
-        roleDao.update(role, result);
+        this.roleDao.update(role, result);
         
         if (itemId >= 10000) {
         	boolean find = false;
@@ -530,21 +529,23 @@ public class HeroService extends BaseClass {
             	}
             	
             } else {
-            	ItemDao itemDao = new ItemDao();
-            	itemDao.addItem(roleId, itemId - 6000, this.soulNumByStar(itemId), result);
+
+            	this.itemDao.addItem(roleId, itemId - 6000, this.soulNumByStar(itemId), result);
             }
         } else {
-        	ItemDao Item = new ItemDao();
-            Item.addItem(roleId, itemId, num, result);
+        	this.itemDao.addItem(roleId, itemId, num, result);
         }
 
         // 酒馆寻宝日常任务
-        dailyTaskDao.addBar(role, 1, result);
+        this.dailyTaskDao.addBar(role, 1, result);
+
+        long time = System.currentTimeMillis();
+        long bar_gold_time = (long)role.barGoldTime * 1000l - time;
 
         result.setValue("bar_coin_times", dateNumModel.getBarCoinNum());
-        result.setValue("bar_gold_time", role.getBarGoldTime() > System.currentTimeMillis() ? role.getBarGoldTime() - System.currentTimeMillis() : 0);
-        result.setValue("bar_coin_time", role.getBarCoinTime() > System.currentTimeMillis() ? role.getBarCoinTime() - System.currentTimeMillis() : 0);
-        return result.toMap();
+        result.setValue("bar_gold_time", bar_gold_time > 0 ? bar_gold_time : 0);
+        result.setValue("bar_coin_time", dateNumModel.barTime > time ? dateNumModel.barTime - time : 0);
+        return this.success(result.toMap());
     }
 
     /**
@@ -559,7 +560,7 @@ public class HeroService extends BaseClass {
     	int roleId = this.roleId();
 
         if (type != TYPE_COIN_RANDOM && type != TYPE_GOLD_RANDOM) {
-            throw new Throwable("参数出错");
+            return this.returnError(this.lineNum(), "参数出错");
         }
 
         int coin = 90000;
@@ -571,8 +572,8 @@ public class HeroService extends BaseClass {
             	return returnError(lineNum(), "铜钱不足");
             }
         } else {
-            if (role.getGold() < coin) {
-            	return ErrorResult.NotEnoughGold;
+            if (role.getGold() < gold) {
+            	return this.success(ErrorResult.NotEnoughGold);
             }
         }
 
@@ -694,7 +695,7 @@ public class HeroService extends BaseClass {
         // 酒馆寻宝日常任务
         dailyTaskDao.addBar(role, times, result);
 
-        return result.toMap();
+        return this.success(result.toMap());
     }
 
     /**
@@ -709,14 +710,13 @@ public class HeroService extends BaseClass {
         int roleId = this.roleId();
 
         if (this.heroDao.findOne(roleId, heroId) != null) {
-            throw new Throwable("出错,已有这个武将");
+            return this.returnError(this.lineNum(), "出错,已有这个武将");
         }
 
-        ItemDao itemDao = new ItemDao();
-        itemDao.setSessionFactory(this.heroDao.getSessionFactory());
-        ItemTable item = itemDao.findOneByItemId(roleId, heroId - 6000);
+        this.itemDao.setSessionFactory(this.heroDao.getSessionFactory());
+        Item item = itemDao.findOneByItemId(roleId, heroId - 6000);
         if (item == null) {
-            throw new Throwable("出错,没有灵魂石");
+            return this.returnError(this.lineNum(), "出错,没有灵魂石");
         }
 
         int soulNum = 80;
@@ -728,7 +728,7 @@ public class HeroService extends BaseClass {
 
         int itemNum = item.getNum();
         if (itemNum < soulNum) {
-            throw new Throwable("出错,灵魂石数量不足");
+            return this.returnError(this.lineNum(), "出错,灵魂石数量不足");
         }
 
         Role role = this.roleDao.findOne(roleId);
@@ -736,7 +736,7 @@ public class HeroService extends BaseClass {
         Result result = new Result();
         this.heroDao.create(role, heroId, result);
         this.itemDao.subItem(item, soulNum, result);
-        return result.toMap();
+        return this.success(result.toMap());
     }
 
     /**
@@ -752,7 +752,7 @@ public class HeroService extends BaseClass {
 
         Hero general = this.heroDao.findOne(roleId, generalId);
         if (general == null) {
-            throw new Throwable("出错,没有这个武将");
+            return this.returnError(this.lineNum(), "出错,没有这个武将");
         }
 
         int gold = 50;
@@ -785,7 +785,7 @@ public class HeroService extends BaseClass {
 
         Role role = this.roleDao.findOne(roleId);
         if (role.getGold() < gold) {
-        	return ErrorResult.NotEnoughGold;
+        	return this.success(ErrorResult.NotEnoughGold);
         } else {
         	this.roleDao.addCoin(role, coin, "重置技能退铜钱", FinanceLog.STATUS_RESET_SKILL, result);
         	this.roleDao.subGold(role, gold, "重置技能<" + this.baseHeroDao.findOne(generalId).getName() + ">", FinanceLog.STATUS_RESET_SKILL);
@@ -799,7 +799,7 @@ public class HeroService extends BaseClass {
 
         this.heroDao.update(general, result);
 
-        return result.toMap();
+        return this.success(result.toMap());
     }
 
     /**
@@ -815,7 +815,7 @@ public class HeroService extends BaseClass {
 
         Hero general = this.heroDao.findOne(roleId, generalId);
         if (general == null) {
-            throw new Throwable("出错,没有这个武将");
+            return this.returnError(this.lineNum(), "出错,没有这个武将");
         }
 
         int gold = 20;
@@ -824,7 +824,7 @@ public class HeroService extends BaseClass {
 
         Role role = this.roleDao.findOne(roleId);
         if (role.getGold() < gold) {
-        	return ErrorResult.NotEnoughGold;
+        	return this.success(ErrorResult.NotEnoughGold);
         } else {
         	this.roleDao.subGold(role, gold, "重置属性点<" + this.baseHeroDao.findOne(generalId).getName() + ">", FinanceLog.STATUS_RESET_POINT);
         	this.roleDao.update(role, result);
@@ -836,7 +836,7 @@ public class HeroService extends BaseClass {
 
         this.heroDao.update(general, result);
 
-        return result.toMap();
+        return this.success(result.toMap());
     }
 
     /**
@@ -857,7 +857,7 @@ public class HeroService extends BaseClass {
 
             return this.returnError(com.zhanglong.sg.result.Error.ERROR_BUY_OVER_NUM, "需要VIP11可解锁魂石商店，前去充值？");
         } else if (role.getGold() < gold) {
-            return ErrorResult.NotEnoughGold;
+            return this.success(ErrorResult.NotEnoughGold);
         }
 
         List<BaseHeroShop> soulList = this.baseHeroShopDao.findAll("soul");
@@ -931,15 +931,15 @@ public class HeroService extends BaseClass {
     	// 酒馆寻宝日常任务
     	dailyTaskDao.addBar(role, 1, result);
 
-    	return result.toMap();
+    	return this.success(result.toMap());
     }
 
     /**
-     * 所有的英雄
-     * @param tokenS
+     * 
      * @return
+     * @throws Throwable
      */
-	public List<BaseHero> showAll() throws Throwable {
+	public Object showAll() throws Throwable {
 
 		List<BaseHero> list = baseHeroDao.findAll();
 
@@ -951,8 +951,387 @@ public class HeroService extends BaseClass {
 
         Collections.sort(list, comparator);
 
-		return list;
+		return this.success(list);
 	}
+
+
+    /**
+     * 锻造
+     * @param heroId
+     * @param index
+     * @param ids
+     * @param nums
+     * @return
+     * @throws Throwable
+     */
+    @Transactional(rollbackFor = Throwable.class)
+    public Object addEquipExp(int heroId, int index, int[] ids, int[] nums) throws Throwable {
+
+    	int roleId = this.roleId();
+
+        Result result = new Result();
+
+        int exp = 0;
+        for (int i = 0; i < ids.length; i++) {
+
+			if (nums[i] <= 0) {
+				return this.returnError(this.lineNum(), "参数出错");
+			}
+
+			int num = nums[i];
+			
+			int itemId = ids[i];
+			Item item = this.itemDao.findOne(itemId);
+
+			if (item == null || !item.getRoleId().equals(roleId)) {
+				return this.returnError(this.lineNum(), "未拥有的道具");
+			}
+			
+			BaseItem baseItem = this.baseItemDao.findOne(item.getItemId());
+			if (baseItem.getType() != 2 && baseItem.getType() != 3  && baseItem.getType() != 5) {
+				return this.returnError(this.lineNum(), baseItem.getName() + ">并非锻造材料");
+			}
+
+			if (item.getNum() < num) {
+				return this.returnError(this.lineNum(), baseItem.getName() + ">数量不足");
+			} else {
+				this.itemDao.subItem(item, num, result);
+			}
+
+			exp += baseItem.getExp() * num;
+		}
+
+        int coin = exp * 200;
+
+        Role role = this.roleDao.findOne(roleId);
+        if (role.coin < coin) {
+        	return this.returnError(this.lineNum(), "铜币不足");
+        }
+
+    	Hero hero = this.heroDao.findOne(roleId, heroId);
+
+        if (index == 1) {
+            if (hero.getEquip1() == false) {
+                return this.returnError(this.lineNum(), "装备没配");
+            } else {
+				hero.setEquip1Exp(hero.getEquip1Exp() + exp);
+			}
+        } else if (index == 2) {
+            if (hero.getEquip2() == false) {
+            	return this.returnError(this.lineNum(), "装备没配");
+            } else {
+				hero.setEquip2Exp(hero.getEquip2Exp() + exp);
+			}
+        } else if (index == 3) {
+            if (hero.getEquip3() == false) {
+            	return this.returnError(this.lineNum(), "装备没配");
+            } else {
+				hero.setEquip3Exp(hero.getEquip3Exp() + exp);
+			}
+        } else if (index == 4) {
+            if (hero.getEquip4() == false) {
+            	return this.returnError(this.lineNum(), "装备没配");
+            } else {
+				hero.setEquip4Exp(hero.getEquip4Exp() + exp);
+			}
+        } else if (index == 5) {
+            if (hero.getEquip5() == false) {
+            	return this.returnError(this.lineNum(), "装备没配");
+            } else {
+				hero.setEquip5Exp(hero.getEquip5Exp() + exp);
+			}
+        } else if (index == 6) {
+            if (hero.getEquip6() == false) {
+            	return this.returnError(this.lineNum(), "装备没配");
+            } else {
+				hero.setEquip6Exp(hero.getEquip6Exp() + exp);
+			}
+        } else if (index == 7) {
+            if (hero.getEquip7() == 0) {
+            	return this.returnError(this.lineNum(), "装备没配");
+            } else {
+				hero.setEquip7Exp(hero.getEquip7Exp() + exp);
+			}
+        } else {
+        	return this.returnError(this.lineNum(), "参数出错");
+        }
+
+        this.roleDao.subCoin(role, coin, hero.getCLASS() + "阶<" + this.baseHeroDao.findOne(heroId).getName() + ">锻造<" + index , FinanceLog.STATUS_COIN_EQUIP_EXP);
+        this.roleDao.update(role, result);
+
+        this.heroDao.update(hero, result);
+
+    	return this.success(result.toMap());
+    }
+
+    /**
+     * 元宝锻造
+     * @param heroId
+     * @param index
+     * @return
+     * @throws Throwable
+     */
+    @Transactional(rollbackFor = Throwable.class)
+    public Object addEquipExp2(int heroId, int index) throws Throwable {
+
+    	int roleId = this.roleId();
+
+    	Hero hero = this.heroDao.findOne(roleId, heroId);
+
+    	int equipId = 0;
+    	if (index == 7) {
+    		equipId = hero.getEquip7();
+    	} else {
+
+    		equipId = this.equipId(hero, index);
+    	}
+
+        if (equipId == 0) {
+            return this.returnError(this.lineNum(), "没装备你锻的个什么劲");
+        }
+
+    	BaseItem baseItem = this.baseItemDao.findOne(equipId);
+    	
+    	int exp = 0;
+        if (index == 1) {
+            if (hero.getEquip1() == false) {
+                return this.returnError(this.lineNum(), "装备没配");
+            } else if (hero.getEquip1Exp() >= baseItem.maxExp()) {
+            	return this.returnError(this.lineNum(), "经验已最大");
+            } else {
+            	exp = baseItem.maxExp() - hero.getEquip1Exp();
+				hero.setEquip1Exp(baseItem.maxExp());
+			}
+        } else if (index == 2) {
+            if (hero.getEquip2() == false) {
+            	return this.returnError(this.lineNum(), "装备没配");
+            } else if (hero.getEquip2Exp() >= baseItem.maxExp()) {
+            	return this.returnError(this.lineNum(), "经验已最大");
+            } else {
+            	exp = baseItem.maxExp() - hero.getEquip2Exp();
+				hero.setEquip2Exp(baseItem.maxExp());
+			}
+        } else if (index == 3) {
+            if (hero.getEquip3() == false) {
+            	return this.returnError(this.lineNum(), "装备没配");
+            } else if (hero.getEquip3Exp() >= baseItem.maxExp()) {
+            	return this.returnError(this.lineNum(), "经验已最大");
+            } else {
+            	exp = baseItem.maxExp() - hero.getEquip3Exp();
+				hero.setEquip3Exp(baseItem.maxExp());
+			}
+        } else if (index == 4) {
+            if (hero.getEquip4() == false) {
+            	return this.returnError(this.lineNum(), "装备没配");
+            } else if (hero.getEquip4Exp() >= baseItem.maxExp()) {
+            	return this.returnError(this.lineNum(), "经验已最大");
+            } else {
+            	exp = baseItem.maxExp() - hero.getEquip4Exp();
+				hero.setEquip4Exp(baseItem.maxExp());
+			}
+        } else if (index == 5) {
+            if (hero.getEquip5() == false) {
+            	return this.returnError(this.lineNum(), "装备没配");
+            } else if (hero.getEquip5Exp() >= baseItem.maxExp()) {
+            	return this.returnError(this.lineNum(), "经验已最大");
+            } else {
+            	exp = baseItem.maxExp() - hero.getEquip5Exp();
+				hero.setEquip5Exp(baseItem.maxExp());
+			}
+        } else if (index == 6) {
+            if (hero.getEquip6() == false) {
+            	return this.returnError(this.lineNum(), "装备没配");
+            } else if (hero.getEquip6Exp() >= baseItem.maxExp()) {
+            	return this.returnError(this.lineNum(), "经验已最大");
+            } else {
+            	exp = baseItem.maxExp() - hero.getEquip6Exp();
+				hero.setEquip6Exp(baseItem.maxExp());
+			}
+        } else if (index == 7) {
+            if (hero.getEquip7() == 0) {
+            	return this.returnError(this.lineNum(), "装备没配");
+            } else if (hero.getEquip7Exp() >= baseItem.maxExp()) {
+            	return this.returnError(this.lineNum(), "经验已最大");
+            } else {
+            	exp = baseItem.maxExp() - hero.getEquip7Exp();
+				hero.setEquip7Exp(baseItem.maxExp());
+			}
+        } else {
+        	return this.returnError(this.lineNum(), "参数出错");
+        }
+
+        Role role = this.roleDao.findOne(roleId);
+        if (role.gold < exp) {
+        	return this.success(ErrorResult.NotEnoughGold);
+        }
+
+        this.roleDao.subGold(role, exp, hero.getCLASS() + "阶<" + baseHeroDao.findOne(heroId).getName() + ">锻造<" + index , FinanceLog.STATUS_COIN_EQUIP_EXP);
+
+        Result result = new Result();
+
+        this.roleDao.update(role, result);
+
+        this.heroDao.update(hero, result);
+
+    	return this.success(result.toMap());
+    }
+
+    /**
+     * 
+     * @param heroId
+     * @param weaponId
+     * @return
+     * @throws Throwable
+     */
+    @Transactional(rollbackFor = Throwable.class)
+    public Object exclusiveWeapon(int heroId, int weaponId) throws Throwable {
+
+    	int roleId = this.roleId();
+
+    	Hero hero = this.heroDao.findOne(roleId, heroId);
+
+    	if (hero == null) {
+    		return this.returnError(this.lineNum(), "参数错误");
+    	}
+
+    	int myId = hero.getEquip7();
+    	if (myId >= 9900) {
+    		return this.returnError(this.lineNum(), "已经是最高级的橙色专属武器");
+    	}
+
+    	Item weapon = this.itemDao.findOne(weaponId);
+
+    	if (weapon == null) {
+    		return this.returnError(this.lineNum(), "参数错误");
+    	}
+
+    	int itemId = weapon.getItemId();
+    	
+    	if (itemId <= myId) {
+    		return this.returnError(this.lineNum(), "参数出错");
+    	}
+
+    	int id1 = hero.getHeroId() - 100;
+    	int id2 = hero.getHeroId() - 200;
+    	int id3 = hero.getHeroId() - 300;
+
+    	if (itemId !=id1 && itemId != id2 && itemId != id3) {
+    		return this.returnError(this.lineNum(), "不是他的专属武器不能装备");
+    	}
+
+    	Result result = new Result();
+
+    	this.itemDao.subItem(weapon, 1, result);
+
+    	hero.setEquip7(itemId);
+    	this.heroDao.update(hero, result);
+
+    	if (myId > 0 && hero.getEquip7Exp() > 10) {
+    		// 返还材料
+    		int material = 4204;
+    		this.itemDao.addItem(roleId, material, hero.getEquip7Exp() / 10, result);
+    		this.itemDao.addItem(roleId, id1, 1, result);
+    	}
+
+    	return this.success(result.toMap());
+    }
+
+    /**
+     * 专属武器进阶
+     * @param heroId
+     * @return
+     * @throws Throwable
+     */
+    public Object equipClassup(int heroId) throws Throwable {
+
+    	int roleId = this.roleId();
+
+    	Hero hero = this.heroDao.findOne(roleId, heroId);
+
+    	if (hero == null) {
+    		return this.returnError(this.lineNum(), "参数出错");
+    	}
+
+    	if (hero.getEquip7() == 0) {
+    		return this.returnError(this.lineNum(), "参数出错");
+    	}
+    	
+    	if (hero.getEquip7() >= 9900) {
+    		return this.returnError(this.lineNum(), "橙色不能进阶了");
+    	}
+
+    	int itemId = hero.getEquip7() + 100;
+
+        BaseItem baseItem = this.baseItemDao.findOne(itemId);
+
+        Result result = new Result();
+
+        Role role = this.roleDao.findOne(roleId);
+        if (role.coin < baseItem.getMakeCoin()) {
+        	return this.returnError(this.lineNum(), "铜币不足");
+        } else {
+        	this.roleDao.subCoin(role, baseItem.getMakeCoin(), "专属进阶<" + baseItem.getName() + ">", FinanceLog.STATUS_EQUIP_MAKE);
+        	this.roleDao.update(role, result);
+        }
+
+	    List<BaseMakeItem> items = this.baseMakeItemDao.findByItemId(itemId);
+
+        boolean find = false;
+		for (BaseMakeItem baseMakeItem : items) {
+			if (baseMakeItem.getPk().getBaseItem().getBaseId() == itemId) {
+				find = true;
+
+				int materialId = baseMakeItem.getPk().getMaterial().getBaseId();
+
+				Item item = this.itemDao.findOneByItemId(roleId, materialId);
+				if (item == null) {
+					return this.returnError(this.lineNum(), "缺少合成材料:" + this.baseItemDao.findOne(materialId).getName());
+				} else if (item.getNum() < baseMakeItem.getNum()) {
+					return this.returnError(this.lineNum(), "合成材料:" + this.baseItemDao.findOne(materialId).getName() + " , 数量不足");
+				} else {
+					this.itemDao.subItem(item, baseMakeItem.getNum(), result);
+				}
+			}
+		}
+
+		if (!find) {
+			return this.returnError(this.lineNum(), "专属合成配置出错");
+		}
+
+    	if (hero.getEquip7Exp() > 10) {
+    		// 返还材料
+    		int material = 4204;
+    		this.itemDao.addItem(roleId, material, hero.getEquip7Exp() / 10, result);
+    	}
+
+		hero.setEquip7(itemId);
+		hero.setEquip7Exp(0);
+		this.heroDao.update(hero, result);
+
+		return this.success(result.toMap());
+    }
+
+    private int equipId(Hero hero, int index) throws Exception {
+
+    	List<BaseHeroEquip> baseHeroEquips = this.baseHeroEquipDao.findByHeroId(hero.getHeroId());
+    	BaseHeroEquip baseHeroEquip = baseHeroEquips.get(hero.getCLASS());
+    	switch (index) {
+		case 1:
+			return baseHeroEquip.getEquip1().getBaseId();
+		case 2:
+			return baseHeroEquip.getEquip2().getBaseId();
+		case 3:
+			return baseHeroEquip.getEquip3().getBaseId();
+		case 4:
+			return baseHeroEquip.getEquip4().getBaseId();
+		case 5:
+			return baseHeroEquip.getEquip5().getBaseId();
+		case 6:
+			return baseHeroEquip.getEquip6().getBaseId();
+		default:
+			throw new Exception("索引出错");
+		}
+    }
 
 	private int soulNumByStar(int heroId) {
 		return 18;

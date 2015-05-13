@@ -2,6 +2,9 @@ package com.zhanglong.sg.model;
 
 import java.io.Serializable;
 
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize.Inclusion;
+
 public class DateNumModel implements Serializable {
 
 	/**
@@ -9,31 +12,65 @@ public class DateNumModel implements Serializable {
 	 */
 	private static final long serialVersionUID = 8022847390225737484L;
 
-	private int date;
+	public int date;
 
-	private int buyApNum;
+	public int buyApNum;
 
-	private int buyCoinNum;
+	public int buyCoinNum;
 
-	private int barCoinNum;
+	public int barCoinNum;
 
-	private int specialCopy1;
+	public int specialCopy1;
 
-	private int specialCopy2;
+	public int specialCopy2;
 
-	private int specialCopy3;
+	public int specialCopy3;
 
-	private int specialCopy4;
+	public int specialCopy4;
 
-	private long specialCopyCoolTime1;
+	@JsonSerialize(include = Inclusion.NON_NULL)
+	public int specialCopy5;
 
-	private long specialCopyCoolTime2;
+	@JsonSerialize(include = Inclusion.NON_NULL)
+	public int specialCopy6;
 
-	private long specialCopyCoolTime3;
+	@JsonSerialize(include = Inclusion.NON_NULL)
+	public int specialCopy7;
 
-	private long specialCopyCoolTime4;
+	public long specialCopyCoolTime1;
 
-	private long arenaNum;
+	public long specialCopyCoolTime2;
+
+	public long specialCopyCoolTime3;
+
+	public long specialCopyCoolTime4;
+
+	@JsonSerialize(include = Inclusion.NON_NULL)
+	public long specialCopyCoolTime5;
+
+	@JsonSerialize(include = Inclusion.NON_NULL)
+	public long specialCopyCoolTime6;
+
+	@JsonSerialize(include = Inclusion.NON_NULL)
+	public long specialCopyCoolTime7;
+
+	@JsonSerialize(include = Inclusion.NON_NULL)
+	public int pillageBuyNum = 0;
+
+	@JsonSerialize(include = Inclusion.NON_NULL)
+	public int online = 0; // 在线奖励
+
+	@JsonSerialize(include = Inclusion.NON_NULL)
+	public int buyArenaNum;
+
+	@JsonSerialize(include = Inclusion.NON_NULL)
+	public int arenaBattleNum;
+
+	@JsonSerialize(include = Inclusion.NON_NULL)
+	public long arenaTime;
+
+	@JsonSerialize(include = Inclusion.NON_NULL)
+	public long barTime; // 铜币抽的时间
 
 	private long arenaCd;
 
@@ -51,6 +88,22 @@ public class DateNumModel implements Serializable {
 
 	public void setBuyApNum(int buyApNum) {
 		this.buyApNum = buyApNum;
+	}
+
+	public int getBuyCoinNum() {
+		return buyCoinNum;
+	}
+
+	public void setBuyCoinNum(int buyCoinNum) {
+		this.buyCoinNum = buyCoinNum;
+	}
+
+	public int getBarCoinNum() {
+		return barCoinNum;
+	}
+
+	public void setBarCoinNum(int barCoinNum) {
+		this.barCoinNum = barCoinNum;
 	}
 
 	public int getSpecialCopy1() {
@@ -85,6 +138,30 @@ public class DateNumModel implements Serializable {
 		this.specialCopy4 = specialCopy4;
 	}
 
+	public int getSpecialCopy5() {
+		return specialCopy5;
+	}
+
+	public void setSpecialCopy5(int specialCopy5) {
+		this.specialCopy5 = specialCopy5;
+	}
+
+	public int getSpecialCopy6() {
+		return specialCopy6;
+	}
+
+	public void setSpecialCopy6(int specialCopy6) {
+		this.specialCopy6 = specialCopy6;
+	}
+
+	public int getSpecialCopy7() {
+		return specialCopy7;
+	}
+
+	public void setSpecialCopy7(int specialCopy7) {
+		this.specialCopy7 = specialCopy7;
+	}
+
 	public long getSpecialCopyCoolTime1() {
 		return specialCopyCoolTime1;
 	}
@@ -117,28 +194,68 @@ public class DateNumModel implements Serializable {
 		this.specialCopyCoolTime4 = specialCopyCoolTime4;
 	}
 
-    public int getBuyCoinNum() {
-		return buyCoinNum;
+	public long getSpecialCopyCoolTime5() {
+		return specialCopyCoolTime5;
 	}
 
-	public void setBuyCoinNum(int buyCoinNum) {
-		this.buyCoinNum = buyCoinNum;
+	public void setSpecialCopyCoolTime5(long specialCopyCoolTime5) {
+		this.specialCopyCoolTime5 = specialCopyCoolTime5;
 	}
 
-	public int getBarCoinNum() {
-		return barCoinNum;
+	public long getSpecialCopyCoolTime6() {
+		return specialCopyCoolTime6;
 	}
 
-	public void setBarCoinNum(int barCoinNum) {
-		this.barCoinNum = barCoinNum;
+	public void setSpecialCopyCoolTime6(long specialCopyCoolTime6) {
+		this.specialCopyCoolTime6 = specialCopyCoolTime6;
 	}
 
-	public long getArenaNum() {
-		return arenaNum;
+	public long getSpecialCopyCoolTime7() {
+		return specialCopyCoolTime7;
 	}
 
-	public void setArenaNum(long arenaNum) {
-		this.arenaNum = arenaNum;
+	public void setSpecialCopyCoolTime7(long specialCopyCoolTime7) {
+		this.specialCopyCoolTime7 = specialCopyCoolTime7;
+	}
+
+	public int getPillageBuyNum() {
+		return pillageBuyNum;
+	}
+
+	public void setPillageBuyNum(int pillageBuyNum) {
+		this.pillageBuyNum = pillageBuyNum;
+	}
+
+	public int getOnline() {
+		return online;
+	}
+
+	public void setOnline(int online) {
+		this.online = online;
+	}
+
+	public int getBuyArenaNum() {
+		return buyArenaNum;
+	}
+
+	public void setBuyArenaNum(int buyArenaNum) {
+		this.buyArenaNum = buyArenaNum;
+	}
+
+	public int getArenaBattleNum() {
+		return arenaBattleNum;
+	}
+
+	public void setArenaBattleNum(int arenaBattleNum) {
+		this.arenaBattleNum = arenaBattleNum;
+	}
+
+	public long getArenaTime() {
+		return arenaTime;
+	}
+
+	public void setArenaTime(long arenaTime) {
+		this.arenaTime = arenaTime;
 	}
 
 	public long getArenaCd() {
@@ -147,6 +264,14 @@ public class DateNumModel implements Serializable {
 
 	public void setArenaCd(long arenaCd) {
 		this.arenaCd = arenaCd;
+	}
+
+	public long getBarTime() {
+		return barTime;
+	}
+
+	public void setBarTime(long barTime) {
+		this.barTime = barTime;
 	}
 
 	public int buyApNeedGold() {

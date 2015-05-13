@@ -21,6 +21,9 @@ public class HeroDao extends BaseDao {
 	@Resource
 	private BaseHeroDao baseHeroDao;
 
+	@Resource
+	private MissionDao missonDao;
+
 	public List<Hero> findAll(int roleId) {
 
 		Session session = this.getSessionFactory().getCurrentSession();
@@ -60,54 +63,68 @@ public class HeroDao extends BaseDao {
 		session.delete(hero);
 	}
 
-    public Hero create(Role role, int heroId, Result result) throws Throwable {
+    public Hero create(Role role, int heroId, Result result) throws Exception {
 
-        Hero general = new Hero();
-        general.setARoleId(role.getRoleId());
-        general.setHeroId(heroId);
-        general.setStar(this.baseHeroDao.findOne(heroId).getStar());
-        general.setExp(0);
-        general.setStr(0);
-        general.setINT(0);
-        general.setDex(0);
-        general.setPoint(0);
-        general.setCLASS(0);
-        general.setIsBattle(0);
-        general.setSkill1Level(1);
-        general.setSkill2Level(1);
-        general.setSkill3Level(1);
-        general.setSkill4Level(1);
-        general.setEquip1(0);
-        general.setEquip2(0);
-        general.setEquip3(0);
-        general.setEquip4(0);
-        general.setEquip5(0);
-        general.setEquip6(0);
+        Hero hero = new Hero();
+        hero.setARoleId(role.getRoleId());
+        hero.setHeroId(heroId);
+        hero.setStar(this.baseHeroDao.findOne(heroId).getStar());
+//        hero.setExp(0);
+//        hero.setStr(0);
+//        hero.setINT(0);
+//        hero.setDex(0);
+//        hero.setCLASS(0);
+//        hero.setIsBattle(false);
+        hero.setSkill1Level(1);
+        hero.setSkill2Level(1);
+        hero.setSkill3Level(1);
+        hero.setSkill4Level(1);
+        hero.setLevel(1);
 
-//        TaskDao taskDao = new TaskDao(role);
-//
-//        taskDao.checkHeroId(heroId, 1, result);
-//        taskDao.checkHeroNum(1, result);
+        if (hero.getHeroId() == 10002) {
+        	hero.setPosition(1);
+        	hero.setIsBattle(true);
+        }
+
+        this.missonDao.checkHeroId(role, heroId, 1, result);
+        this.missonDao.checkHeroNum(role, 1, result);
 
         result.addRandomItem(new int[]{heroId, 1});
 
         Session session = this.getSessionFactory().getCurrentSession();
-        session.save(general);
+        session.save(hero);
 
-        result.addHero(general);
-        return general;
+        result.addHero(hero);
+        return hero;
     }
 
     public int maxExp(int rolelevel) {
-    	return 999;
+    	int maxLevel = MAX_LEVEL[rolelevel - 1];
+    	return Hero.EXP[maxLevel - 1];
     }
-    
-    public int soulNumByStar(int heroId) {
-    	return 18;
+
+    public int soulNumByStar(int heroId) throws Throwable {
+
+    	int star = this.baseHeroDao.findOne(heroId).getStar();
+
+		if (star == 2) {
+			return 18;
+		} else if (star == 3) {
+			return 30;
+		} else {
+			return 7;
+		}
     }
 
     public void addExp(Hero hero, int rolelevel, int exp, Result result) throws Throwable {
-    	hero.setExp(hero.getExp() + exp);
+
+    	int maxExp = this.maxExp(rolelevel);
+
+    	if (hero.getExp() < maxExp) {
+        	hero.setExp(hero.getExp() + exp);
+        	hero.setLevel(hero.level());
+    	}
+
         result.addHero(hero);
     }
 }

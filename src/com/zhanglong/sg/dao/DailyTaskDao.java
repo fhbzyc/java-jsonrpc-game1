@@ -66,7 +66,7 @@ public class DailyTaskDao extends BaseDao {
 	 * @return
 	 */
 	public void addCopy(Role role, int num, Result result) {
-		BaseDailyTask dailyTask = addNum(role, "copy", num);
+		BaseDailyTask dailyTask = this.addNum(role, "copy", num);
 		if (dailyTask != null) {
 			result.addDailyTask(dailyTask);
 		}
@@ -90,7 +90,7 @@ public class DailyTaskDao extends BaseDao {
 	 * @return
 	 */
 	public void addSkill(Role role, Result result) {
-		BaseDailyTask dailyTask = addNum(role, "skill", 1);
+		BaseDailyTask dailyTask = this.addNum(role, "skill", 1);
 		if (dailyTask != null) {
 			result.addDailyTask(dailyTask);
 		}
@@ -102,7 +102,7 @@ public class DailyTaskDao extends BaseDao {
 	 * @return
 	 */
 	public void addBar(Role role, int num, Result result) {
-		BaseDailyTask dailyTask = addNum(role, "bar", num);
+		BaseDailyTask dailyTask = this.addNum(role, "bar", num);
 		if (dailyTask != null) {
 			result.addDailyTask(dailyTask);
 		}
@@ -114,14 +114,14 @@ public class DailyTaskDao extends BaseDao {
 	 * @return
 	 */
 	public void addCoin(Role role, int num, Result result) {
-		BaseDailyTask dailyTask = addNum(role, "coin", num);
+		BaseDailyTask dailyTask = this.addNum(role, "coin", num);
 		if (dailyTask != null) {
 			result.addDailyTask(dailyTask);
 		}
 	}
 
 	public void pk(Role role, Result result) {
-		BaseDailyTask dailyTask = addNum(role, "pk", 1);
+		BaseDailyTask dailyTask = this.addNum(role, "pk", 1);
 		if (dailyTask != null) {
 			result.addDailyTask(dailyTask);
 		}
@@ -164,7 +164,7 @@ public class DailyTaskDao extends BaseDao {
 	 * @return
 	 */
 	public void addVip(Role role, Result result) {
-		BaseDailyTask dailyTask = addNum(role, "card", 1);
+		BaseDailyTask dailyTask = this.addNum(role, "card", 1);
 		if (dailyTask != null) {
 			result.addDailyTask(dailyTask);
 		}
@@ -175,7 +175,7 @@ public class DailyTaskDao extends BaseDao {
 	 * @return
 	 */
 	public void addSpecialCopy(Role role, Result result) {
-		BaseDailyTask dailyTask = addNum(role, "special_copy", 1);
+		BaseDailyTask dailyTask = this.addNum(role, "special_copy", 1);
 		if (dailyTask != null) {
 			result.addDailyTask(dailyTask);
 		}
@@ -187,7 +187,7 @@ public class DailyTaskDao extends BaseDao {
 	 * @param result
 	 */
 	public void addCrusade(Role role, Result result) {
-		BaseDailyTask dailyTask = addNum(role, "crusade", 1);
+		BaseDailyTask dailyTask = this.addNum(role, "crusade", 1);
 		if (dailyTask != null) {
 			result.addDailyTask(dailyTask);
 		}
@@ -234,7 +234,7 @@ public class DailyTaskDao extends BaseDao {
 		List<BaseDailyTask> list = dailyTaskModel.taskList(role.level());
 
 		for (BaseDailyTask dailyTask : list) {
-			if (dailyTask.getType().equals("daily_" + type)) {
+			if (!dailyTask.getComplete() && dailyTask.getType().equals(type)) {
 
 	        	dailyTask.setNum(dailyTask.getNum() + num);
 	        	

@@ -20,26 +20,26 @@ public class BaseStory implements Serializable {
 	private static final long serialVersionUID = -1227382473763042694L;
 
 	@Id
-	@Column(name = "story_id" , nullable = false , columnDefinition = "int(11) default 0")
+	@Column(name = "story_id" , nullable = false , columnDefinition = "int default 0")
     private Integer id;
 
 	@Id
-	@Column(name = "story_type" , nullable = false , columnDefinition = "tinyint(4) default 0")
+	@Column(name = "story_type" , nullable = false , columnDefinition = "smallint default 0")
 	private Integer type;
 
 	@Column(name = "story_name" , nullable = false , columnDefinition = "varchar(255) default ''")
     private String name;
 
-	@Column(name = "story_team_exp" , nullable = false , columnDefinition = "int(11) default 0")
+	@Column(name = "story_team_exp" , nullable = false , columnDefinition = "int default 0")
     private Integer teamExp;
 
-	@Column(name = "story_exp" , nullable = false , columnDefinition = "int(11) default 0")
+	@Column(name = "story_exp" , nullable = false , columnDefinition = "int default 0")
     private Integer exp;
 
-	@Column(name = "story_coin" , nullable = false , columnDefinition = "int(11) default 0")
+	@Column(name = "story_coin" , nullable = false , columnDefinition = "int default 0")
     private Integer coin;
 
-	@Column(name = "story_unlock_level" , nullable = false , columnDefinition = "int(11) default 0")
+	@Column(name = "story_unlock_level" , nullable = false , columnDefinition = "int default 0")
     private Integer unlockLevel; // 等级限制
 
 	@Column(name = "story_items" , nullable = false , columnDefinition = "text")
@@ -49,7 +49,6 @@ public class BaseStory implements Serializable {
     private String wipeOutItems; // 扫荡掉落
 
 	public BaseStory() {
-		
 	}
 
     public BaseStory(int id, int type, String name, int teamExp, int exp, int coin, int unlockLevel, String items, String wipeOutItems) {

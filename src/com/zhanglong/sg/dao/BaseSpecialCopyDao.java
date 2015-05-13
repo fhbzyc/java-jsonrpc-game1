@@ -1,11 +1,8 @@
 package com.zhanglong.sg.dao;
 
-import java.util.Calendar;
-import java.util.Date;
 import java.util.List;
 
 import org.hibernate.Session;
-import org.hibernate.criterion.Restrictions;
 import org.springframework.stereotype.Repository;
 
 import com.zhanglong.sg.entity.BaseSpecialCopy;
@@ -13,13 +10,11 @@ import com.zhanglong.sg.entity.BaseSpecialCopy;
 @Repository
 public class BaseSpecialCopyDao extends BaseDao {
 
+	@SuppressWarnings("unchecked")
 	public List<BaseSpecialCopy> findTodayAll() {
 
-	    Calendar c = Calendar.getInstance();
-        c.setTime(new Date());
-        int week =  c.get(Calendar.DAY_OF_WEEK) - 1;
-        
         Session session = this.getSessionFactory().getCurrentSession();
-        return session.createCriteria(BaseSpecialCopy.class).add(Restrictions.eq("week", week)).list();
+        String sql = "SELECT * FROM base_special_copy WHERE week = (SELECT EXTRACT(DOW FROM NOW())) AND NOW() BETWEEN begin_time AND end_time";
+        return session.createSQLQuery(sql).addEntity(BaseSpecialCopy.class).list();
 	}
 }

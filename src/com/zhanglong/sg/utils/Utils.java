@@ -12,17 +12,10 @@ import org.springframework.data.redis.core.RedisTemplate;
 
 public class Utils {
 
-	private static SessionFactory sessionFactory;
-
     public static String date() {
         return new SimpleDateFormat("yyyyMMdd").format(new Date());
     }
 
-    public static void addCustomEvent(String eventId, HashMap<String, String> eventData, String sgpPlayerId) {
-    }
-
-    public static void addCustomEvent(String eventId, String key, String value, String sgpPlayerId) {
-    }
 
     /**
      * 根据概率随机一个值 返回的是数组的下标
@@ -49,32 +42,5 @@ public class Utils {
 		}
 
 		return newArray.length - 1;
-	}
-
-//	public static SessionFactory getSessionFactory() {
-//		if (sessionFactory == null) {
-//			ClassPathXmlApplicationContext ac = new ClassPathXmlApplicationContext("beans.xml");
-//			sessionFactory = (SessionFactory)ac.getBean("sessionFactory");
-//		}
-//		return sessionFactory;
-//	}
-//
-//	public static void setSessionFactory(SessionFactory s) {
-//		sessionFactory = s;
-//	}
-//
-//	public static RedisTemplate getRedisTemplate() {
-//		return new RedisTemplate();
-//	}
-
-    private static ClassPathXmlApplicationContext classPathXmlApplicationContext;
-
-	public static ApplicationContext getApplicationContext() {
-
-		if (classPathXmlApplicationContext == null) {
-			classPathXmlApplicationContext = new ClassPathXmlApplicationContext("beans.xml");
-		}
-
-		return classPathXmlApplicationContext;
 	}
 }

@@ -1,25 +1,17 @@
 package com.zhanglong.sg.task;
 
-import javax.persistence.EntityManager;
-import javax.persistence.Query;
+import org.quartz.JobExecutionContext;
+import org.quartz.JobExecutionException;
+import org.springframework.scheduling.quartz.QuartzJobBean;
+import org.springframework.web.context.ContextLoader;
 
-import org.springframework.transaction.annotation.Transactional;
+import com.zhanglong.sg.dao.MailDao;
 
-public class DeleteMail {
-//
-//	@Override
-//	public void run(Context context, SchedulerEvent arg1) throws Throwable {
-//		this.delete(context);
-//	}
-//
-//    @Transactional(rollbackFor = Throwable.class)
-//	public void delete(Context context) {
-//
-//		String sql = "DELETE FROM `mail` WHERE (`attchment` IS NULL OR `attchment` = '') AND `send_time` < ? ";
-//
-//		EntityManager em = context.getEntityManager();
-//		Query query = em.createNativeQuery(sql, Object.class);
-//		query.setParameter(1, System.currentTimeMillis() - 30l * 86400l * 1000l);
-//		query.executeUpdate();
-//	}
+public class DeleteMail extends QuartzJobBean {
+
+	@Override
+	protected void executeInternal(JobExecutionContext arg0) throws JobExecutionException {
+		// TODO Auto-generated method stub
+		ContextLoader.getCurrentWebApplicationContext().getBean(MailDao.class).del(7);
+	}
 }

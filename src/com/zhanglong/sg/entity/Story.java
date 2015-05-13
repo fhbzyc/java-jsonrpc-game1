@@ -33,10 +33,10 @@ public class Story implements Serializable {
     private Integer storyId;
 
     @Id
-    @Column(name = "story_type" , nullable = false , columnDefinition = "tinyint(2) default 0")
+    @Column(name = "story_type" , nullable = false , columnDefinition = "smallint default 0")
     private Integer type;
 
-    @Column(name = "story_star" , nullable = false , columnDefinition = "tinyint(2) default 0")
+    @Column(name = "story_star" , nullable = false , columnDefinition = "smallint default 0")
     private Integer star;
 
     @Column(name = "story_num" , nullable = false , columnDefinition = "int default 0")

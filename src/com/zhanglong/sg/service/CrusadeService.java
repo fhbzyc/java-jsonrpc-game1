@@ -7,6 +7,9 @@ import java.util.Random;
 
 import javax.annotation.Resource;
 
+import org.springframework.stereotype.Service;
+
+import com.googlecode.jsonrpc4j.JsonRpcService;
 import com.zhanglong.sg.dao.BattleLogDao;
 import com.zhanglong.sg.dao.CrusadeDao;
 import com.zhanglong.sg.dao.PowerDao;
@@ -21,13 +24,18 @@ import com.zhanglong.sg.model.Reward;
 import com.zhanglong.sg.result.ErrorResult;
 import com.zhanglong.sg.result.Result;
 
-public class CrusadeService extends BaseClass {
+@Service
+@JsonRpcService("/crusade")
+public class CrusadeService extends BaseService {
 
 	@Resource
 	private PowerDao powerDao;
 
 	@Resource
 	private CrusadeDao crusadeDao;
+
+	@Resource
+	private BattleLogDao battleLogDao;
 
     /**
      * 
@@ -57,7 +65,7 @@ public class CrusadeService extends BaseClass {
             ArrayList<Hero> heros = battlePlayerModel.getHeros();
             Object[] objectList = new Object[heros.size()];
             for (int i = 0 ; i < heros.size() ; i++) {
-                objectList[i] = heros.get(i).toArray2();
+                objectList[i] = heros.get(i).toArray();
             }
 
             List<Reward> rewards = battlePlayerModel.getRewards();
@@ -90,12 +98,11 @@ public class CrusadeService extends BaseClass {
         result.setValue("num", battleInWorldModel.getNum());
         result.setValue("myhp", battleInWorldModel.getHpMap());
         result.setValue("mycd", battleInWorldModel.getCdMap());
-        return result.toMap();
+        return this.success(result.toMap());
     }
 
     /**
      * 战斗开始
-     * @param tokenS
      * @param index
      * @param heroId1
      * @param heroId2
@@ -105,10 +112,10 @@ public class CrusadeService extends BaseClass {
      * @return
      * @throws Throwable
      */
-    public Object battleBegin(String tokenS, int index, int heroId1, int heroId2, int heroId3, int heroId4, int power) throws Throwable {
+    public Object battleBegin(int index, int heroId1, int heroId2, int heroId3, int heroId4, int power) throws Throwable {
 
         if (index <= 0 || index > 15) {
-            throw new Throwable("参数出错");
+            return this.returnError(this.lineNum(), "参数出错");
         }
 
         int roleId = this.roleId();
@@ -140,7 +147,7 @@ public class CrusadeService extends BaseClass {
         }
 
         if (heroId1 != 0 && !find1 || heroId2 != 0 && !find2 || heroId3 != 0 && !find3 || heroId4 != 0 && !find4) {
-            throw new Throwable("未拥有的武将");
+            return this.returnError(this.lineNum(), "未拥有的武将");
         }
 
         Role role = this.roleDao.findOne(roleId);
@@ -157,29 +164,27 @@ public class CrusadeService extends BaseClass {
             List<Hero> heros2 = player.getHeros();
             for (Hero hero : heros2) {
                 if (hero.getHp() == null || hero.getHp() > 0) {
-                    throw new Throwable("你丫前一关还没赢呢！ ");
+                    return this.returnError(this.lineNum(), "你丫前一关还没赢呢！ ");
                 }
             }
         }
 
-        BattleLogDao battleLogDao = new BattleLogDao();
-
         BattleLog battleLog = new BattleLog();
         battleLog.setRoleId(roleId);
-        battleLog.setGeneralBaseId1(heroId1);
-        battleLog.setGeneralBaseId2(heroId2);
-        battleLog.setGeneralBaseId3(heroId3);
-        battleLog.setGeneralBaseId4(heroId4);
+        battleLog.setHeroId1(heroId1);
+        battleLog.setHeroId2(heroId2);
+        battleLog.setHeroId3(heroId3);
+        battleLog.setHeroId4(heroId4);
         battleLog.setStoryType(4);
         battleLog.setStoryId(index);
 
-        battleLog = battleLogDao.create(battleLog);
+        battleLog = this.battleLogDao.create(battleLog);
 
         ArrayList<Hero> heros2 = battleInWorldModel.getList().get(index - 1).getHeros();
 
         List<Object> list = new ArrayList<Object>();
         for (Hero hero : heros2) {
-			list.add(hero.toArray2());
+			list.add(hero.toArray());
 		}
 
         Result result = new Result();
@@ -187,7 +192,7 @@ public class CrusadeService extends BaseClass {
         result.setValue("myhp", battleInWorldModel.getHpMap());
         result.setValue("mycd", battleInWorldModel.getCdMap());
         result.setValue("heHeros", list);
-        return result.toMap();
+        return this.success(result.toMap());
     }
 
     /**
@@ -216,15 +221,14 @@ public class CrusadeService extends BaseClass {
 
         int roleId = this.roleId();
 
-        BattleLogDao battleLogDao = new BattleLogDao();
-        BattleLog battleLog = battleLogDao.findOne(battleId);
+        BattleLog battleLog = this.battleLogDao.findOne(battleId);
 
         if (battleLog == null) {
-            throw new Throwable("非法提交木有这个battleId");
+            return this.returnError(this.lineNum(), "非法提交木有这个battleId");
         }
 
         if (battleLog.getStoryType() != 4) {
-            throw new Throwable("非法提交木有这个battleId");
+            return this.returnError(this.lineNum(), "非法提交木有这个battleId");
         }
 
         Role role = this.roleDao.findOne(roleId);
@@ -233,21 +237,21 @@ public class CrusadeService extends BaseClass {
 
         CrusadeModel battleInWorldModel = this.crusadeDao.findOne(roleId, role.level(), p.getPower());
 
-        if (battleLog.getGeneralBaseId1() != 0) {
-        	battleInWorldModel.getHpMap().put(battleLog.getGeneralBaseId1(), myHp1);
-        	battleInWorldModel.getCdMap().put(battleLog.getGeneralBaseId1(), mytime1);
+        if (battleLog.getHeroId1() != 0) {
+        	battleInWorldModel.getHpMap().put(battleLog.getHeroId1(), myHp1);
+        	battleInWorldModel.getCdMap().put(battleLog.getHeroId1(), mytime1);
         }
-        if (battleLog.getGeneralBaseId2() != 0) {
-        	battleInWorldModel.getHpMap().put(battleLog.getGeneralBaseId2(), myHp2);
-        	battleInWorldModel.getCdMap().put(battleLog.getGeneralBaseId2(), mytime2);
+        if (battleLog.getHeroId2() != 0) {
+        	battleInWorldModel.getHpMap().put(battleLog.getHeroId2(), myHp2);
+        	battleInWorldModel.getCdMap().put(battleLog.getHeroId2(), mytime2);
         }
-        if (battleLog.getGeneralBaseId3() != 0) {
-        	battleInWorldModel.getHpMap().put(battleLog.getGeneralBaseId3(), myHp3);
-        	battleInWorldModel.getCdMap().put(battleLog.getGeneralBaseId3(), mytime3);
+        if (battleLog.getHeroId3() != 0) {
+        	battleInWorldModel.getHpMap().put(battleLog.getHeroId3(), myHp3);
+        	battleInWorldModel.getCdMap().put(battleLog.getHeroId3(), mytime3);
         }
-        if (battleLog.getGeneralBaseId4() != 0) {
-        	battleInWorldModel.getHpMap().put(battleLog.getGeneralBaseId4(), myHp4);
-        	battleInWorldModel.getCdMap().put(battleLog.getGeneralBaseId4(), mytime4);
+        if (battleLog.getHeroId4() != 0) {
+        	battleInWorldModel.getHpMap().put(battleLog.getHeroId4(), myHp4);
+        	battleInWorldModel.getCdMap().put(battleLog.getHeroId4(), mytime4);
         }
 
         BattlePlayerModel player = battleInWorldModel.getList().get(battleLog.getStoryId() - 1);
@@ -307,7 +311,7 @@ public class CrusadeService extends BaseClass {
             ArrayList<Hero> heros = battlePlayerModel.getHeros();
             Object[] objectList = new Object[heros.size()];
             for (int i = 0 ; i < heros.size() ; i++) {
-                objectList[i] = heros.get(i).toArray2();
+                objectList[i] = heros.get(i).toArray();
             }
 
             List<Reward> rewards = battlePlayerModel.getRewards();
@@ -343,16 +347,15 @@ public class CrusadeService extends BaseClass {
         // 讨伐天下日常任务
         this.dailyTaskDao.addCrusade(role, result);
 
-        return result.toMap();
+        return this.success(result.toMap());
     }
 
     /**
      * 
-     * @param tokenS
      * @return
      * @throws Throwable
      */
-    public Object reset(String tokenS) throws Throwable {
+    public Object reset() throws Throwable {
     	
     	int roleId = this.roleId();
 
@@ -368,7 +371,7 @@ public class CrusadeService extends BaseClass {
         CrusadeModel crusadeModel = this.crusadeDao.findOne(roleId, role.level(), p);
 
         if (crusadeModel.getNum() >= 2) {
-        	throw new Throwable("重置两次不能再重置");
+        	return this.returnError(this.lineNum(), "重置两次不能再重置");
         }
 
         crusadeModel.newPlayers(role.level(), p);
@@ -395,11 +398,11 @@ public class CrusadeService extends BaseClass {
     public Object getReward(int index, int index2) throws Throwable {
 
         if (index <= 0 || index > 15) {
-            throw new Throwable("参数出错");
+            return this.returnError(this.lineNum(), "参数出错");
         }
 
         if (index2 <= 0 || index2 > 4) {
-            throw new Throwable("参数出错");
+            return this.returnError(this.lineNum(), "参数出错");
         }
         
         index--;
@@ -416,21 +419,21 @@ public class CrusadeService extends BaseClass {
         List<Hero> heros2 = player.getHeros();
         for (Hero hero : heros2) {
             if (hero.getHp() == null || hero.getHp() > 0) {
-                throw new Throwable("你丫还没赢呢 ");
+                return this.returnError(this.lineNum(), "你丫还没赢呢 ");
             }
         }
         
         Result result = new Result();
         List<Reward> rewards = player.getRewards();
 //        if (reward.getHas()) {
-//        	throw new Throwable("你丫已经抽过这个宝箱了啊");
+//        	return this.returnError(this.lineNum(), "你丫已经抽过这个宝箱了啊");
 //        }
         int n = 0;
         for (int i = 0 ; i < rewards.size() ; i++) {
         	if (rewards.get(i).getHas() != null && rewards.get(i).getHas()) {
         		n++;
         		if (i == index2) {
-        			throw new Throwable("你丫已经抽过这个宝箱了啊");
+        			return this.returnError(this.lineNum(), "你丫已经抽过这个宝箱了啊");
         		}
         	}
 		}
@@ -439,7 +442,7 @@ public class CrusadeService extends BaseClass {
         
 //        int n = player.getRewardNum();
 //        if (n >= 4) {
-//            throw new Throwable("你丫抽了4次还要抽啊");
+//            return this.returnError(this.lineNum(), "你丫抽了4次还要抽啊");
 //        }
         if (n > 0) {
             int gold = 0;
@@ -452,9 +455,9 @@ public class CrusadeService extends BaseClass {
             }
 
             if (role.getGold() < gold) {
-                return ErrorResult.NotEnoughGold;
+                return this.success(ErrorResult.NotEnoughGold);
             } else {
-                this.roleDao.subGold(role, gold, "第<" + (index + 1) + ">关,第<" + (n + 1) + ">次抽奖", FinanceLog.STATUS_BATTLE_IN_WORLD);
+                this.roleDao.subGold(role, gold, "讨伐天下第<" + (index + 1) + ">关,第<" + (n + 1) + ">次抽奖", FinanceLog.STATUS_BATTLE_IN_WORLD);
                 this.roleDao.update(role, result);
             }
         }
@@ -471,7 +474,7 @@ public class CrusadeService extends BaseClass {
         this.crusadeDao.save(roleId, crusadeModel);
 
         result.setValue("reward_num", player.getRewardNum());
-        return result.toMap();
+        return this.success(result.toMap());
     }
 
     /**

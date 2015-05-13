@@ -4,12 +4,10 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Random;
 
 import org.springframework.stereotype.Service;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.googlecode.jsonrpc4j.JsonRpcService;
 import com.zhanglong.sg.entity.BaseDailyTask;
@@ -24,7 +22,7 @@ import com.zhanglong.sg.utils.Utils;
 
 @Service
 @JsonRpcService("/mission")
-public class MissionService extends BaseClass {
+public class MissionService extends BaseService {
 
     /**
      * 任务列表
@@ -32,13 +30,13 @@ public class MissionService extends BaseClass {
      * @return
      * @throws Throwable
      */
-    public HashMap<String, Object> taskList() throws Throwable {
+    public Object taskList() throws Throwable {
 
     	int roleId = this.roleId();
 
-        Role role = roleDao.findOne(roleId);
+        Role role = this.roleDao.findOne(roleId);
 
-        List<BaseMission> list = missionDao.findAll(role);
+        List<BaseMission> list = this.missionDao.findAll(role);
 
         Result result = new Result();
         for (BaseMission mission : list) {
@@ -47,11 +45,13 @@ public class MissionService extends BaseClass {
 			}
 		}
 
+        this.missionDao.newMission(role, result);
+
         HashMap<String, Object> r = result.toMap();
         if (r.get("task") == null) {
-        	r.put("task", new int[]{});
+        	r.put("task", new Object[]{});
         }
-        return r;
+        return this.success(r);
     }
 
     /**
@@ -64,9 +64,9 @@ public class MissionService extends BaseClass {
 
     	int roleId = this.roleId();
 
-        Role role = roleDao.findOne(roleId);
+        Role role = this.roleDao.findOne(roleId);
 
-        List<BaseMission> list = missionDao.findAll(role);
+        List<BaseMission> list = this.missionDao.findAll(role);
 
         boolean find = false;
         BaseMission task = new BaseMission();
@@ -74,37 +74,36 @@ public class MissionService extends BaseClass {
             if (mission.getId() == missionId) {
 
                 if (mission.getNum() < mission.getGoal()) {
-                    throw new Throwable("目标数量还未达成");
+                    return this.returnError(this.lineNum(), "目标数量还未达成");
                 }
 
                 if (mission.getComplete()) {
-                    throw new Throwable("已领奖");
+                	return this.success(new Result().toMap());
                 }
-                
+
                 task = mission;
                 find = true;
             }
         }
 
         if (!find) {
-            throw new Throwable("参数出错,没有领这个任务");
+            return this.returnError(this.lineNum(), "参数出错,没有领这个任务");
         }
 
         Result result = new Result();
 
-        missionDao.complete(role, missionId, result);
-        missionDao.newMission(role, result);
+        this.missionDao.complete(role, missionId, result);
+        this.missionDao.newMission(role, result);
 
         try {
             ObjectMapper mapper = new ObjectMapper();
-            HashMap<String, Object> map = mapper.readValue(task.getReward(), new TypeReference<Map<String, Object>>(){});
-            Reward reward = (Reward) map.get("reward");
-            rewardDao.get(role, reward, "任务领取<" + task.getName() + ">", FinanceLog.STATUS_TASK_GET, result);
+            Reward reward = mapper.readValue(task.getReward(), Reward.class);
+            this.rewardDao.get(role, reward, "任务领取<" + task.getName() + ">", FinanceLog.STATUS_TASK_GET, result);
         } catch (Exception e) {
-            throw new Throwable("JSON解析出错");
+            return this.returnError(this.lineNum(), "JSON解析出错");
         }
 
-        return result.toMap();
+        return this.success(result.toMap());
     }
 
     /**
@@ -116,11 +115,11 @@ public class MissionService extends BaseClass {
 
     	int roleId = this.roleId();
 
-        Role role = roleDao.findOne(roleId);
+        Role role = this.roleDao.findOne(roleId);
 
         Result result = new Result();
 
-        List<BaseDailyTask> list = dailyTaskDao.taskList(role);
+        List<BaseDailyTask> list = this.dailyTaskDao.taskList(role);
         for (BaseDailyTask dailyTask : list) {
 
         	if (!dailyTask.getComplete()) {
@@ -133,7 +132,7 @@ public class MissionService extends BaseClass {
         	r.put("daily_task", new int[]{});
         }
 
-        return r;
+        return this.success(r);
     }
 
     /**
@@ -143,11 +142,11 @@ public class MissionService extends BaseClass {
      * @return
      * @throws Throwable
      */
-	public HashMap<String, Object> completeDailyTask(int taskId) throws Throwable {
+	public Object completeDailyTask(int taskId) throws Throwable {
 
     	int roleId = this.roleId();
 
-        Role role = roleDao.findOne(roleId);
+        Role role = this.roleDao.findOne(roleId);
 
         List<BaseDailyTask> taskList = dailyTaskDao.taskList(role);
 
@@ -157,13 +156,13 @@ public class MissionService extends BaseClass {
             if (dailyTask.getId() == taskId) {
 
             	if (dailyTask.getComplete()) {
-            		throw new Throwable("此任务已领奖");
+            		return this.success(new Result().toMap());
             	}
 
                 String type = dailyTask.getType();
 
-                if (dailyTask.getNum() < dailyTask.getGoal() && !type.equals("daily_noon") && !type.equals("daily_night") && !type.equals("daily_midnight")) {
-                    throw new Throwable("目标数量还未达成");
+                if (dailyTask.getNum() < dailyTask.getGoal() && !type.equals("noon") && !type.equals("night") && !type.equals("midnight")) {
+                    return this.returnError(this.lineNum(), "目标数量还未达成");
                 }
 
                 task = dailyTask;
@@ -172,50 +171,49 @@ public class MissionService extends BaseClass {
         }
 
         if (!find) {
-            throw new Throwable("参数出错,没有领这个任务");
+            return this.returnError(this.lineNum(), "参数出错,没有领这个任务");
         }
 
         Result result = new Result();
 
-        if (task.getType().equals("daily_noon") || task.getType().equals("daily_night") || task.getType().equals("daily_midnight")) {
+        if (task.getType().equals("noon") || task.getType().equals("night") || task.getType().equals("midnight")) {
 
             Date date = new SimpleDateFormat("yyyyMMdd").parse(Utils.date());
 
             long begintime = 0;
             long endtime = 0;
-            if (task.getType().equals("daily_noon")) {
+            if (task.getType().equals("noon")) {
                 begintime = date.getTime() + 12 * 3600 * 1000;
                 endtime = date.getTime() + 14 * 3600 * 1000;
-            } else if (task.getType().equals("daily_night")) {
+            } else if (task.getType().equals("night")) {
                 begintime = date.getTime() + 18 * 3600 * 1000;
                 endtime = date.getTime() + 20 * 3600 * 1000;
-            } else if (task.getType().equals("daily_midnight")) {
+            } else if (task.getType().equals("midnight")) {
                 begintime = date.getTime() + 21 * 3600 * 1000;
                 endtime = date.getTime() + 24 * 3600 * 1000;
             }
 
             if (System.currentTimeMillis() < begintime) {
-                throw new Throwable("时间未到, 不能领取体力");
+                return this.returnError(this.lineNum(), "时间未到, 不能领取体力");
             } else if (System.currentTimeMillis() > endtime) {
-                throw new Throwable("时间已过, 不能领取体力");
+                return this.returnError(this.lineNum(), "时间已过, 不能领取体力");
             }
 
-            dailyTaskDao.complete(role, taskId);
+            this.dailyTaskDao.complete(role, taskId);
 
-            role.setPhysicalStrength(role.getPhysicalStrength() + 60);
-            roleDao.update(role, result);
+            this.roleDao.addAp(role, 60, result);
+            this.roleDao.update(role, result);
 
-            return result.toMap();
+            return this.success(result.toMap());
         }
 
-        dailyTaskDao.complete(role, taskId);
+        this.dailyTaskDao.complete(role, taskId);
 
         ObjectMapper mapper = new ObjectMapper();
-        HashMap<String, Object> map = mapper.readValue(task.getReward(), new TypeReference<Map<String, Object>>(){});
-        Reward reward = (Reward) map.get("reward");
-        rewardDao.get(role, reward, "任务领取<" + task.getName() + ">", FinanceLog.STATUS_TASK_GET, result);
+        Reward reward = mapper.readValue(task.getReward(), Reward.class);
+        this.rewardDao.get(role, reward, "任务领取<" + task.getName() + ">", FinanceLog.STATUS_TASK_GET, result);
 
-        return result.toMap();
+        return this.success(result.toMap());
     }
 
     /**
@@ -229,12 +227,12 @@ public class MissionService extends BaseClass {
     	int roleId = this.roleId();
 
         if (times != 1 && times != 3) {
-            throw new Throwable("Illegal operation !");
+            return this.returnError(this.lineNum(), "Illegal operation !");
         }
 
         Result result = new Result();
 
-        Role role = roleDao.findOne(roleId);
+        Role role = this.roleDao.findOne(roleId);
 
         DateNumModel dateNumModel = this.dateNumDao.findOne(roleId);
         
@@ -242,7 +240,7 @@ public class MissionService extends BaseClass {
             com.zhanglong.sg.result.Error error = new com.zhanglong.sg.result.Error();
             error.setCode(com.zhanglong.sg.result.Error.ERROR_BUY_OVER_NUM);
             error.setMessage("提升VIP等级，可增加每日点金次数，前去充值？");
-            return new ErrorResult(error);
+            return this.success(new ErrorResult(error));
         }
 
         int gold = 0;
@@ -283,24 +281,23 @@ public class MissionService extends BaseClass {
         }
 
         if (role.getGold() < gold) {
-        	return ErrorResult.NotEnoughGold;
+        	return this.success(ErrorResult.NotEnoughGold);
         } else {
 
-        	roleDao.addCoin(role, coin, "点金手", FinanceLog.STATUS_GOLD_BUY_COIN, result);
-        	roleDao.subGold(role, gold, "使用点金手花费<" + gold + ">元宝", FinanceLog.STATUS_GOLD_BUY_COIN);
-        	roleDao.update(role, result);
+        	this.roleDao.addCoin(role, coin, "点金手", FinanceLog.STATUS_GOLD_BUY_COIN, result);
+        	this.roleDao.subGold(role, gold, "使用点金手花费<" + gold + ">元宝", FinanceLog.STATUS_GOLD_BUY_COIN);
+        	this.roleDao.update(role, result);
         	
         	dateNumModel.setBuyCoinNum(dateNumModel.getBuyCoinNum() + times);
         	this.dateNumDao.save(roleId, dateNumModel);
         	
         }
 
-        dailyTaskDao.addCoin(role, times, result);
+        this.dailyTaskDao.addCoin(role, times, result);
 
-        HashMap<String, Object> map = result.toMap();
         result.setValue("get_coin", new int[]{dateNumModel.getBuyCoinNum(), role.maxGetCoinTimes(), getCoinNeedGold(dateNumModel.getBuyCoinNum()), getMinCoin(role.level(), dateNumModel.getBuyCoinNum())});
         result.setValue("random_coin", random_coin);
-        return result.toMap();
+        return this.success(result.toMap());
     }
 
 //    private int vipWipeOutItemNum(int vip) {

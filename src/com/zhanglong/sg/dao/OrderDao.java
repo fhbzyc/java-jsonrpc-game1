@@ -1,9 +1,11 @@
 package com.zhanglong.sg.dao;
 
+import java.math.BigInteger;
 import java.util.List;
 
 import org.hibernate.Criteria;
 import org.hibernate.Query;
+import org.hibernate.SQLQuery;
 import org.hibernate.Session;
 import org.hibernate.criterion.Restrictions;
 import org.springframework.stereotype.Repository;
@@ -38,29 +40,30 @@ public class OrderDao extends BaseDao {
 		
 		Session session = this.getSessionFactory().getCurrentSession();
 		
-		Query query = session.createQuery(sql);
+		SQLQuery query = session.createSQLQuery(sql);
 
-		query.setParameter(1, roleId);
-		query.setParameter(2, Order.STATUS_SUCCESS);
+		query.setParameter(0, roleId);
+		query.setParameter(1, Order.STATUS_SUCCESS);
 
-		return ((Integer) query.list().iterator().next()).intValue();
+		return ((BigInteger) query.list().iterator().next()).intValue();
 	}
 
 	public int after6(int roleId) {
 
-		String sql = "SELECT count(*) FROM role_orders WHERE role_id = ? AND order_status = ? AND order_gold >= ?";
+		String sql = "SELECT COUNT(*) FROM role_orders WHERE role_id = ? AND order_status = ? AND order_gold >= ?";
 
 		Session session = this.getSessionFactory().getCurrentSession();
 
-		Query query = session.createQuery(sql);
+		SQLQuery query = session.createSQLQuery(sql);
 
-		query.setParameter(1, roleId);
-		query.setParameter(2, Order.STATUS_SUCCESS);
-		query.setParameter(3, 60);
+		query.setParameter(0, roleId);
+		query.setParameter(1, Order.STATUS_SUCCESS);
+		query.setParameter(2, 60);
 
-		return ((Integer) query.list().iterator().next()).intValue();
+		BigInteger bigInteger = ((BigInteger) query.list().iterator().next());
+		return bigInteger.intValue();
 	}
-	
+
 	public void create(Order order) {
 		Session session = this.getSessionFactory().getCurrentSession();
 		session.save(order);

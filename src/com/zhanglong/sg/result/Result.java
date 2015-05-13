@@ -6,19 +6,17 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
-import com.zhanglong.sg.dao.BaseHeroDao;
-import com.zhanglong.sg.dao.BaseHeroEquipDao;
+import org.springframework.web.context.ContextLoader;
+
 import com.zhanglong.sg.dao.BaseItemDao;
 import com.zhanglong.sg.dao.BaseStoryDao;
 import com.zhanglong.sg.dao.HeroDao;
 import com.zhanglong.sg.entity.BaseDailyTask;
-import com.zhanglong.sg.entity.BaseHeroEquip;
 import com.zhanglong.sg.entity.BaseItem;
 import com.zhanglong.sg.entity.BaseMission;
-import com.zhanglong.sg.entity.BaseSkill;
 import com.zhanglong.sg.entity.BaseStory;
 import com.zhanglong.sg.entity.Hero;
-import com.zhanglong.sg.entity.ItemTable;
+import com.zhanglong.sg.entity.Item;
 import com.zhanglong.sg.entity.Role;
 import com.zhanglong.sg.entity.Story;
 import com.zhanglong.sg.utils.Utils;
@@ -43,7 +41,7 @@ public class Result {
     private HashMap<String, Integer> team;
     private int[] physicalStrength;
     
-    private int addPhysicalStrength = 0;
+    private int addAp = 0;
 
     private Integer arena_money = null;
 
@@ -54,8 +52,8 @@ public class Result {
         this.arena_money = money;
     }
 
-    public void addPhysicalStrength(int physicalStrength) {
-        this.addPhysicalStrength += physicalStrength;
+    public void addAp(int ap) {
+        this.addAp += ap;
     }
 
     public void setTeam(int exp) {
@@ -117,73 +115,34 @@ public class Result {
         this.heroCopyList = heroCopyList;
     }
 
-    public void addItem(ItemTable item) throws Throwable {
+    public void addItem(Item item) throws Exception {
 
         if (this.itemList == null) {
             this.itemList = new ArrayList<Object>();
         }
 
-        BaseItemDao baseItemDao = Utils.getApplicationContext().getBean(BaseItemDao.class);
+        BaseItemDao baseItemDao = ContextLoader.getCurrentWebApplicationContext().getBean(BaseItemDao.class);
         BaseItem baseItem = baseItemDao.findOne(item.getItemId());
 
-        int[] itemData = new int[4];
+        int[] itemData = new int[5];
         itemData[0] = item.getItemId();
         itemData[1] = item.getNum();
         itemData[2] = item.getId();
         itemData[3] = baseItem.getSellCoin();
+        itemData[4] = baseItem.getExp();
 
         this.itemList.add(itemData);
     }
 
-    public Object[] addHero(Hero hero) throws Throwable {
+    public Object[] addHero(Hero hero) throws Exception {
 
         if (this.generalList == null) {
             this.generalList = new ArrayList<Object>();
         }
 
-        int expIndex = hero.getLevel() - 2;
-        int baseExp = 0;
-        if (expIndex >= 0) {
-            baseExp = Hero.EXP[expIndex];
-        }
+        this.generalList.add(hero.toArray());
 
-        Object[] array = new Object[15];
-        array[0] = hero.getHeroId();
-        array[1] = hero.getStr();
-        array[2] = hero.getINT();
-        array[3] = hero.getDex();
-        array[4] = hero.getExp() - baseExp;
-        array[5] = hero.getLevel();
-        array[6] = hero.getCLASS();
-        array[7] = hero.getStar();
-        array[8] = hero.getIsBattle();
-        array[9] = new int[]{hero.getSkill1Level() , hero.getSkill2Level() , hero.getSkill3Level() , hero.getSkill4Level()};
-        array[10] = new int[]{hero.getEquip1() , hero.getEquip2() , hero.getEquip3() , hero.getEquip4() , hero . getEquip5() , hero.getEquip6()};
-        array[11] = hero.getAvailablePoint(); // 可用的属性点
-        array[12] = hero.getAvailableSkillPoint(); // 可用的技能点
-        
-        BaseHeroEquipDao baseHeroEquipDao = Utils.getApplicationContext().getBean(BaseHeroEquipDao.class);
-        BaseHeroEquip equip = baseHeroEquipDao.findByHeroId(hero.getHeroId()).get(hero.getCLASS());
-
-        array[13] = new int[]{equip.getEquip1().getBaseId() , equip.getEquip2().getBaseId() , equip.getEquip3().getBaseId() , equip.getEquip4().getBaseId() , equip.getEquip5().getBaseId() , equip.getEquip6().getBaseId()};
-
-        BaseHeroDao baseHeroDao = Utils.getApplicationContext().getBean(BaseHeroDao.class);
-
-        BaseSkill baselSkill1 = baseHeroDao.findOne(hero.getHeroId()).getSkill1();
-        BaseSkill baselSkill2 = baseHeroDao.findOne(hero.getHeroId()).getSkill2();
-        BaseSkill baselSkill3 = baseHeroDao.findOne(hero.getHeroId()).getSkill3();
-        BaseSkill baselSkill4 = baseHeroDao.findOne(hero.getHeroId()).getSkill4();
-
-        int coin1 = baselSkill1.getBaseCoin() + (hero.getSkill1Level() - 1) * baselSkill1.getLevelupCoin();
-        int coin2 = baselSkill2.getBaseCoin() + (hero.getSkill2Level() - 1) * baselSkill2.getLevelupCoin();
-        int coin3 = baselSkill3.getBaseCoin() + (hero.getSkill3Level() - 1) * baselSkill3.getLevelupCoin();
-        int coin4 = baselSkill4.getBaseCoin() + (hero.getSkill4Level() - 1) * baselSkill4.getLevelupCoin();
-
-        array[14] = new int[]{coin1 , coin2 , coin3 , coin4};
-
-        this.generalList.add(array);
-        
-        return array;
+        return hero.toArray();
     }
 
     public void addRandomItem(int[] item) {
@@ -196,7 +155,7 @@ public class Result {
 
         if (story.getType() == BaseStory.COPY_TYPE) {
 
-        	BaseStoryDao baseStoryDao = Utils.getApplicationContext().getBean(BaseStoryDao.class);
+        	BaseStoryDao baseStoryDao = ContextLoader.getCurrentWebApplicationContext().getBean(BaseStoryDao.class);
             BaseStory baseStory = baseStoryDao.findOne(story.getStoryId(), BaseStory.COPY_TYPE);
 
             this.copyList.add(new int[]{story.getStoryId() , story.getStar() , 0 , baseStory.getTeamExp() , 0 , 0});
@@ -207,7 +166,7 @@ public class Result {
                 num = 0;
             }
 
-        	BaseStoryDao baseStoryDao = Utils.getApplicationContext().getBean(BaseStoryDao.class);
+        	BaseStoryDao baseStoryDao = ContextLoader.getCurrentWebApplicationContext().getBean(BaseStoryDao.class);
             BaseStory baseStory = baseStoryDao.findOne(story.getStoryId(), BaseStory.HERO_COPY_TYPE);
 
             this.heroCopyList.add(new int[]{story.getStoryId() , story.getStar() , num , baseStory.getTeamExp() , story.needGold() , story.getBuyNum()});
@@ -242,7 +201,7 @@ public class Result {
         }
 
         if (this.team != null) {
-            this.team.put("add_mp", this.addPhysicalStrength);
+            this.team.put("add_mp", this.addAp);
             result.put("team", this.team);
         }
 

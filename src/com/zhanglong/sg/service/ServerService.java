@@ -5,12 +5,16 @@ import java.util.List;
 
 import javax.annotation.Resource;
 
+import org.springframework.stereotype.Service;
+
 import com.googlecode.jsonrpc4j.JsonRpcService;
 import com.zhanglong.sg.dao.ServerDao;
 import com.zhanglong.sg.entity.Server;
+import com.zhanglong.sg.model.Token;
 
+@Service
 @JsonRpcService("/server")
-public class ServerService extends BaseClass {
+public class ServerService extends BaseService {
 
 	@Resource
 	private ServerDao serverDao;
@@ -24,8 +28,7 @@ public class ServerService extends BaseClass {
 			param = -1;
 		}
 
-		ServerDao serverDao = new ServerDao();
-		List<Server> list = serverDao.findAll();
+		List<Server> list = this.serverDao.findAll();
 		List<Server> servers = new ArrayList<Server>();
 		for (Server server : list) {
 			if (server.getState() > param) {
@@ -33,6 +36,16 @@ public class ServerService extends BaseClass {
 			}
 		}
 
-		return servers;
+		return this.success(list);
+	}
+
+	public Object conn(String tokenS) throws Throwable {
+
+		Token token = this.tokenDao.findOne(tokenS);
+
+		this.getHandler().userId = token.getUserId();
+		this.getHandler().serverId = token.getServerId();
+		this.getHandler().roleId = token.getRoleId();
+		return this.success(true);
 	}
 }

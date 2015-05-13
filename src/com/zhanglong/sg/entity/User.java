@@ -1,54 +1,63 @@
 package com.zhanglong.sg.entity;
 
 import java.io.Serializable;
+import java.sql.Timestamp;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
+import javax.persistence.Index;
 import javax.persistence.Table;
+import javax.persistence.Transient;
 
 @Entity
-@Table(name = "user")
+@Table(name = "users" , indexes = {@Index(columnList="user_name" , unique = false)})
 public class User implements Serializable {
+
+	public static int NORMAL_REG = 0;
+	public static int QUICK_REG = 1;
 
     private static final long serialVersionUID = -6832583979566246187L;
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "user_id")
-    private int id;
+    private Integer id;
 
-    @Column(name = "user_pwd")
+    @Column(name = "user_pwd" , nullable = false , columnDefinition = "varchar(32) default ''")
     private String password;
 
-    @Column(name = "user_imei")
+    @Column(name = "user_imei" , nullable = false , columnDefinition = "varchar(32) default ''")
     private String imei;
 
-    @Column(name = "user_mac")
+    @Column(name = "user_mac" , nullable = false , columnDefinition = "varchar(32) default ''")
     private String mac;
 
-    @Column(name = "platform_id")
-    private Integer platformId;
+    @Column(name = "platform_id" , nullable = false , columnDefinition = "int default 0")
+    private int platformId;
 
-    @Column(name = "user_name")
+    @Column(name = "user_name" , nullable = false , columnDefinition = "varchar(32) default ''")
     private String name;
 
     @Column(name = "user_register_type" , nullable = false , columnDefinition = "smallint default 0")
-    private Integer registerType;
+    private int registerType;
 
-    @Column(name = "user_register_time" , nullable = false , columnDefinition = "timestamp")
-    private String time;
-    
+    @Column(name = "user_register_time" , columnDefinition = "timestamp default CURRENT_TIMESTAMP")
+    private Timestamp time;
+
+    @Transient
+    public String token = "";
+
     public User() {
     }
 
-	public int getId() {
+	public Integer getId() {
 		return id;
 	}
 
-	public void setId(int id) {
+	public void setId(Integer id) {
 		this.id = id;
 	}
 
@@ -76,11 +85,11 @@ public class User implements Serializable {
 		this.mac = mac;
 	}
 
-	public Integer getPlatformId() {
+	public int getPlatformId() {
 		return platformId;
 	}
 
-	public void setPlatformId(Integer platformId) {
+	public void setPlatformId(int platformId) {
 		this.platformId = platformId;
 	}
 
@@ -92,19 +101,19 @@ public class User implements Serializable {
 		this.name = name;
 	}
 
-	public Integer getRegisterType() {
+	public int getRegisterType() {
 		return registerType;
 	}
 
-	public void setRegisterType(Integer registerType) {
+	public void setRegisterType(int registerType) {
 		this.registerType = registerType;
 	}
 
-	public String getTime() {
+	public Timestamp getTime() {
 		return time;
 	}
 
-	public void setTime(String time) {
+	public void setTime(Timestamp time) {
 		this.time = time;
 	}
 }

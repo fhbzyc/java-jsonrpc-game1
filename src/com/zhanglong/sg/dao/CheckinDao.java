@@ -8,14 +8,14 @@ import org.hibernate.criterion.Restrictions;
 import org.springframework.stereotype.Repository;
 
 import com.zhanglong.sg.entity.Checkin;
-import com.zhanglong.sg.entity.ItemTable;
+import com.zhanglong.sg.entity.Item;
 import com.zhanglong.sg.utils.Utils;
 
 @Repository
 public class CheckinDao extends BaseDao {
 
 	public List<Checkin> findAll(int roleId) {
-		
+
 		int month = month();
 
 		Session session = this.sessionFactory.getCurrentSession();

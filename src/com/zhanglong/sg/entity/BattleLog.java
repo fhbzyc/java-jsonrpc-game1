@@ -34,10 +34,10 @@ public class BattleLog implements Serializable {
 	@Column(name = "story_id" , nullable = false , columnDefinition = "int default 0")
 	private Integer storyId;
 
-	@Column(name = "story_type" , nullable = false , columnDefinition = "tinyint(1) default 0")
+	@Column(name = "story_type" , nullable = false , columnDefinition = "smallint default 0")
 	private Integer storyType;
 
-	@Column(name = "battle_result" , nullable = false , columnDefinition = "tinyint(1) default 0")
+	@Column(name = "battle_result" , nullable = false , columnDefinition = "smallint default 0")
 	private Integer battleResult;  // 0 无发送结果  1胜利 2失败
 
 	@Column(name = "battle_begin_time" , nullable = false , columnDefinition = "int default 0")
@@ -46,20 +46,23 @@ public class BattleLog implements Serializable {
 	@Column(name = "battle_end_time" , nullable = false , columnDefinition = "int default 0")
 	private Integer endTime;
 
-	@Column(name = "battle_general_base_id_1" , nullable = false , columnDefinition = "int default 0")
-	private Integer generalBaseId1;
+	@Column(name = "battle_hero_id1" , nullable = false , columnDefinition = "int default 0")
+	private Integer heroId1;
 
-	@Column(name = "battle_general_base_id_2" , nullable = false , columnDefinition = "int default 0")
-	private Integer generalBaseId2;
+	@Column(name = "battle_hero_id2" , nullable = false , columnDefinition = "int default 0")
+	private Integer heroId2;
 
-	@Column(name = "battle_general_base_id_3" , nullable = false , columnDefinition = "int default 0")
-	private Integer generalBaseId3;
+	@Column(name = "battle_hero_id3" , nullable = false , columnDefinition = "int default 0")
+	private Integer heroId3;
 
-	@Column(name = "battle_general_base_id_4" , nullable = false , columnDefinition = "int default 0")
-	private Integer generalBaseId4;
+	@Column(name = "battle_hero_id4" , nullable = false , columnDefinition = "int default 0")
+	private Integer heroId4;
 
 	@Column(name = "battle_data" , nullable = false , columnDefinition = "text")
 	private String data;
+
+	@Column(name = "battle_role_id2" , nullable = false , columnDefinition = "int default 0")
+	private int roleId2;
 
 	public BattleLog() {
 	}
@@ -92,20 +95,20 @@ public class BattleLog implements Serializable {
 		this.endTime = unixTime;
 	}
 
-	public void setGeneralBaseId1(Integer generalBaseId) {
-		this.generalBaseId1 = generalBaseId;
+	public void setHeroId1(Integer heroId) {
+		this.heroId1 = heroId;
 	}
 
-	public void setGeneralBaseId2(Integer generalBaseId) {
-		this.generalBaseId2 = generalBaseId;
+	public void setHeroId2(Integer heroId) {
+		this.heroId2 = heroId;
 	}
 	
-	public void setGeneralBaseId3(Integer generalBaseId) {
-		this.generalBaseId3 = generalBaseId;
+	public void setHeroId3(Integer heroId) {
+		this.heroId3 = heroId;
 	}
 
-	public void setGeneralBaseId4(Integer generalBaseId) {
-		this.generalBaseId4 = generalBaseId;
+	public void setHeroId4(Integer heroId) {
+		this.heroId4 = heroId;
 	}
 
 	/**
@@ -140,20 +143,20 @@ public class BattleLog implements Serializable {
 		return this.endTime;
 	}
 
-	public Integer getGeneralBaseId1() {
-		return this.generalBaseId1;
+	public Integer getHeroId1() {
+		return this.heroId1;
 	}
 
-	public Integer getGeneralBaseId2() {
-		return this.generalBaseId2;
+	public Integer getHeroId2() {
+		return this.heroId2;
 	}
 	
-	public Integer getGeneralBaseId3() {
-		return this.generalBaseId3;
+	public Integer getHeroId3() {
+		return this.heroId3;
 	}
 
-	public Integer getGeneralBaseId4() {
-		return this.generalBaseId4;
+	public Integer getHeroId4() {
+		return this.heroId4;
 	}
 
 	public String getData() {
@@ -162,5 +165,13 @@ public class BattleLog implements Serializable {
 
 	public void setData(String data) {
 		this.data = data;
+	}
+
+	public int getRoleId2() {
+		return roleId2;
+	}
+
+	public void setRoleId2(int roleId2) {
+		this.roleId2 = roleId2;
 	}
 }

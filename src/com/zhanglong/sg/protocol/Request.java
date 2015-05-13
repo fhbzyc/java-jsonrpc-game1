@@ -1,4 +1,4 @@
-package com.zhanglong.protocol;
+package com.zhanglong.sg.protocol;
 
 import java.io.Serializable;
 

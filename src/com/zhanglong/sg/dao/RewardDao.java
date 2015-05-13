@@ -33,22 +33,26 @@ public class RewardDao extends BaseDao {
             }
         }
 
+        boolean set = false;
         Integer exp = (Integer)reward.getExp();
         if (exp != null) {
-        	roleDao.addExp(role, exp, result);
+        	this.roleDao.addExp(role, exp, result);
+        	set = true;
         }
 
         Integer coin = (Integer)reward.getCoin();
         if (coin != null) {
-        	roleDao.addCoin(role, coin, desc, financeStatus, result);
+        	this.roleDao.addCoin(role, coin, desc, financeStatus, result);
+        	set = true;
         }
 
         Integer gold = (Integer)reward.getGold();
         if (gold != null) {
         	this.roleDao.addGold(role, gold, desc, financeStatus, result);
+        	set = true;
         }
 
-        if (coin != null || gold != null || exp != null) {
+        if (set) {
         	this.roleDao.update(role, result);
         }
 
@@ -63,6 +67,8 @@ public class RewardDao extends BaseDao {
 //        	ArenaModel arenaModel = new ArenaModel(this.roleId);
 //        	arenaModel.addMoney(arena_money, result);
         }
+
+        
     }
 //
 //    public String getJson(int[] itemId, int[]itemNum, Integer coin, Integer gold, Integer heroId, Integer arena_money) throws JsonProcessingException  {

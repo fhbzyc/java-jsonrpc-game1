@@ -1,15 +1,16 @@
 package com.zhanglong.sg.entity;
 
 import java.io.Serializable;
+import java.sql.Timestamp;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
 import javax.persistence.Id;
+import javax.persistence.IdClass;
 import javax.persistence.Table;
 
 @Entity
+@IdClass(BaseSpecialCopyPK.class)
 @Table(name = "base_special_copy")
 public class BaseSpecialCopy implements Serializable {
 
@@ -19,22 +20,18 @@ public class BaseSpecialCopy implements Serializable {
 	private static final long serialVersionUID = -2996442305001891837L;
 
 	@Id
-	@GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Integer id;
-
-    @Column
+    @Column(name = "week" , nullable = false , columnDefinition = "smallint default 0")
     private Integer week;
 
-    @Column
+	@Id
+    @Column(name = "type" , nullable = false , columnDefinition = "smallint default 0")
     private Integer type;
 
-	public Integer getId() {
-		return id;
-	}
+    @Column(name = "begin_time" , nullable = false , columnDefinition = "timestamp")
+    private Timestamp beginTime;
 
-	public void setId(Integer id) {
-		this.id = id;
-	}
+    @Column(name = "end_time" , nullable = false , columnDefinition = "timestamp")
+    private Timestamp endTime;
 
 	public Integer getWeek() {
 		return week;
@@ -50,5 +47,21 @@ public class BaseSpecialCopy implements Serializable {
 
 	public void setType(Integer type) {
 		this.type = type;
+	}
+
+	public Timestamp getBeginTime() {
+		return beginTime;
+	}
+
+	public void setBeginTime(Timestamp beginTime) {
+		this.beginTime = beginTime;
+	}
+
+	public Timestamp getEndTime() {
+		return endTime;
+	}
+
+	public void setEndTime(Timestamp endTime) {
+		this.endTime = endTime;
 	}
 }

@@ -19,9 +19,6 @@ public class BaseHeroShop implements Serializable {
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Integer id;
 
-	@Column(name = "goods_name" , nullable = false)
-	private String name;
-
 	@Column(name = "goods_type" , nullable = false)
 	private String type;
 
@@ -46,14 +43,6 @@ public class BaseHeroShop implements Serializable {
 
 	public void setId(Integer id) {
 		this.id = id;
-	}
-
-	public String getName() {
-		return name;
-	}
-
-	public void setName(String name) {
-		this.name = name;
 	}
 
 	public String getType() {

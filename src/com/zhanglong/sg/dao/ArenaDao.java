@@ -1,22 +1,24 @@
 package com.zhanglong.sg.dao;
 
+import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
 import java.util.List;
 
 import javax.annotation.Resource;
 
+import org.hibernate.Criteria;
 import org.hibernate.SQLQuery;
 import org.hibernate.Session;
+import org.hibernate.criterion.Order;
+import org.hibernate.criterion.Restrictions;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Repository;
 
+import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.zhanglong.sg.entity.Arena;
-import com.zhanglong.sg.entity.BaseHeroEquip;
+import com.zhanglong.sg.entity.RankLog;
 import com.zhanglong.sg.entity.Hero;
 import com.zhanglong.sg.entity.Mail;
 import com.zhanglong.sg.entity.Role;
@@ -42,28 +44,24 @@ public class ArenaDao extends BaseDao {
 
 	@Resource
 	private HeroDao heroDao;
-//	private int roleId;
-//	private int loserId;
 
 	public ArenaDao() {
 	}
-
 
 	public void changeIndex(int roleId, int loserId, int serverId) {
 
 		// 交换位置
 		int myIndex = this.getIndex(roleId, serverId);
 		int newIndex = this.getIndex(loserId, serverId);
-		this.redisTemplate.opsForList().set(this.redisKey(serverId), myIndex, loserId);
-		this.redisTemplate.opsForList().set(this.redisKey(serverId), newIndex, roleId);;
+		this.redisTemplate.opsForList().set(ArenaDao.redisKey(serverId), myIndex, loserId);
+		this.redisTemplate.opsForList().set(ArenaDao.redisKey(serverId), newIndex, roleId);
 
-		Arena arenaTable = this.findOne(roleId, serverId);
-		int oldRank = arenaTable.getRank();
+		Role role = this.roleDao.findOne(roleId);
+
+		int oldRank = role.getRank();
 		int newRank = newIndex + 1;
-        if (newRank < arenaTable.getRank()) {
-            arenaTable.setRank(newRank);
-            arenaTable.setWinNum(arenaTable.getWinNum() + 1);
-            this.update(arenaTable);
+        if (newRank < oldRank) {
+        	role.rank = newRank;
 
     	    // 历史排名上升发奖励
             try {
@@ -84,54 +82,72 @@ public class ArenaDao extends BaseDao {
                     mail.setContent(content);
                     mail.setStatus(0);
                     mail.setRoleId(roleId);
-                    mailDao.create(mail);
+                    this.mailDao.create(mail);
                 }
     		} catch (Exception e) {
     		}
-        } else {
-            arenaTable.setWinNum(arenaTable.getWinNum() + 1);
-            this.update(arenaTable);
         }
+
+    	role.winNum += 1;
+    	this.roleDao.update(role, new Result());
 	}
 
 	public List<Integer> getList(int serverId) {
 
-		List<Integer> list = redisTemplate.opsForList().range(redisKey(serverId), 0, -1);
+		List<Integer> list = this.redisTemplate.opsForList().range(redisKey(serverId), 0, -1);
 
 		if (list.size() == 0) {
 
 			for ( int i = 1 ; i <= 10000 ; i++) {
-				redisTemplate.opsForList().rightPush(redisKey(serverId), i);
+				this.redisTemplate.opsForList().rightPush(redisKey(serverId), i);
 			}
-			list = redisTemplate.opsForList().range(redisKey(serverId), 0, -1);
+			list = this.redisTemplate.opsForList().range(redisKey(serverId), 0, -1);
 		}
 
 		return list;
 	}
 
 	/**
-	 * 每日9点的排名
+	 * 
+	 * @throws IOException 
+	 * @throws JsonMappingException 
+	 * @throws JsonParseException 
 	 */
-	public List<Integer> getLastRank(int serverId) {
+	public RankLog getLastRank(int serverId) throws JsonParseException, JsonMappingException, IOException {
 
-		RedisTemplate<String, List<Integer>> redisT = (RedisTemplate<String, List<Integer>>) Utils.getApplicationContext().getBean("redisTemplate");
-		List<Integer> list = (List<Integer>) redisT.opsForHash().get("ARENA_LAST_", serverId);
-		if (list == null) {
-			list = new ArrayList<Integer>();
+		Session session = this.getSessionFactory().getCurrentSession();
+		Criteria criteria = session.createCriteria(RankLog.class);
+		@SuppressWarnings("unchecked")
+		List<RankLog> list = criteria.add(Restrictions.eq("serverId", serverId)).addOrder(Order.desc("id")).list();
+		
+		RankLog rank = null;
+		if (list != null) {
+			rank = list.get(0);
 		}
-		return list;
+		return rank;
 	}
 
 	/**
 	 * 每日9点记录最后的排名
+	 * @throws Exception 
+	 * @throws Throwable 
 	 */
-	public void setLastRank(int serverId) {
+	public void setLastRank(int serverId) throws Exception {
 
-		RedisTemplate<String, List<Integer>> redisT = (RedisTemplate<String, List<Integer>>) Utils.getApplicationContext().getBean("redisTemplate");
-		redisT.opsForHash().put("ARENA_LAST_", serverId, getList(serverId).subList(0, 20));
+		List<Integer> list = getList(serverId).subList(0, 20);
+		List<ArenaPlayerModel> players = this.getPlayers(list, serverId);
+
+		ObjectMapper objectMapper = new ObjectMapper();
+		RankLog rankLog = new RankLog();
+		rankLog.setData(objectMapper.writeValueAsString(players));
+		rankLog.setRank(objectMapper.writeValueAsString(getList(serverId)));
+		rankLog.setServerId(serverId);
+		rankLog.setDate(Integer.valueOf(Utils.date()));
+		this.getSessionFactory().getCurrentSession().save(rankLog);
+
 	}
 
-	private String redisKey(int serverId) {
+	public static String redisKey(int serverId) {
 		return RedisKey + serverId;
 	}
 
@@ -155,17 +171,16 @@ public class ArenaDao extends BaseDao {
 		return list.size();
 	}
 
-	
 	/**
 	 * 
 	 * @param roleIds
 	 * @return
-	 * @throws Throwable 
+	 * @throws Exception 
 	 */
-	public ArrayList<ArenaPlayerModel> getPlayers(List<Integer> roleIds, int serverId) throws Throwable {
+	public List<ArenaPlayerModel> getPlayers(List<Integer> roleIds, int serverId) throws Exception {
 
 		List<Integer> copy = new ArrayList<Integer>();
-		
+
 		for (int i = 0 ; i < roleIds.size() ; i++) {
 			int roleId = roleIds.get(i);
 
@@ -181,7 +196,7 @@ public class ArenaDao extends BaseDao {
 			for (int i = 0; i < roleIds.size(); i++) {
 				ArenaPlayerModel player = new ArenaPlayerModel();
 				player.roleId = roleIds.get(i);
-				this.toPlayer(player, serverId);
+				ArenaDao.toPlayer(player, serverId);
 				result.add(player);
 			}
 
@@ -199,16 +214,18 @@ public class ArenaDao extends BaseDao {
 		}
 		sql += ")";
 
-		Session session = this.sessionFactory.getCurrentSession();
+		Session session = this.getSessionFactory().getCurrentSession();
 		SQLQuery query = session.createSQLQuery(sql);
 
 		for (int i = 0 ; i < copy.size() ; i++) {
-			query.setParameter(i + 1, copy.get(i));
+			query.setParameter(i, copy.get(i));
 		}
 
-		List<Role> roleTables = query.list();
-		
-		sql = "SELECT * FROM role_arena WHERE role_id IN(";
+		query.addEntity(Role.class);
+		@SuppressWarnings("unchecked")
+		List<Role> roles = query.list();
+
+		sql = "SELECT * FROM role_hero WHERE role_id IN(";
 
 		for (int i = 0 ; i < copy.size() ; i++) {
 			if (i == 0) {
@@ -217,34 +234,17 @@ public class ArenaDao extends BaseDao {
 				sql += ",?";
 			}
 		}
-		sql += ")";
-
-		query = session.createSQLQuery(sql);
-		
-		for (int i = 0 ; i < copy.size() ; i++) {
-			query.setParameter(i + 1, copy.get(i));
-		}
-
-		List<Arena> arenaTables = query.list();
-
-		sql = "SELECT * FROM role_general WHERE role_id IN(";
-
-		for (int i = 0 ; i < copy.size() ; i++) {
-			if (i == 0) {
-				sql += "?";
-			} else {
-				sql += ",?";
-			}
-		}
-		sql += ") AND general_is_battle = 1";
+		sql += ") AND hero_is_battle = true";
 
 		query = session.createSQLQuery(sql);
 
 		for (int i = 0 ; i < copy.size() ; i++) {
-			query.setParameter(i + 1, copy.get(i));
+			query.setParameter(i, copy.get(i));
 		}
 
-		List<Hero> generalTables = query.list();
+		query.addEntity(Hero.class);
+		@SuppressWarnings("unchecked")
+		List<Hero> heros = query.list();
 
 		for (int i = 0 ; i < roleIds.size() ; i++) {
 			
@@ -255,28 +255,22 @@ public class ArenaDao extends BaseDao {
 			player.roleId = roleId;
 
             if (roleId <= 20000) {
-            	this.toPlayer(player, serverId);
+            	ArenaDao.toPlayer(player, serverId);
 
             } else {
-            	for (Role roleTable : roleTables) {
-            		
-            		if (roleTable.getRoleId().equals(roleId)) {
-    					player.avatar = roleTable.getAvatar();
-    					player.level = roleTable.level();
-    					player.name = roleTable.getName();
-    					player.wins = 0;
+            	for (Role role : roles) {
+
+            		if (role.getRoleId().equals(roleId)) {
+    					player.avatar = role.getAvatar();
+    					player.level = role.level();
+    					player.name = role.getName();
+    					player.wins = role.winNum;
             		}
 				}
 
-            	for (Arena arenaTable : arenaTables) {
-            		if (arenaTable.getRoleId().equals(roleId)) {
-    					player.wins = arenaTable.getWinNum();
-            		}
-				}
-            	
-            	for (Hero generalTable : generalTables) {
-            		if (generalTable.getARoleId().equals(roleId)) {
-            			player.generalList.add(generalTable.toArray());
+            	for (Hero hero : heros) {
+            		if (hero.getARoleId() == roleId) {
+            			player.generalList.add(hero.toArray());
             		}
 				}
             }
@@ -285,61 +279,6 @@ public class ArenaDao extends BaseDao {
 		}
 
 		return result;
-	}
-
-	public void update(Arena arenaTable) {
-		Session session = this.sessionFactory.getCurrentSession();
-		session.save(arenaTable);
-	}
-
-	public Arena findOne(int roleId, int serverId) {
-
-		Session session = this.sessionFactory.getCurrentSession();
-
-		Arena arenaTable = (Arena) session.get(Arena.class, roleId);
-		if (arenaTable == null) {
-			arenaTable = new Arena();
-			arenaTable.setWinNum(0);
-			arenaTable.setBattleNum(0);
-			arenaTable.setDate(Integer.valueOf(Utils.date()));
-			arenaTable.setBuyNum(0);
-			arenaTable.setBattleTime(System.currentTimeMillis());
-
-			arenaTable.setGeneralId2(0);
-			arenaTable.setGeneralId3(0);
-			arenaTable.setGeneralId4(0);
-			arenaTable.setRank(this.getIndex(roleId, serverId) + 1);
-			arenaTable.setRoleId(roleId);
-
-			List<Hero> generals = this.heroDao.findAll(roleId);
-
-	        Comparator<Hero> comparator = new Comparator<Hero>(){  
-	        	public int compare(Hero s1, Hero s2) {  
-	        		return s2.getExp() - s1.getExp();
-				}  
-	        };
-
-	        Collections.sort(generals, comparator);
-
-			arenaTable.setGeneralId1(generals.get(0).getHeroId());
-//			arenaTable.setGeneralId2(generals.get(1).getBaseId());
-//			arenaTable.setGeneralId3(generals.get(2).getBaseId());
-
-			if (generals.size() >= 4) {
-				arenaTable.setGeneralId4(generals.get(3).getHeroId());
-			}
-
-			session.save(arenaTable);
-		} else {
-			if (arenaTable.getDate() != (int)Integer.valueOf(Utils.date())) {
-				arenaTable.setBuyNum(0);
-				arenaTable.setBattleNum(0);
-				arenaTable.setDate((int)Integer.valueOf(Utils.date()));
-				arenaTable.setBattleTime(System.currentTimeMillis());
-				session.update(arenaTable);
-			}
-		}
-		return arenaTable;
 	}
 
 	public ArrayList<int[]> rewardConfig() {
@@ -413,11 +352,8 @@ public class ArenaDao extends BaseDao {
 		reward.setGold(gold);
 
 		ObjectMapper objectMapper = new ObjectMapper();
-		
-		HashMap<String, Reward> map = new HashMap<String, Reward>();
-		map.put("reward", reward);
 
-		return objectMapper.writeValueAsString(map);
+		return objectMapper.writeValueAsString(reward);
 	}
 
 	public void addMoney(int money, Result result) {
@@ -438,153 +374,114 @@ public class ArenaDao extends BaseDao {
 //		result.setArenaMoney(arenaTable.getMoney());
 	}
 
-	public void toPlayer(ArenaPlayerModel player, int serverId)  {
+	public static void toPlayer(ArenaPlayerModel player, int serverId) throws Exception  {
 
-		try {
+		int rank = player.roleId;
+		player.avatar = rank % 9;
 
-			if (player.roleId > 20000) {
+		player.wins = 20 - (rank % 18);
 
-		//		RoleDao roleDao = Utils.getApplicationContext().getBean(RoleDao.class);
+    	String[] firstName = RoleService.FirstName;
+    	String[] lastName = RoleService.LastName;
 
-				if (player.level == 0) {
-					Role role = roleDao.findOne(player.roleId);
-					player.name = role.getName();
-					player.avatar = role.getAvatar();
-					player.level = role.level();
+    	player.name = firstName[rank % firstName.length] + lastName[rank % lastName.length];
+
+		ArrayList<Object[]> configs = new ArrayList<Object[]>();
+
+		configs.add(new Object[]{1 , 1 , new int[]{10004,25,3,3} ,new int[]{10016,25,3,3} ,new int[]{10012,25,3,3} ,new int[]{10014,25,3,3}});
+		configs.add(new Object[]{2 , 2 , new int[]{10002,24,3,3} ,new int[]{10005,24,3,3} ,new int[]{10012,24,3,3} ,new int[]{10014,24,3,3}});
+		configs.add(new Object[]{3 , 3 , new int[]{10010,23,3,3} ,new int[]{10016,23,3,3} ,new int[]{10012,23,3,3} ,new int[]{10014,23,3,3}});
+		configs.add(new Object[]{4 , 4 , new int[]{10002,22,3,3} ,new int[]{10005,22,3,3} ,new int[]{10012,22,3,3} ,new int[]{10009,22,3,3}});
+		configs.add(new Object[]{5 , 5 , new int[]{10010,21,3,3} ,new int[]{10016,21,3,3} ,new int[]{10012,21,3,3} ,new int[]{10014,21,3,3}});
+		configs.add(new Object[]{6 , 6 , new int[]{10002,20,3,2} ,new int[]{10011,20,3,2} ,new int[]{10012,20,3,2} ,new int[]{10009,20,3,2}});
+		configs.add(new Object[]{7 , 7 , new int[]{10004,19,3,2} ,new int[]{10016,19,2,2} ,new int[]{10012,19,3,2} ,new int[]{10014,19,3,2}});
+		configs.add(new Object[]{8 , 8 , new int[]{10002,18,3,2} ,new int[]{10005,18,3,2} ,new int[]{10012,18,3,2} ,new int[]{10014,18,3,2}});
+		configs.add(new Object[]{9 , 9 , new int[]{10002,17,3,2} ,new int[]{10011,17,3,2} ,new int[]{10012,17,3,2} ,new int[]{10009,17,3,2}});
+		configs.add(new Object[]{10 , 10 , new int[]{10010,17,3,2} ,new int[]{10016,17,3,2} ,new int[]{10012,17,3,2} ,new int[]{10014,17,3,2}});
+		configs.add(new Object[]{11 , 20 , new int[]{10002,17,3,2} ,new int[]{10011,16,3,2} ,new int[]{10012,16,3,2} ,new int[]{10009,17,3,2}});
+		configs.add(new Object[]{21 , 30 , new int[]{10004,16,3,2} ,new int[]{10016,16,2,2} ,new int[]{10012,16,3,2} ,new int[]{10014,16,3,2}});
+		configs.add(new Object[]{31 , 40 , new int[]{10010,16,3,2} ,new int[]{10016,16,2,2} ,new int[]{10012,16,3,2} ,new int[]{10014,16,3,2}});
+		configs.add(new Object[]{41 , 50 , new int[]{10004,15,3,2} ,new int[]{10016,15,2,2} ,new int[]{10012,15,3,2} ,new int[]{10014,15,3,2}});
+		configs.add(new Object[]{51 , 70 , new int[]{10002,15,3,2} ,new int[]{10011,15,3,2} ,new int[]{10012,15,3,2} ,new int[]{10009,15,3,2}});
+		configs.add(new Object[]{71 , 100 , new int[]{10010,14,3,2} ,new int[]{10016,14,2,2} ,new int[]{10012,14,3,2} ,new int[]{10014,14,3,2}});
+		configs.add(new Object[]{101 , 200 , new int[]{10002,14,2,2} ,new int[]{10011,14,3,2} ,new int[]{10012,14,3,2} ,new int[]{10009,14,3,2}});
+		configs.add(new Object[]{201 , 300 , new int[]{10004,14,3,2} ,new int[]{10016,14,2,2} ,new int[]{10012,14,3,2} ,new int[]{10014,14,2,2}});
+		configs.add(new Object[]{301 , 400 , new int[]{10010,13,3,1} ,new int[]{10016,13,2,1} ,new int[]{10012,13,3,1} ,new int[]{10014,13,3,1}});
+		configs.add(new Object[]{401 , 500 , new int[]{10002,13,2,1} ,new int[]{10011,13,3,1} ,new int[]{10004,13,3,1} ,new int[]{10009,13,3,1}});
+		configs.add(new Object[]{501 , 700 , new int[]{10004,13,3,1} ,new int[]{10016,13,2,1} ,new int[]{10012,13,3,1} ,new int[]{10014,13,2,1}});
+		configs.add(new Object[]{701 , 1000 , new int[]{10002,13,2,1} ,new int[]{10011,13,3,1} ,new int[]{10004,13,3,1} ,new int[]{10009,13,3,1}});
+		configs.add(new Object[]{1001 , 2000 , new int[]{10010,12,2,1} ,new int[]{10016,12,3,1} ,new int[]{10012,12,3,1} ,new int[]{10014,12,2,1}});
+		configs.add(new Object[]{2001 , 3000 , new int[]{10004,12,2,1} ,new int[]{10016,12,2,1} ,new int[]{10012,12,2,1} ,new int[]{10014,12,2,1}});
+		configs.add(new Object[]{3001 , 4000 , new int[]{10004,12,2,1} ,new int[]{10016,12,2,1} ,new int[]{10012,12,2,1} ,new int[]{10014,12,2,1}});
+		configs.add(new Object[]{4001 , 5000 , new int[]{10010,13,2,1} ,new int[]{10011,13,2,0} ,new int[]{10004,10,2,1} ,new int[]{10014,11,3,0}});
+		configs.add(new Object[]{5001 , 7000 , new int[]{10002,8,1,0} ,new int[]{10011,10,1,0} ,new int[]{10012,9,1,1} ,new int[]{10009,8,1,0}});
+		configs.add(new Object[]{7001 , 10000 , new int[]{10002,8,1,0} ,new int[]{10011,6,1,0} ,new int[]{10012,8,1,0} ,new int[]{10009,6,1,0}});   
+		configs.add(new Object[]{10001 , 15000 , new int[]{10010,7,1,0} ,new int[]{10011,8,1,0} ,new int[]{10012,6,1,0} ,new int[]{10014,8,1,0}});
+		configs.add(new Object[]{15001 , 20000 , new int[]{10002,6,1,0} ,new int[]{10011,8,1,0} ,new int[]{10012,8,1,0} ,new int[]{10009,8,1,0}});
+
+		int maxLevel = 0;
+		
+		for (Object[] objects : configs) {
+			int min = (Integer)objects[0];
+			int max = (Integer)objects[1];
+
+			if (rank >= min && rank <= max) {
+
+				int[] g1 = (int[])objects[2];
+				int[] g2 = (int[])objects[3];
+				int[] g3 = (int[])objects[4];
+				int[] g4 = (int[])objects[5];
+
+				
+				maxLevel = g1[1];
+				if (g2[1] > maxLevel) {
+					maxLevel = g2[1];
+				}
+				if (g3[1] > maxLevel) {
+					maxLevel = g3[1];
+				}
+				if (g4[1] > maxLevel) {
+					maxLevel = g4[1];
 				}
 
-				Arena arenaTable = this.findOne(player.roleId, serverId);
-
-				player.wins = arenaTable.getWinNum();
-
-				int general1 = arenaTable.getGeneralId1();
-				int general2 = arenaTable.getGeneralId2();
-				int general3 = arenaTable.getGeneralId3();
-				int general4 = arenaTable.getGeneralId4();
-
-				if (general1 != 0) {
-					Hero general = heroDao.findOne(player.roleId, general1);
-					player.generalList.add(general.toArray());
-				}
-				 
-				if (general2 != 0) {
-					Hero general = heroDao.findOne(player.roleId, general2);
-					player.generalList.add(general.toArray());
-				}
-				 
-				if (general3 != 0) {
-					Hero general = heroDao.findOne(player.roleId, general3);
-					player.generalList.add(general.toArray());
-				}
-				 
-				if (general4 != 0) {
-					Hero general = heroDao.findOne(player.roleId, general4);
-					player.generalList.add(general.toArray());
-				}
-				 
-				if (player.generalList.size() == 0) {
-					Hero general = heroDao.findOne(player.roleId, 10002);
-					player.generalList.add(general.toArray());
-				}
-			} else {
-
-				int rank = player.roleId;
-				player.avatar = rank % 9;
-
-				player.wins = 20 - (rank % 18);
-
-		    	String[] firstName = RoleService.FirstName;
-		    	String[] lastName = RoleService.LastName;
-
-		    	player.name = firstName[rank % firstName.length] + lastName[rank % lastName.length];
-
-				ArrayList<Object[]> configs = new ArrayList<Object[]>();
-
-				configs.add(new Object[]{1 , 1 , new int[]{10004,25,3,3} ,new int[]{10016,25,3,3} ,new int[]{10012,25,3,3} ,new int[]{10014,25,3,3}});
-				configs.add(new Object[]{2 , 2 , new int[]{10002,24,3,3} ,new int[]{10005,24,3,3} ,new int[]{10012,24,3,3} ,new int[]{10014,24,3,3}});
-				configs.add(new Object[]{3 , 3 , new int[]{10010,23,3,3} ,new int[]{10016,23,3,3} ,new int[]{10012,23,3,3} ,new int[]{10014,23,3,3}});
-				configs.add(new Object[]{4 , 4 , new int[]{10002,22,3,3} ,new int[]{10005,22,3,3} ,new int[]{10012,22,3,3} ,new int[]{10009,22,3,3}});
-				configs.add(new Object[]{5 , 5 , new int[]{10010,21,3,3} ,new int[]{10016,21,3,3} ,new int[]{10012,21,3,3} ,new int[]{10014,21,3,3}});
-				configs.add(new Object[]{6 , 6 , new int[]{10002,20,3,2} ,new int[]{10011,20,3,2} ,new int[]{10012,20,3,2} ,new int[]{10009,20,3,2}});
-				configs.add(new Object[]{7 , 7 , new int[]{10004,19,3,2} ,new int[]{10016,19,2,2} ,new int[]{10012,19,3,2} ,new int[]{10014,19,3,2}});
-				configs.add(new Object[]{8 , 8 , new int[]{10002,18,3,2} ,new int[]{10005,18,3,2} ,new int[]{10012,18,3,2} ,new int[]{10014,18,3,2}});
-				configs.add(new Object[]{9 , 9 , new int[]{10002,17,3,2} ,new int[]{10011,17,3,2} ,new int[]{10012,17,3,2} ,new int[]{10009,17,3,2}});
-				configs.add(new Object[]{10 , 10 , new int[]{10010,17,3,2} ,new int[]{10016,17,3,2} ,new int[]{10012,17,3,2} ,new int[]{10014,17,3,2}});
-				configs.add(new Object[]{11 , 20 , new int[]{10002,17,3,2} ,new int[]{10011,16,3,2} ,new int[]{10012,16,3,2} ,new int[]{10009,17,3,2}});
-				configs.add(new Object[]{21 , 30 , new int[]{10004,16,3,2} ,new int[]{10016,16,2,2} ,new int[]{10012,16,3,2} ,new int[]{10014,16,3,2}});
-				configs.add(new Object[]{31 , 40 , new int[]{10010,16,3,2} ,new int[]{10016,16,2,2} ,new int[]{10012,16,3,2} ,new int[]{10014,16,3,2}});
-				configs.add(new Object[]{41 , 50 , new int[]{10004,15,3,2} ,new int[]{10016,15,2,2} ,new int[]{10012,15,3,2} ,new int[]{10014,15,3,2}});
-				configs.add(new Object[]{51 , 70 , new int[]{10002,15,3,2} ,new int[]{10011,15,3,2} ,new int[]{10012,15,3,2} ,new int[]{10009,15,3,2}});
-				configs.add(new Object[]{71 , 100 , new int[]{10010,14,3,2} ,new int[]{10016,14,2,2} ,new int[]{10012,14,3,2} ,new int[]{10014,14,3,2}});
-				configs.add(new Object[]{101 , 200 , new int[]{10002,14,2,2} ,new int[]{10011,14,3,2} ,new int[]{10012,14,3,2} ,new int[]{10009,14,3,2}});
-				configs.add(new Object[]{201 , 300 , new int[]{10004,14,3,2} ,new int[]{10016,14,2,2} ,new int[]{10012,14,3,2} ,new int[]{10014,14,2,2}});
-				configs.add(new Object[]{301 , 400 , new int[]{10010,13,3,1} ,new int[]{10016,13,2,1} ,new int[]{10012,13,3,1} ,new int[]{10014,13,3,1}});
-				configs.add(new Object[]{401 , 500 , new int[]{10002,13,2,1} ,new int[]{10011,13,3,1} ,new int[]{10004,13,3,1} ,new int[]{10009,13,3,1}});
-				configs.add(new Object[]{501 , 700 , new int[]{10004,13,3,1} ,new int[]{10016,13,2,1} ,new int[]{10012,13,3,1} ,new int[]{10014,13,2,1}});
-				configs.add(new Object[]{701 , 1000 , new int[]{10002,13,2,1} ,new int[]{10011,13,3,1} ,new int[]{10004,13,3,1} ,new int[]{10009,13,3,1}});
-				configs.add(new Object[]{1001 , 2000 , new int[]{10010,12,2,1} ,new int[]{10016,12,3,1} ,new int[]{10012,12,3,1} ,new int[]{10014,12,2,1}});
-				configs.add(new Object[]{2001 , 3000 , new int[]{10004,12,2,1} ,new int[]{10016,12,2,1} ,new int[]{10012,12,2,1} ,new int[]{10014,12,2,1}});
-				configs.add(new Object[]{3001 , 4000 , new int[]{10004,12,2,1} ,new int[]{10016,12,2,1} ,new int[]{10012,12,2,1} ,new int[]{10014,12,2,1}});
-				configs.add(new Object[]{4001 , 5000 , new int[]{10010,13,2,1} ,new int[]{10011,13,2,0} ,new int[]{10004,10,2,1} ,new int[]{10014,11,3,0}});
-				configs.add(new Object[]{5001 , 7000 , new int[]{10002,8,1,0} ,new int[]{10011,10,1,0} ,new int[]{10012,9,1,1} ,new int[]{10009,8,1,0}});
-				configs.add(new Object[]{7001 , 10000 , new int[]{10002,8,1,0} ,new int[]{10011,6,1,0} ,new int[]{10012,8,1,0} ,new int[]{10009,6,1,0}});   
-				configs.add(new Object[]{10001 , 15000 , new int[]{10010,7,1,0} ,new int[]{10011,8,1,0} ,new int[]{10012,6,1,0} ,new int[]{10014,8,1,0}});
-				configs.add(new Object[]{15001 , 20000 , new int[]{10002,6,1,0} ,new int[]{10011,8,1,0} ,new int[]{10012,8,1,0} ,new int[]{10009,8,1,0}});
-
-				for (Object[] objects : configs) {
-					int min = (Integer)objects[0];
-					int max = (Integer)objects[1];
-					if (rank >= min && rank <= max) {
-						int[] g1 = (int[])objects[2];
-						int[] g2 = (int[])objects[3];
-						int[] g3 = (int[])objects[4];
-						int[] g4 = (int[])objects[5];
-						player.generalList.add(this.getGeneral(rank, g1));
-						player.generalList.add(this.getGeneral(rank, g2));
-						player.generalList.add(this.getGeneral(rank, g3));
-						player.generalList.add(this.getGeneral(rank, g4));
-						return ;
-					}
-				}
-
+				player.generalList.add(ArenaDao.toHero(rank, g1));
+				player.generalList.add(ArenaDao.toHero(rank, g2));
+				player.generalList.add(ArenaDao.toHero(rank, g3));
+				player.generalList.add(ArenaDao.toHero(rank, g4));
+				player.level = maxLevel;
+				return ;
 			}
-
-		} catch (Throwable e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
 		}
 	}
 
-	private Object[] getGeneral(int rank, int[] config) {
-		
-		int id = config[0];
+	public static Object[] toHero(int rank, int[] config) throws Exception {
+
+		int heroId = config[0];
 		int level = config[1];
 		int star = config[2];
 		int CLASS = config[3];
 
-		Object[] array = new Object[15];
-        array[0] = id;
-        array[1] = level;
-        array[2] = level;
-        array[3] = level;
-        array[4] = 0;
-        array[5] = level;
-        array[6] = CLASS;
-        array[7] = star;
-        array[8] = 0;
-        array[9] = new int[]{1 , 1 , 1 , 1};
-        array[10] = new int[]{1 , 1 , 1 , 1 , 1 , 1};
-        if (rank >= 7000) {
-        	array[10] = new int[]{0 , 0 , 0 , 0 , 0 , 0};
+		Hero hero = new Hero();
+		hero.setHeroId(heroId);
+		hero.setStr(level);
+		hero.setDex(level);
+		hero.setINT(level);
+		hero.setExp(Hero.EXP[level - 1] - 1);
+		hero.setLevel(level);
+		hero.setCLASS(CLASS);
+		hero.setStar(star);
+		hero.setSkill1Level(1);
+		hero.setSkill2Level(1);
+		hero.setSkill3Level(1);
+		hero.setSkill4Level(1);
+		if (rank < 7000) {
+			hero.setEquip1(true);
+			hero.setEquip2(true);
+			hero.setEquip3(true);
+			hero.setEquip4(true);
+			hero.setEquip5(true);
+			hero.setEquip6(true);
         }
-        array[11] = 0; // 可用的属性点
-        array[12] = 0; // 可用的技能点
-
-        BaseHeroEquipDao baseHeroEquipDao = Utils.getApplicationContext().getBean(BaseHeroEquipDao.class);
-        BaseHeroEquip equip = baseHeroEquipDao.findByHeroId(id).get(CLASS);
-
-        array[13] = new int[]{equip.getEquip1().getBaseId() , equip.getEquip2().getBaseId() , equip.getEquip3().getBaseId() , equip.getEquip4().getBaseId() , equip.getEquip5().getBaseId() , equip.getEquip6().getBaseId()};
-        array[14] = new int[]{1 , 1 , 1 , 1};
-        return array;
+        return hero.toArray();
 	}
 }

@@ -1,6 +1,5 @@
 package com.zhanglong.sg.service;
 
-import java.util.HashMap;
 import java.util.List;
 
 import javax.annotation.Resource;
@@ -14,39 +13,19 @@ import com.zhanglong.sg.entity.BaseItem;
 import com.zhanglong.sg.entity.BaseMakeItem;
 import com.zhanglong.sg.entity.FinanceLog;
 import com.zhanglong.sg.entity.Hero;
-import com.zhanglong.sg.entity.ItemTable;
+import com.zhanglong.sg.entity.Item;
 import com.zhanglong.sg.entity.Role;
 import com.zhanglong.sg.result.Result;
 
 @Service
 @JsonRpcService("/item")
-public class ItemService extends BaseClass {
+public class ItemService extends BaseService {
 
 	@Resource
 	private BaseMakeItemDao baseMakeItemDao;
-	
-	/**
-	 * 道具列表
-	 * @param tokenS
-	 * @return
-	 * @throws Throwable
-	 */
-    public HashMap<String, Object> list() throws Throwable {
-
-        List<ItemTable> queryList = this.itemDao.findAll(this.roleId());
-
-        Result result = new Result();
-        
-        for (ItemTable itemTable : queryList) {
-            result.addItem(itemTable);
-        }
-
-        return result.toMap();
-    }
 
     /**
      * 合成装备
-     * @param tokenS
      * @param itemBaseId
      * @return HashMap<String, Object>
      * @throws Throwable
@@ -58,7 +37,7 @@ public class ItemService extends BaseClass {
 
         BaseItem baseItem = this.baseItemDao.findOne(itemBaseId);
         if (baseItem == null) {
-            throw new Throwable("出错,不存在此道具");
+            return this.returnError(this.lineNum(), "出错,不存在此道具");
         }
 
         Result result = new Result();
@@ -81,11 +60,11 @@ public class ItemService extends BaseClass {
 
 				int materialId = baseMakeItem.getPk().getMaterial().getBaseId();
 
-				ItemTable item = this.itemDao.findOneByItemId(roleId, materialId);
+				Item item = this.itemDao.findOneByItemId(roleId, materialId);
 				if (item == null) {
-					throw new Throwable("缺少合成材料:" + this.baseItemDao.findOne(materialId).getName());
+					return this.returnError(this.lineNum(), "缺少合成材料:" + this.baseItemDao.findOne(materialId).getName());
 				} else if (item.getNum() < baseMakeItem.getNum()) {
-					throw new Throwable("合成材料:" + this.baseItemDao.findOne(materialId).getName() + " , 数量不足");
+					return this.returnError(this.lineNum(), "合成材料:" + this.baseItemDao.findOne(materialId).getName() + " , 数量不足");
 				} else {
 					this.itemDao.subItem(item, baseMakeItem.getNum(), result);
 				}
@@ -93,38 +72,37 @@ public class ItemService extends BaseClass {
 		}
 
         if (!find) {
-        	throw new Throwable("这个道具没有合成配方");
+        	return this.returnError(this.lineNum(), "这个道具没有合成配方");
         }
 
         this.itemDao.addItem(roleId, itemBaseId, 1, result);
 
-        return result.toMap();
+        return this.success(result.toMap());
     }
 
     /**
      * 出售道具
-     * @param tokenS
      * @param itemId
      * @param num
      * @return
      * @throws Throwable
      */
     @Transactional(rollbackFor = Throwable.class)
-    public HashMap<String, Object> sellItem(int id, int num) throws Throwable {
+    public Object sellItem(int id, int num) throws Throwable {
 
     	int roleId = this.roleId();
 
         if (num < 1) {
-            throw new Throwable("参数出错,数量最少为1");
+            return this.returnError(this.lineNum(), "参数出错,数量最少为1");
         }
 
-        ItemTable item = this.itemDao.findOne(id);
+        Item item = this.itemDao.findOne(id);
         if (item == null) {
-            throw new Throwable("出错,你没有此道具");
+            return this.returnError(this.lineNum(), "出错,你没有此道具");
         }
 
         if (item.getNum() < num) {
-            throw new Throwable("参数出错,卖出道具数量超过拥有的数量");
+            return this.returnError(this.lineNum(), "参数出错,卖出道具数量超过拥有的数量");
         }
 
         BaseItem baseItem = this.baseItemDao.findOne(item.getItemId());
@@ -137,30 +115,69 @@ public class ItemService extends BaseClass {
         this.roleDao.addCoin(role, coin, "卖出道具<" + baseItem.getName() + "> 数量<" + num + ">", FinanceLog.STATUS_ITEM_SELL, result);
         this.roleDao.update(role, result);
 
-        return result.toMap();
+        return this.success(result.toMap());
+    }
+
+    /**
+     * 批量出售
+     * @param itemIds
+     * @param nums
+     * @return
+     * @throws Throwable
+     */
+    public Object sellItems(int[]itemIds, int[]nums) throws Throwable {
+
+    	int roleId = this.roleId();
+
+    	Result result = new Result();
+
+    	int coin = 0;
+    	String descString = "";
+
+    	Role role = this.roleDao.findOne(roleId);
+        for (int i = 0  ; i < itemIds.length ; i++) {
+
+        	Item item = this.itemDao.findOne(itemIds[i]);
+
+        	int num = nums[i];
+        	if (item.getNum() < num) {
+        		return this.returnError(this.lineNum(), "参数出错,卖出数量超过拥有的数量");
+        	}
+
+        	this.itemDao.subItem(item, num, result);
+
+            BaseItem baseItem = this.baseItemDao.findOne(item.getItemId());
+            coin += baseItem.getSellCoin() * num;
+            
+            descString += baseItem.getName() + "x" + num + ",";
+		}
+
+        this.roleDao.addCoin(role, coin, descString, FinanceLog.STATUS_ITEM_SELL, result);
+        this.roleDao.update(role, result);
+
+        return this.success(result.toMap());
     }
 
     /**
      * 使用经验书
-     * @param tokenS
-     * @param generalId
+     * @param heroId
      * @param itemId
      * @param num
      * @return
      * @throws Throwable
      */
-    public HashMap<String, Object> useExpBook(int generalId, int id, int num) throws Throwable {
+    public Object useExpBook(int heroId, int id, int num) throws Throwable {
 
     	int roleId = this.roleId();
 
-        ItemTable item = this.itemDao.findOne(id);
+        Item item = this.itemDao.findOne(id);
         if (item == null) {
-            throw new Throwable("出错,你没有此道具");
+            return this.returnError(this.lineNum(), "出错,你没有此道具");
         }
 
-        Hero hero = heroDao.findOne(roleId, generalId);
+        Hero hero = heroDao.findOne(roleId, heroId);
         if (hero == null) {
-            throw new Throwable("出错,你没有此武将");
+            return this.returnError(this.lineNum(), "出错,你没有此武将");
         }
 
         int baseId = item.getItemId();
@@ -172,7 +189,7 @@ public class ItemService extends BaseClass {
         } else if (baseId == 4202) {
         	exp = 1500;
         } else {
-        	throw new Throwable("出错,此道具不是经验书");
+        	return this.returnError(this.lineNum(), "出错,此道具不是经验书");
         }
 
         Result result = new Result();
@@ -180,7 +197,7 @@ public class ItemService extends BaseClass {
         Role role = roleDao.findOne(roleId);
         int maxExp = heroDao.maxExp(role.level());
         if (hero.getExp() >= maxExp) {
-        	throw new Throwable("经验已经最大,不能再加了");
+        	return this.returnError(this.lineNum(), "经验已经最大,不能再加了");
         } else {
         	int j = num;
         	for (int i = 1; i <= num; i++) {
@@ -191,10 +208,11 @@ public class ItemService extends BaseClass {
         			break;
         		}
         	}
+        	hero.setLevel(hero.level());
         	heroDao.update(hero, result);
         	this.itemDao.subItem(item, j, result);
         }
 
-        return result.toMap();
+        return this.success(result.toMap());
     }
 }

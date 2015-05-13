@@ -1,51 +1,78 @@
 package com.zhanglong.sg.dao;
 
+import java.io.IOException;
 import java.util.UUID;
 
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.redis.core.RedisTemplate;
+import javax.annotation.Resource;
+
+import org.springframework.data.redis.connection.jedis.JedisConnection;
+import org.springframework.data.redis.connection.jedis.JedisConnectionFactory;
 import org.springframework.stereotype.Repository;
 
 import com.zhanglong.sg.model.Token;
+import com.fasterxml.jackson.core.JsonParseException;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 @Repository
 public class TokenDao {
 
-	private static String TokenKey = "TOKEN_";
-	private static String UidKey = "TOKEN_UID_";
+	private static String TOKEN_KEY = "TOKEN_";
+	private static String USER_ID_KEY = "TOKEN_UID_";
 
-	@Autowired
-    private RedisTemplate<String, Token> redisTemplate;
+	@Resource
+    private JedisConnectionFactory jedisConnectionFactory;
 
-	public RedisTemplate<String, Token> getRedisTemplate() {
-		return redisTemplate;
-	}
+    public Token findOne(String tokenS) throws JsonParseException, JsonMappingException, IOException {
 
-	public void setRedisTemplate(RedisTemplate<String, Token> redisTemplate) {
-		this.redisTemplate = redisTemplate;
-	}
-
-    public Token findOne(String tokenS) {
-    	return (Token) this.getRedisTemplate().opsForHash().get(TokenKey, tokenS);
-    }
-
-    public Token create(int userId) {
-    	
-    	Token token = (Token) this.getRedisTemplate().opsForHash().get(UidKey, userId);
-    	if (token != null) {
-    		this.getRedisTemplate().opsForHash().delete(TokenKey, token.getTokenS());
+    	JedisConnection jedisConnection = this.jedisConnectionFactory.getConnection();
+    	String json = jedisConnection.getNativeConnection().get(TOKEN_KEY + tokenS);
+    	jedisConnection.close();
+    	if (json == null) {
+    		return null;
     	}
 
-    	String tokenS = UUID.randomUUID().toString().replace("-", "");
-  
-    	token = new Token();
+    	ObjectMapper objectMapper = new ObjectMapper();
+    	Token token = objectMapper.readValue(json, Token.class);
+    	return token;
+    }
+
+    public String getTokenByUserId(int userId) {
+    	JedisConnection jedisConnection = this.jedisConnectionFactory.getConnection();
+    	String tokenS = jedisConnection.getNativeConnection().get(USER_ID_KEY + userId);
+    	jedisConnection.close();
+    	return tokenS;
+    }
+
+    public Token create(int userId) throws JsonProcessingException {
+
+    	JedisConnection jedisConnection = this.jedisConnectionFactory.getConnection();
+    	String tokenS = jedisConnection.getNativeConnection().get(USER_ID_KEY + userId);
+
+    	if (tokenS != null) {
+    		jedisConnection.getNativeConnection().del(TOKEN_KEY + tokenS);
+    	}
+
+    	tokenS = UUID.randomUUID().toString().replace("-", "");
+
+    	Token token = new Token();
     	token.setUserId(userId);
     	token.setTokenS(tokenS);
 
-    	this.getRedisTemplate().opsForHash().put(TokenKey, tokenS, token);
+    	ObjectMapper objectMapper = new ObjectMapper();
+    	jedisConnection.getNativeConnection().set(TOKEN_KEY + token.getTokenS(), objectMapper.writeValueAsString(token));
 
-    	this.getRedisTemplate().opsForHash().put(UidKey, userId, token);
+    	jedisConnection.getNativeConnection().set(USER_ID_KEY + userId, tokenS);
+    	jedisConnection.close();
     	
     	return token;
+    }
+
+    public void setToken(Token token) throws JsonProcessingException {
+    	ObjectMapper objectMapper = new ObjectMapper();
+    	JedisConnection jedisConnection = this.jedisConnectionFactory.getConnection();
+    	jedisConnection.getNativeConnection().set(TOKEN_KEY + token.getTokenS(), objectMapper.writeValueAsString(token));
+    	jedisConnection.close();
     }
 }

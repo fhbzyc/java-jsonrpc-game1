@@ -37,17 +37,17 @@ public class MissionDao extends BaseDao {
 	public MissionDao() {
 	}
 
-	public static String TYPE_COPY = "main_copy";
-	public static String TYPE_HERO_COPY = "main_hero_copy";
-	public static String TYPE_LEVELUP = "main_levelup";
-	public static String TYPE_HERO_NUM = "main_general_num";
-	public static String TYPE_ITEM_NUM = "main_item_num";
-	public static String TYPE_HERO_CLASS = "main_general_class";
-	public static String TYPE_CALL_HERO = "main_call_hero";
+	public static String TYPE_COPY = "copy";
+	public static String TYPE_HERO_COPY = "hero_copy";
+	public static String TYPE_LEVELUP = "levelup";
+	public static String TYPE_HERO_NUM = "general_num";
+	public static String TYPE_ITEM_NUM = "item_num";
+	public static String TYPE_HERO_CLASS = "general_class";
+	public static String TYPE_CALL_HERO = "call_hero";
 
     private static String RedisKey = "MISSION_MAP_";
 
-    public List<BaseMission> findAll(Role role) throws Throwable {
+    public List<BaseMission> findAll(Role role) throws Exception {
 
         MissionModel missionModel = (MissionModel) this.redisTemplate.opsForHash().get(RedisKey, role.getRoleId());
 
@@ -67,7 +67,7 @@ public class MissionDao extends BaseDao {
                 Integer missionId = entry.getKey();
                 int num = entry.getValue();
 
-                BaseMission mission = baseMissionDao.findOne(missionId);
+                BaseMission mission = this.baseMissionDao.findOne(missionId);
                 if (num < 0) {
                 	mission.setComplete(true);
                 	mission.setNum(mission.getGoal());
@@ -102,7 +102,7 @@ public class MissionDao extends BaseDao {
     	this.redisTemplate.opsForHash().put(RedisKey, roleId, missionModel);
     }
 
-    private void check(Role role, String type, int target, int num, Result result) throws Throwable {
+    private void check(Role role, String type, int target, int num, Result result) throws Exception {
 
     	List<BaseMission> list = this.findAll(role);
 
@@ -124,7 +124,7 @@ public class MissionDao extends BaseDao {
     }
 
 
-    private void check(Role role, String type, int num, Result result) throws Throwable {
+    private void check(Role role, String type, int num, Result result) throws Exception {
 
     	List<BaseMission> list = this.findAll(role);
 
@@ -143,7 +143,7 @@ public class MissionDao extends BaseDao {
         }
     }
 
-    public void checkHeroNum(Role role, int num, Result result) throws Throwable {
+    public void checkHeroNum(Role role, int num, Result result) throws Exception {
         this.check(role, TYPE_HERO_NUM, num, result);
     }
 
@@ -156,8 +156,9 @@ public class MissionDao extends BaseDao {
         for (BaseMission mission : list) {
             if (!mission.getComplete() && mission.getType().equals(TYPE_LEVELUP)) {
 
-            	mission.setNum(role.level());
+            	find = true;
 
+            	mission.setNum(role.level());
                 result.addMission(mission);
             }
         }
@@ -172,20 +173,20 @@ public class MissionDao extends BaseDao {
     }
 
 
-    public void checkHeroStory(Role role, int storyId, int num, Result result) throws Throwable {
+    public void checkHeroStory(Role role, int storyId, int num, Result result) throws Exception {
     	this.check(role, TYPE_HERO_COPY, storyId, num, result);
     }
 
 
-    public void checkHeroClass(Role role, int CLASS, int num, Result result) throws Throwable {
+    public void checkHeroClass(Role role, int CLASS, int num, Result result) throws Exception {
     	this.check(role, TYPE_HERO_CLASS, CLASS, num, result);
     }
 
-    public void checkHeroId(Role role, int heroId, int num, Result result) throws Throwable {
+    public void checkHeroId(Role role, int heroId, int num, Result result) throws Exception {
         check(role, TYPE_CALL_HERO, heroId, num, result);
     }
 
-    public void complete(Role role, int missionId, Result result) throws Throwable {
+    public void complete(Role role, int missionId, Result result) throws Exception {
 
     	List<BaseMission> list = this.findAll(role);
 
@@ -206,9 +207,10 @@ public class MissionDao extends BaseDao {
 
     private void checkNew(Role role, List<BaseMission> missions, Result result) throws CloneNotSupportedException {
 
-         for (BaseMission temp : baseMissionDao.findAll()) {
+         for (BaseMission temp : this.baseMissionDao.findAll()) {
 
         	 BaseMission baseMission = temp.clone();
+        	 baseMission.setComplete(false);
 
              if (role.level() >= baseMission.getLevel()) {
 

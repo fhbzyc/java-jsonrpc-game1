@@ -6,7 +6,6 @@ import javax.persistence.EntityManager;
 import javax.persistence.Query;
 
 import com.zhanglong.sg.dao.ArenaDao;
-import com.zhanglong.sg.entity.Arena;
 import com.zhanglong.sg.result.Result;
 import com.zhanglong.sg.utils.Utils;
 
@@ -16,7 +15,7 @@ import com.zhanglong.sg.utils.Utils;
  * @author Speed
  *
  */
-public class message extends BaseClass {
+public class message extends BaseService {
 //
 //	/**
 //	 * 滚动消息

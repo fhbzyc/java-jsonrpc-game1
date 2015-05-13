@@ -1,7 +1,6 @@
 package com.zhanglong.sg.dao;
 
-import java.text.SimpleDateFormat;
-import java.util.Date;
+import java.sql.Timestamp;
 
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
@@ -22,7 +21,7 @@ public class FinanceLogDao {
 
 	public void create(FinanceLog financeLog) {
 		Session session = this.getSessionFactory().getCurrentSession();
-		financeLog.setTime(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date()));
+		financeLog.setTime(new Timestamp(System.currentTimeMillis()));
 		session.save(financeLog);
 	}
 }

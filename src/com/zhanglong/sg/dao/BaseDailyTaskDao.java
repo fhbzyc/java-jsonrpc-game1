@@ -1,5 +1,6 @@
 package com.zhanglong.sg.dao;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import org.hibernate.Session;
@@ -20,6 +21,16 @@ public class BaseDailyTaskDao extends BaseDao {
 			BaseDailyTaskDao.list = session.createCriteria(BaseDailyTask.class).list();
 		}
 
-		return BaseDailyTaskDao.list;
+		List<BaseDailyTask> list = new ArrayList<BaseDailyTask>();
+		for (BaseDailyTask baseDailyTask : BaseDailyTaskDao.list) {
+			try {
+				list.add(baseDailyTask.clone());
+			} catch (CloneNotSupportedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
+
+		return list;
 	}
 }

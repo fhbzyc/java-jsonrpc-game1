@@ -1,6 +1,8 @@
 package com.zhanglong.sg.entity;
 
 import java.io.Serializable;
+import java.sql.Timestamp;
+
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
@@ -31,26 +33,26 @@ public class Mail implements Serializable {
     @Column(name = "mail_id")
     private Integer id;
 
-    @Column(name = "mail_from_name" , nullable = false)
+    @Column(name = "mail_from_name" , nullable = false , columnDefinition = "varchar(255) default ''")
     private String fromName;
 
     @Column(name = "role_id" , nullable = false , columnDefinition = "int default 0")
     private Integer roleId;
 
-    @Column(name = "mail_title" , nullable = false)
+    @Column(name = "mail_title" , nullable = false , columnDefinition = "varchar(255) default ''")
     private String title;
 
-    @Column(name = "mail_content" , nullable = false , length = 8000)
+    @Column(name = "mail_content" , nullable = false , columnDefinition = "text")
     private String content;
 
-    @Column(name = "mail_attchment" , nullable = false , length = 8000)
+    @Column(name = "mail_attchment" , nullable = false , columnDefinition = "text")
     private String attachment;
 
     @Column(name = "mail_status" , nullable = false , columnDefinition = "smallint default 0")
     private Integer status;
 
-    @Column(name = "mail_time" , nullable = false)
-    private Long sendTime;
+    @Column(name = "mail_time" , nullable = false , columnDefinition = "timestamp DEFAULT CURRENT_TIMESTAMP")
+    private Timestamp sendTime;
 
     public Mail() {
     }
@@ -111,11 +113,11 @@ public class Mail implements Serializable {
 		this.status = status;
 	}
 
-	public Long getSendTime() {
+	public Timestamp getSendTime() {
 		return sendTime;
 	}
 
-	public void setSendTime(Long sendTime) {
+	public void setSendTime(Timestamp sendTime) {
 		this.sendTime = sendTime;
 	}
 }

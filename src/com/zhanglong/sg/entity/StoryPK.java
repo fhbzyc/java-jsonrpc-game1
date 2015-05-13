@@ -38,5 +38,17 @@ public class StoryPK implements Serializable {
 	public Integer getARoleId() {
 		return this.aRoleId;
 	}
+
+	@Override
+	public boolean equals(Object obj) {
+		// TODO Auto-generated method stub
+		return super.equals(obj);
+	}
+
+	@Override
+	public int hashCode() {
+		// TODO Auto-generated method stub
+		return super.hashCode();
+	}
 }
 

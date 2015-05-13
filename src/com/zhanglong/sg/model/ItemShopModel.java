@@ -16,6 +16,8 @@ public class ItemShopModel implements Serializable {
 
 	private int date;
 
+	private int discount;
+
 	private int refreshNum;
 
 	private long refreshTime;
@@ -50,5 +52,13 @@ public class ItemShopModel implements Serializable {
 
 	public void setRefreshNum(int refreshNum) {
 		this.refreshNum = refreshNum;
+	}
+
+	public int getDiscount() {
+		return discount;
+	}
+
+	public void setDiscount(int discount) {
+		this.discount = discount;
 	}
 }

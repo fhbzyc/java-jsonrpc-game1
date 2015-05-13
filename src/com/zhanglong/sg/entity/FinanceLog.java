@@ -1,6 +1,7 @@
 package com.zhanglong.sg.entity;
 
 import java.io.Serializable;
+import java.sql.Timestamp;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
@@ -60,6 +61,11 @@ public class FinanceLog implements Serializable {
     public static final int STATUS_UPDATE_NAME = 47;
     public static final int STATUS_BATTLE_IN_WORLD = 48;
     public static final int STATUS_GOLD_WIPE_OUT = 49; // 扫荡
+
+    public static final int STATUS_SHOP_BUY_MONEY3 = 70;
+    public static final int STATUS_SHOP_BUY_MONEY4 = 71;
+
+    public static final int STATUS_COIN_EQUIP_EXP = 72;
 
     public static final String statusName(int status) {
         switch (status) {
@@ -135,7 +141,7 @@ public class FinanceLog implements Serializable {
     private Integer id;
 
     // 1 coin 2 gold
-    @Column(name = "finance_money_type" , nullable = false , columnDefinition = "tinyint(1) default 0")
+    @Column(name = "finance_money_type" , nullable = false , columnDefinition = "smallint default 0")
     private Integer moneyType;
     
     @Column(name = "finance_old_money" , nullable = false , columnDefinition = "int default 0")
@@ -144,11 +150,11 @@ public class FinanceLog implements Serializable {
     @Column(name = "finance_new_money" , nullable = false , columnDefinition = "int default 0")
     private Integer newMoney;
 
-    @Column(name = "finance_status" , nullable = false , columnDefinition = "tinyint(4) default 0")
+    @Column(name = "finance_status" , nullable = false , columnDefinition = "smallint default 0")
     private Integer status;
 
     @Column(name = "finance_time" , nullable = false , columnDefinition = "timestamp")
-    private String time;
+    private Timestamp time;
 
     @Column(name = "role_id")
     private Integer roleId;
@@ -194,7 +200,7 @@ public class FinanceLog implements Serializable {
         this.status = status;
     }
 
-    public void setTime(String time) {
+    public void setTime(Timestamp time) {
         this.time = time;
     }
 
@@ -223,7 +229,7 @@ public class FinanceLog implements Serializable {
         return this.desc;
     }
 
-    public String getTime() {
+    public Timestamp getTime() {
         return this.time;
     }
 

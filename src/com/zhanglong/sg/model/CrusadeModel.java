@@ -1,10 +1,13 @@
 package com.zhanglong.sg.model;
 
 import java.io.IOException;
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Random;
+
+import org.springframework.web.context.ContextLoader;
 
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.JsonMappingException;
@@ -14,9 +17,13 @@ import com.zhanglong.sg.dao.RoleDao;
 import com.zhanglong.sg.entity.Hero;
 import com.zhanglong.sg.entity.Power;
 import com.zhanglong.sg.service.RoleService;
-import com.zhanglong.sg.utils.Utils;
 
-public class CrusadeModel {
+public class CrusadeModel implements Serializable {
+
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = -6795317386085461737L;
 
 	private int roleId;
 
@@ -87,9 +94,9 @@ public class CrusadeModel {
 
 		int serverId = 0;
 
-		RoleDao roleDao = new RoleDao();
+		RoleDao roleDao = ContextLoader.getCurrentWebApplicationContext().getBean(RoleDao.class);
 		serverId = roleDao.findOne(this.roleId).getServerId();
-		
+
 		this.list = new ArrayList<BattlePlayerModel>();
 		for (int i = 0; i < 15; i++) {
 
@@ -110,9 +117,7 @@ public class CrusadeModel {
 				}
 			} else {
 				player.setRoleId(i + 1);
-
 				player.setAvatar(i % 9);
-				player.setLevel(i + 1);
 
 		    	String[] firstName = RoleService.FirstName;
 		    	String[] lastName = RoleService.LastName;
@@ -122,10 +127,17 @@ public class CrusadeModel {
 
 		    	int power2 = power * numByLevel(level, i) / 100;
 
+		    	int maxLevel = 1;
+		    	
 		    	List<Hero> hero = this.hero(power2);
 		    	for (Hero hero2 : hero) {
 		    		player.addAHero(hero2);
+		    		if (hero2.level() > maxLevel) {
+		    			maxLevel = hero2.level();
+		    		}
 				}
+
+		    	player.setLevel(maxLevel);
 			}
 
 			this.list.add(player);
@@ -311,8 +323,8 @@ public class CrusadeModel {
 		Hero hero = new Hero();
 		hero.setHeroId(arr[0]);
 		hero.setExp(Hero.EXP[level - 1] - 1);
+		hero.setLevel(level);
 		hero.setStar(arr[2]);
-		hero.setIsBattle(1);
 		hero.setCLASS(arr[3]);
 		hero.setStr(arr[1]);
 		hero.setDex(arr[1]);
@@ -321,19 +333,18 @@ public class CrusadeModel {
 		hero.setSkill2Level(1);
 		hero.setSkill3Level(1);
 		hero.setSkill4Level(0);
-		hero.setEquip1(1);
-		hero.setEquip2(1);
-		hero.setEquip3(1);
-		hero.setEquip4(1);
-		hero.setEquip5(1);
-		hero.setEquip6(1);
-		hero.setPoint(0);
+		hero.setEquip1(true);
+		hero.setEquip2(true);
+		hero.setEquip3(true);
+		hero.setEquip4(true);
+		hero.setEquip5(true);
+		hero.setEquip6(true);
 		return hero;
 	}
 
 	private Power getRolePower(int roleId, int serverId, int myPower, int index) {
 
-		PowerDao powerDao = Utils.getApplicationContext().getBean(PowerDao.class);
+		PowerDao powerDao = ContextLoader.getCurrentWebApplicationContext().getBean(PowerDao.class);
 
 		int min = 0;
 		int max = 0;

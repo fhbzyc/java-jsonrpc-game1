@@ -21,7 +21,7 @@ import com.zhanglong.sg.utils.Utils;
 
 @Service
 @JsonRpcService("/checkin")
-public class CheckinService extends BaseClass {
+public class CheckinService extends BaseService {
 
 	@Resource
 	private BaseCheckinDao baseCheckinDao;
@@ -46,7 +46,7 @@ public class CheckinService extends BaseClass {
         int num = 0;
 
         boolean find = false;
-        
+
         List<Checkin> list = this.checkinDao.findAll(roleId);
 
         for (Checkin checkin : list) {
@@ -66,7 +66,7 @@ public class CheckinService extends BaseClass {
         result.setValue("reward", data);
         result.setValue("status", num);
 
-        return result.toMap();
+        return this.success(result.toMap());
 	}
 
 	/**
@@ -86,7 +86,7 @@ public class CheckinService extends BaseClass {
 			if ((int)temp.getDay() == Integer.valueOf(Utils.date())) {
 				status = temp.getNum();
 				if (status == 2) {
-					throw new Throwable("不能再领");
+					return this.returnError(this.lineNum(), "不能再领");
 				}
 				checkin = temp;
 				find = true;
@@ -128,7 +128,7 @@ public class CheckinService extends BaseClass {
         } else {
 
         	if (status == 1 && role.getVip() < vipLv) {
-        		throw new Throwable("vip" + vipLv + "才能再领奖品");
+        		return this.returnError(this.lineNum(), "vip" + vipLv + "才能再领奖品");
         	}
 
         	if (status == 0 && vipLv > 0 && role.getVip() >= vipLv) {
@@ -189,6 +189,6 @@ public class CheckinService extends BaseClass {
 
     	result.setValue("sign_times", days);
     	result.setValue("status", status);
-		return result.toMap();
+		return this.success(result.toMap());
 	}
 }

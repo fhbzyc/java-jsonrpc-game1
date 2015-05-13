@@ -11,7 +11,7 @@ import com.zhanglong.sg.dao.VersionDao;
 import com.zhanglong.sg.entity.Version;
 
 @JsonRpcService("/version")
-public class VersionService extends BaseClass {
+public class VersionService extends BaseService {
 
 	@Resource
 	private VersionDao versionDao;
@@ -52,7 +52,7 @@ public class VersionService extends BaseClass {
 			result.put("update_list", update_list);
 		}
 
-		return result;
+		return this.success(result);
     }
 
     /**

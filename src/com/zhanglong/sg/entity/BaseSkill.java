@@ -14,31 +14,22 @@ public class BaseSkill implements Serializable {
 	private static final long serialVersionUID = -3992205919499178901L;
 
 	@Id
-	@Column(name = "skill_id" , nullable = false , columnDefinition = "int(11) default 0")
+	@Column(name = "skill_id" , nullable = false , columnDefinition = "int default 0")
 	private Integer id;
 
-	@Column(name = "skill_name" , nullable = false , columnDefinition = "varchar(255) default ''")
+	@Column(name = "skill_name" , nullable = false , columnDefinition = "varchar(255) default ''" , length = 255)
 	private String name; //
 
-	@Column(name = "skill_max_level" , nullable = false , columnDefinition = "int(11) default 0")
+	@Column(name = "skill_max_level" , nullable = false , columnDefinition = "int default 0")
 	private Integer maxLevel; //
 
-	@Column(name = "skill_base_coin" , nullable = false , columnDefinition = "int(11) default 0")
+	@Column(name = "skill_base_coin" , nullable = false , columnDefinition = "int default 0")
 	private Integer baseCoin; //
 
-	@Column(name = "skill_levelup_coin" , nullable = false , columnDefinition = "int(11) default 0")
+	@Column(name = "skill_levelup_coin" , nullable = false , columnDefinition = "int default 0")
 	private Integer levelupCoin; //
 
 	public BaseSkill() {
-		
-	}
-
-	public BaseSkill(int id, String name, int max_level, int base_coin, int levelup_coin) {
-		this.id = id;
-		this.name = name;
-		this.maxLevel = max_level;
-		this.baseCoin = base_coin;
-		this.levelupCoin = levelup_coin;
 	}
 
 	public void setId(Integer id) {

@@ -44,7 +44,11 @@ public class ItemShopDao extends BaseDao {
 
 			int num = 8;
 
-			BaseItemShop[] items = this.ref(type, num);
+	    	BaseItemShopDao baseItemShopDao = new BaseItemShopDao();
+	    	baseItemShopDao.setSessionFactory(this.getSessionFactory());
+	        int discount = baseItemShopDao.getDiscount(type);
+
+			BaseItemShop[] items = this.ref(type, num, discount);
 
 			List<BaseItemShop> itemList = new ArrayList<BaseItemShop>();
 			for (BaseItemShop baseItemShop : items) {
@@ -53,6 +57,7 @@ public class ItemShopDao extends BaseDao {
 
 			itemShopModel = new ItemShopModel();
 			itemShopModel.setItemList(itemList);
+			itemShopModel.setDiscount(discount);
 			
 			this.save(roleId, type, itemShopModel);
 		}
@@ -73,7 +78,11 @@ public class ItemShopDao extends BaseDao {
 
 		int num = 8;
 
-		BaseItemShop[] items = this.ref(type, num);
+    	BaseItemShopDao baseItemShopDao = new BaseItemShopDao();
+    	baseItemShopDao.setSessionFactory(this.getSessionFactory());
+        int discount = baseItemShopDao.getDiscount(type);
+
+		BaseItemShop[] items = this.ref(type, num, discount);
 
 		List<BaseItemShop> itemList = new ArrayList<BaseItemShop>();
 		for (BaseItemShop baseItemShop : items) {
@@ -84,11 +93,12 @@ public class ItemShopDao extends BaseDao {
 		
 		itemShopModel.setItemList(itemList);
 		itemShopModel.setRefreshNum(itemShopModel.getRefreshNum() + 1);
+		itemShopModel.setDiscount(discount);
 
     	this.save(roleId, type, itemShopModel);
     }
 
-    private BaseItemShop[] ref(int type, int num) throws Throwable {
+    private BaseItemShop[] ref(int type, int num, int discount) throws Throwable {
 
     	BaseItemShopDao baseItemShopDao = new BaseItemShopDao();
     	baseItemShopDao.setSessionFactory(this.getSessionFactory());
@@ -98,14 +108,6 @@ public class ItemShopDao extends BaseDao {
         if (shopItemList.size() <= num) {
         	throw new Throwable("商店配置出错,无法刷新");
         }
-
-        //******************************************** 获取折扣  begin ********************************************// 
-
-
-        Integer dis = 100;
-
-        int discount = dis;
-        //******************************************** 获取折扣  end   ********************************************//
 
         int[] tempList = new int[num];
         BaseItemShop[] result = new BaseItemShop[num];
@@ -152,7 +154,7 @@ public class ItemShopDao extends BaseDao {
         }
 
         for (int i = 0 ; i < result.length ; i++) {
-            result[i].setPrice(result[i].getPrice() * discount / 100);
+            result[i].setPrice(result[i].getPrice() * discount / 10);
 		}
 
         return result;

@@ -1,4 +1,4 @@
-package com.zhanglong.protocol;
+package com.zhanglong.sg.protocol;
 
 public class Error {
 

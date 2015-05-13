@@ -29,18 +29,13 @@ public class BaseItem implements Serializable , Cloneable {
 	@Column(name = "item_make_coin" , nullable = false , columnDefinition = "int default 0")
 	private Integer makeCoin;
 
+	@Column(name = "item_color" , nullable = false , columnDefinition = "int default 0")
+	private Integer color;
+
+	@Column(name = "item_exp" , nullable = false , columnDefinition = "int default 0")
+	private Integer exp;
+
 	public BaseItem() {
-//		this.id = id;
-//		this.name = name;
-//		this.type = type;
-//		this.sell_coin = sell_coin;
-//		this.make_coin = make_coin;
-//		this.make_need_id = new int[make_need.length];
-////		this.make_need_num = new int[make_need.length];
-//		for (int i = 0 ; i < make_need.length ; i++) {
-//			this.make_need_id[i] = make_need[i][0];
-//			this.make_need_num[i] = make_need[i][1];
-//		}
 	}
 	
 	public void setBaseId(Integer baseId) {
@@ -81,6 +76,36 @@ public class BaseItem implements Serializable , Cloneable {
 
 	public int getMakeCoin() {
 		return this.makeCoin;
+	}
+
+	public Integer getColor() {
+		return color;
+	}
+
+	public void setColor(Integer color) {
+		this.color = color;
+	}
+
+	public Integer getExp() {
+		return exp;
+	}
+
+	public void setExp(Integer exp) {
+		this.exp = exp;
+	}
+
+	public int maxExp() {
+		if (this.type == 5) {
+			if (this.color == 1) {
+				return 20;
+			} else if (this.color == 2) {
+				return 270;
+			} else if (this.color == 3) {
+				return 1620;
+			}
+		}
+
+		return 0;
 	}
 
 	public BaseItem clone() throws CloneNotSupportedException {

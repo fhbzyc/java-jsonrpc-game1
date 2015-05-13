@@ -4,16 +4,21 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
+import javax.annotation.Resource;
+
 import org.hibernate.Session;
+import org.hibernate.criterion.Order;
 import org.springframework.stereotype.Repository;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.zhanglong.sg.entity.BaseStory;
-import com.zhanglong.sg.utils.Utils;
 
 @Repository
 public class BaseStoryDao extends BaseDao {
 
+	@Resource
+	private BaseItemDao baseItemDao;
+	
 	private static List<BaseStory> copys;
 	
 	@SuppressWarnings("unchecked")
@@ -21,7 +26,7 @@ public class BaseStoryDao extends BaseDao {
 
 		if (copys == null) {
 			Session session = this.getSessionFactory().getCurrentSession();
-			copys = session.createCriteria(BaseStory.class).list();
+			copys = session.createCriteria(BaseStory.class).addOrder(Order.asc("id")).list();
 		}
 		return copys;
     }
@@ -101,7 +106,7 @@ public class BaseStoryDao extends BaseDao {
         int heroN = 0;
 
         for (int i = 1 ; i <= times ; i++) {
-            ArrayList<int[]> item = randomItems(baseStory);
+            ArrayList<int[]> item = this.randomItems(baseStory);
             if (i == 10) {
                 if (num == 0) {
                     item = new ArrayList<int[]>();
@@ -129,13 +134,18 @@ public class BaseStoryDao extends BaseDao {
             result.add(item);
         }
 
-        BaseItemDao baseItemDao = Utils.getApplicationContext().getBean(BaseItemDao.class);
-        // 双倍灵魂石掉落
-        if (isSoulDoubleTime()) {
+        // 双倍掉落
+        if (isDoubleTime(baseStory)) {
+            for (ArrayList<int[]> items : result) {
+            	for (int[] is : items) {
+                   is[1] *= 2;
+				}
+            }
+        } else if (isSoulDoubleTime()) {
             for (ArrayList<int[]> items : result) {
 
             	for (int[] is : items) {
-                	int type = baseItemDao.findOne(is[0]).getType();
+                	int type = this.baseItemDao.findOne(is[0]).getType();
                     if (type == 6) {
                     	is[1] *= 2;
                     }
@@ -215,24 +225,6 @@ public class BaseStoryDao extends BaseDao {
             }
         }
 
-        // 双倍掉落
-        if (isDoubleTime(baseStory)) {
-            for (int[] item : result) {
-                item[1] *= 2;
-            }
-        }
-
-        BaseItemDao baseItemDao = Utils.getApplicationContext().getBean(BaseItemDao.class);
-
-        // 双倍灵魂石掉落
-        if (this.isSoulDoubleTime()) {
-            for (int[] item : result) {
-                if (baseItemDao.findOne(item[0]).getType() == 6) {
-                    item[1] *= 2;
-                }
-            }
-        }
-
         return result;
     }
 
@@ -263,9 +255,9 @@ public class BaseStoryDao extends BaseDao {
         
         String baseStoryType = "";
         if (baseStory.getType() == BaseStory.COPY_TYPE) {
-            baseStoryType = "activity_copy_double";
+            baseStoryType = "copy_double";
         } else if (baseStory.getType() == BaseStory.HERO_COPY_TYPE) {
-            baseStoryType = "activity_hero_copy_double";
+            baseStoryType = "hero_copy_double";
         }
 
 //        ArrayList<DailyTask> activityList = BaseActivityInstance.getActivityList();

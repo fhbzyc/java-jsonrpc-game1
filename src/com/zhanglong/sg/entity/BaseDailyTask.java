@@ -9,10 +9,12 @@ import javax.persistence.Table;
 import javax.persistence.Transient;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize.Inclusion;
 
 @Entity
 @Table(name = "base_daily_task")
-public class BaseDailyTask implements Serializable {
+public class BaseDailyTask implements Serializable , Cloneable {
 
     /**
 	 * 
@@ -35,6 +37,7 @@ public class BaseDailyTask implements Serializable {
     @Column(name = "task_reward" , nullable = false , columnDefinition = "text")
     private String reward;
 
+    @JsonSerialize(include = Inclusion.NON_NULL)
     @Column(name = "task_desc" , nullable = false , columnDefinition = "text")
     private String desc;
 
@@ -107,5 +110,11 @@ public class BaseDailyTask implements Serializable {
 
 	public void setDesc(String desc) {
 		this.desc = desc;
+	}
+
+	@Override
+	public BaseDailyTask clone() throws CloneNotSupportedException {
+		// TODO Auto-generated method stub
+		return (BaseDailyTask) super.clone();
 	}
 }

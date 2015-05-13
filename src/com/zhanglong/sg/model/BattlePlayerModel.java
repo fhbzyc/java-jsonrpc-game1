@@ -1,5 +1,6 @@
 package com.zhanglong.sg.model;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -10,7 +11,12 @@ import com.zhanglong.sg.entity.Hero;
  * @author Speed
  *
  */
-public class BattlePlayerModel {
+public class BattlePlayerModel implements Serializable {
+
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = -6939211554025468041L;
 
 	private int roleId;
 

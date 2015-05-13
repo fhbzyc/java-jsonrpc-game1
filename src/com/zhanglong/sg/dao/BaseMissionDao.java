@@ -22,12 +22,12 @@ public class BaseMissionDao extends BaseDao {
 		return missions;
     }
 
-	public BaseMission findOne(int missionId) throws Throwable {
+	public BaseMission findOne(int missionId) throws Exception {
 		for (BaseMission baseMission : findAll()) {
 			if (baseMission.getId() == missionId) {
-				return baseMission;
+				return baseMission.clone();
 			}
 		}
-		throw new Throwable("mission-id not found[id:" + missionId + "]");
+		throw new Exception("mission-id not found[id:" + missionId + "]");
 	}
 }

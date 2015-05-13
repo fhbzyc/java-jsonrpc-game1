@@ -7,7 +7,7 @@ import org.hibernate.Session;
 import org.hibernate.criterion.Restrictions;
 import org.springframework.stereotype.Repository;
 
-import com.zhanglong.sg.entity.ItemTable;
+import com.zhanglong.sg.entity.Item;
 import com.zhanglong.sg.result.Result;
 
 @Repository
@@ -16,24 +16,27 @@ public class ItemDao extends BaseDao {
     public ItemDao() {
     }
 
-	public List<ItemTable> findAll(int roleId) throws Throwable {
+	public List<Item> findAll(int roleId) {
 
 		Session session = this.getSessionFactory().getCurrentSession();
-		Criteria criteria = session.createCriteria(ItemTable.class);
-		return criteria.add(Restrictions.eq("roleId", roleId)).list();
+		Criteria criteria = session.createCriteria(Item.class);
+		@SuppressWarnings("unchecked")
+		List<Item> list = criteria.add(Restrictions.eq("roleId", roleId)).list();
+		return list;
     }
 
-    public ItemTable findOne(int pk) {
+    public Item findOne(int pk) {
 
     	Session session = this.getSessionFactory().getCurrentSession();
-    	return (ItemTable) session.get(ItemTable.class, pk);
+    	return (Item) session.get(Item.class, pk);
     }
 
-    public ItemTable findOneByItemId(int roleId, int itemId) throws Throwable {
+    public Item findOneByItemId(int roleId, int itemId) {
 
     	Session session = this.getSessionFactory().getCurrentSession();
-		Criteria criteria = session.createCriteria(ItemTable.class);
-		List<ItemTable> list = criteria.add(Restrictions.eq("roleId", roleId)).add(Restrictions.eq("itemId", itemId)).list();
+		Criteria criteria = session.createCriteria(Item.class);
+		@SuppressWarnings("unchecked")
+		List<Item> list = criteria.add(Restrictions.eq("roleId", roleId)).add(Restrictions.eq("itemId", itemId)).list();
 
 		if (list == null || list.size() == 0) {
 			return null;
@@ -41,12 +44,12 @@ public class ItemDao extends BaseDao {
 		return list.get(0);
     }
 
-    public ItemTable addItem(int roleId, int itemId, int num, Result result) throws Throwable {
+    public Item addItem(int roleId, int itemId, int num, Result result) throws Throwable {
 
     	return this.addItem(roleId, itemId, num, false, result);
     }
 
-    public ItemTable subItem(ItemTable item, int num, Result result) throws Throwable {
+    public Item subItem(Item item, int num, Result result) throws Throwable {
 
         if (item == null) {
             return item;
@@ -70,15 +73,15 @@ public class ItemDao extends BaseDao {
         return item;
     }
 
-    private ItemTable addItem(int roleId, int itemId, int num, boolean isSoulStone, Result result) throws Throwable {
+    private Item addItem(int roleId, int itemId, int num, boolean isSoulStone, Result result) throws Throwable {
 
-        ItemTable item = this.findOneByItemId(roleId, itemId);
+        Item item = this.findOneByItemId(roleId, itemId);
 
         Session session = this.getSessionFactory().getCurrentSession();
 
         if (item == null) {
 
-        	item = new ItemTable();
+        	item = new Item();
         	item.setRoleId(roleId);
         	item.setItemId(itemId);
         	item.setNum(num);

@@ -1,5 +1,6 @@
 package com.zhanglong.sg.service;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -8,28 +9,44 @@ import java.util.Random;
 
 import javax.annotation.Resource;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.googlecode.jsonrpc4j.JsonRpcService;
-import com.zhanglong.sg.result.ErrorResult;
 
+import org.hibernate.Criteria;
+import org.hibernate.SQLQuery;
+import org.hibernate.Session;
+import org.hibernate.SessionFactory;
+import org.hibernate.Transaction;
+import org.hibernate.criterion.Order;
+import org.hibernate.criterion.Restrictions;
+import org.quartz.JobExecutionContext;
+import org.quartz.JobExecutionException;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.context.ContextLoader;
 
 import com.zhanglong.sg.dao.ArenaDao;
 import com.zhanglong.sg.dao.ArenaLogDao;
 import com.zhanglong.sg.dao.PowerDao;
+import com.zhanglong.sg.dao.ServerDao;
 import com.zhanglong.sg.entity.ArenaLog;
-import com.zhanglong.sg.entity.Arena;
 import com.zhanglong.sg.entity.BattleLog;
 import com.zhanglong.sg.entity.FinanceLog;
 import com.zhanglong.sg.entity.Hero;
+import com.zhanglong.sg.entity.RankLog;
 import com.zhanglong.sg.entity.Role;
+import com.zhanglong.sg.entity.Server;
 import com.zhanglong.sg.model.ArenaPlayerModel;
 import com.zhanglong.sg.model.DateNumModel;
+import com.zhanglong.sg.model.Reward;
 import com.zhanglong.sg.result.Result;
+import com.zhanglong.sg.utils.Utils;
 
 @Service
 @JsonRpcService("/arena")
-public class ArenaService extends BaseClass {
+public class ArenaService extends BaseService {
 
     private static int MAXCHALLENGER_NUM = 5;
     private static long BATTLE_MAX_TIME = 240l * 1000l;
@@ -43,6 +60,9 @@ public class ArenaService extends BaseClass {
     @Resource
     private PowerDao powerDao;
 
+    @Resource
+    private ServerDao serverDao;
+
     /**
      * 刷新5个对手
      * @return
@@ -54,13 +74,13 @@ public class ArenaService extends BaseClass {
         int serverId = this.serverId();
 
         Role role = this.roleDao.findOne(roleId);
-        if (role.level() < 10 ) {
-  //      	throw new Throwable("不到10级不能开竞技场");
+        if (role.level() < 10) {
+  //      	return this.returnError(this.lineNum(), "不到10级不能开竞技场");
         }
 
-        Arena arenaTable = this.arenaDao.findOne(roleId, serverId);
+        DateNumModel dateNumModel = this.dateNumDao.findOne(roleId);
 
-        long time= arenaTable.getBattleTime() - System.currentTimeMillis();
+        long time= dateNumModel.arenaTime - System.currentTimeMillis();
         if (time < 0) {
             time = 0;
         }
@@ -112,7 +132,7 @@ public class ArenaService extends BaseClass {
 
 		roleIds2.add(roleId);
 
-		ArrayList<ArenaPlayerModel> players = this.arenaDao.getPlayers(roleIds2, serverId);
+		List<ArenaPlayerModel> players = this.arenaDao.getPlayers(roleIds2, serverId);
 
 		ArenaPlayerModel me = new ArenaPlayerModel();
 
@@ -128,35 +148,50 @@ public class ArenaService extends BaseClass {
 
 		players.remove(me);
 
-		ArrayList<Object> heros = new ArrayList<Object>();
-		for (Object object : me.generalList) {
-			Object[] objects = (Object[])object;
-			if ((Integer)objects[0] == (int)arenaTable.getGeneralId1()) {
-				heros.add(object);
-			}
-		}
-		for (Object object : me.generalList) {
-			Object[] objects = (Object[])object;
-			if ((Integer)objects[0] == (int)arenaTable.getGeneralId2()) {
-				heros.add(object);
-			}
-		}
-		for (Object object : me.generalList) {
-			Object[] objects = (Object[])object;
-			if ((Integer)objects[0] == (int)arenaTable.getGeneralId3()) {
-				heros.add(object);
-			}
-		}
-		for (Object object : me.generalList) {
-			Object[] objects = (Object[])object;
-			if ((Integer)objects[0] == (int)arenaTable.getGeneralId4()) {
-				heros.add(object);
-			}
-		}
+		List<Object> heros = new ArrayList<Object>();
+		heros.add(null);
+		heros.add(null);
+		heros.add(null);
+		heros.add(null);
+		
+		List<Hero> heroList = this.heroDao.findAll(roleId);
+		
 
-        playinfo.put("maxrank", arenaTable.getRank());
+		for (Hero hero : heroList) {
+			if (hero.getIsBattle()) {
+				if (hero.getPosition() > 0) {
+					heros.set(hero.getPosition() - 1, hero.toArray());
+				}
+			}
+		}
+//		for (Object object : me.generalList) {
+//			Object[] objects = (Object[])object;
+//			if ((Integer)objects[0] == (int)arenaTable.getGeneralId1()) {
+//				heros.add(object);
+//			}
+//		}
+//		for (Object object : me.generalList) {
+//			Object[] objects = (Object[])object;
+//			if ((Integer)objects[0] == (int)arenaTable.getGeneralId2()) {
+//				heros.add(object);
+//			}
+//		}
+//		for (Object object : me.generalList) {
+//			Object[] objects = (Object[])object;
+//			if ((Integer)objects[0] == (int)arenaTable.getGeneralId3()) {
+//				heros.add(object);
+//			}
+//		}
+//		for (Object object : me.generalList) {
+//			Object[] objects = (Object[])object;
+//			if ((Integer)objects[0] == (int)arenaTable.getGeneralId4()) {
+//				heros.add(object);
+//			}
+//		}
+
+        playinfo.put("maxrank", role.rank);
         playinfo.put("playrank", myIndex + 1);
-        playinfo.put("challenge", arenaTable.getBattleNum());
+        playinfo.put("challenge", dateNumModel.arenaBattleNum);
         playinfo.put("challengetime", time);
 
         Result result = new Result();
@@ -169,12 +204,11 @@ public class ArenaService extends BaseClass {
 
         //Utils.addCustomEvent("jingJiChang", "jinRu", new SimpleDateFormat("HH").format(new Date()), roleId);
 
-        return result.toMap();
+        return this.success(result.toMap());
     }
 
     /**
      * 设置上阵武将
-     * @param tokenS
      * @param heroId1
      * @param heroId2
      * @param heroId3
@@ -182,66 +216,72 @@ public class ArenaService extends BaseClass {
      * @return
      * @throws Throwable
      */
-    public HashMap<String, Object> setDefense(String tokenS, int heroId1, int heroId2, int heroId3, int heroId4) throws Throwable {
+    public Object setDefense(int heroId1, int heroId2, int heroId3, int heroId4) throws Throwable {
 
         int roleId = this.roleId();
 
         Result result = new Result();
-        ArrayList<Object> heros = new ArrayList<Object>();
-        
-        List<Hero> generalList = this.heroDao.findAll(roleId);
 
-        for (Hero general : generalList) {
+        List<Hero> list = this.heroDao.findAll(roleId);
+
+        for (Hero hero : list) {
     	  
-      	    int id = general.getHeroId();
+      	    int id = hero.getHeroId();
 
-      	    if (general.getIsBattle() != Hero.UN_BATTLE) {
+      	    if (hero.getIsBattle()) {
 
-    		     if (id != heroId1 && id != heroId2 && id != heroId3 && id != heroId4) {
-                    general.setIsBattle(Hero.UN_BATTLE);
-                    this.heroDao.update(general, result);
+    		    if (id != heroId1 && id != heroId2 && id != heroId3 && id != heroId4) {
+    		    	hero.setIsBattle(false);
+    		    	hero.setPosition(0);
+                	this.heroDao.update(hero, result);
     		    }
     	    } else {
     		    if (id == heroId1 || id == heroId2 || id == heroId3 || id == heroId4) {
-                    general.setIsBattle(Hero.ON_BATTLE);
-                    this.heroDao.update(general, result);
+    		    	hero.setIsBattle(true);
+
+    		    	if (id == heroId1) {
+    		    		hero.setPosition(1);
+    		    	} else if (id == heroId2) {
+    		    		hero.setPosition(2);
+    		    	} else if (id == heroId3) {
+    		    		hero.setPosition(3);
+    		    	} else if (id == heroId4) {
+    		    		hero.setPosition(4);
+    		    	}
+
+                    this.heroDao.update(hero, result);
     		    }
     	    }
         }
 
-        for (Hero hero : generalList) {
+        ArrayList<Object> heros = new ArrayList<Object>();
+
+        for (Hero hero : list) {
         	if (hero.getHeroId() == heroId1) {
         		heros.add(hero.toArray());
         	}
 	    }
 
-        for (Hero hero : generalList) {
+        for (Hero hero : list) {
         	if (hero.getHeroId() == heroId2) {
         		heros.add(hero.toArray());
         	}
 	    }
         
-        for (Hero hero : generalList) {
+        for (Hero hero : list) {
         	if (hero.getHeroId() == heroId3) {
         		heros.add(hero.toArray());
         	}
 	    }
         
-        for (Hero hero : generalList) {
+        for (Hero hero : list) {
         	if (hero.getHeroId() == heroId4) {
         		heros.add(hero.toArray());
         	}
 	    }
-        
-        Arena arenaTable = this.arenaDao.findOne(roleId, this.serverId());
-        arenaTable.setGeneralId1(heroId1);
-        arenaTable.setGeneralId2(heroId2);
-        arenaTable.setGeneralId3(heroId3);
-        arenaTable.setGeneralId4(heroId4);
-        this.arenaDao.update(arenaTable);
 
         result.setValue("hero", heros);
-        return result.toMap();
+        return this.success(result.toMap());
     }
 
     /**
@@ -249,86 +289,77 @@ public class ArenaService extends BaseClass {
      * @return
      * @throws Throwable
      */
-    public Object resetChallengerTime() throws Throwable {
+    public Object reset() throws Throwable {
 
         int roleId = this.roleId();
 
-        int serverId = this.serverId();
-        
-        Result result = new Result();
-
-        Arena arenaTable = arenaDao.findOne(roleId, serverId);
+      //  Arena arenaTable = arenaDao.findOne(roleId, serverId);
 
         int gold = 50;
 
         Role role = this.roleDao.findOne(roleId);
-        
-        arenaTable.setBattleTime(System.currentTimeMillis());
-        if (arenaTable.getBattleNum() >= MAXCHALLENGER_NUM) {
+
+        DateNumModel dateNumModel = this.dateNumDao.findOne(roleId);
+
+        dateNumModel.arenaTime = System.currentTimeMillis();
+        this.dateNumDao.save(roleId, dateNumModel);
+
+        if (dateNumModel.arenaBattleNum >= MAXCHALLENGER_NUM) {
 
             if (role.getVip() < 3) {
-                com.zhanglong.sg.result.Error error = new com.zhanglong.sg.result.Error();
-                error.setCode(com.zhanglong.sg.result.Error.ERROR_BUY_OVER_NUM);
-                error.setMessage("需要VIP等级为3时才可购买【竞技场】挑战次数，现在就成为VIP3？");
-                return new ErrorResult(error);
-            } else if (arenaTable.getBuyNum() >= role.getVip() - 2) {
-                com.zhanglong.sg.result.Error error = new com.zhanglong.sg.result.Error();
-                error.setCode(com.zhanglong.sg.result.Error.ERROR_BUY_OVER_NUM);
-                error.setMessage("升级VIP等级可提升【竞技场】购买次数，前去充值？");
-                return new ErrorResult(error);
+            	return this.returnError(this.lineNum(), "需要VIP等级为3时才可购买【竞技场】挑战次数，现在就成为VIP3？");
+
+            } else if (dateNumModel.buyArenaNum >= role.getVip() - 2) {
+            	return this.returnError(this.lineNum(), "升级VIP等级可提升【竞技场】购买次数，前去充值？");
+
             } else {
 
                 gold = this.gold2(roleId);
 
                 if (role.getGold() < gold) {
-                    com.zhanglong.sg.result.Error error = new com.zhanglong.sg.result.Error();
-                    error.setCode(com.zhanglong.sg.result.Error.ERROR_BUY_OVER_NUM);
-                    error.setMessage("元宝不足，前去充值？");
-                    return new ErrorResult(error);
+
+                    return this.returnError(this.lineNum(), "元宝不足，前去充值？");
                 } else {
                      this.addGold2(roleId);
                 }
 
-                arenaTable.setBuyNum(arenaTable.getBuyNum() + 1);
+               // dateNumModel.buyArenaNum += 1;
             }
 
-            arenaTable.setBattleNum(0);
+           // dateNumModel.buyArenaNum = 0;
 
         } else {
 
             if (role.getVip() < 3) {
-                com.zhanglong.sg.result.Error error = new com.zhanglong.sg.result.Error();
-                error.setCode(com.zhanglong.sg.result.Error.ERROR_BUY_OVER_NUM);
-                error.setMessage("VIP才可清除冷却时间，现在就成为VIP？");
-                return new ErrorResult(error);
+                return this.returnError(this.lineNum(), "VIP才可清除冷却时间，现在就成为VIP？");
             }
 
             gold = this.gold1(roleId);
 
             if (role.getGold() < gold) {
-                com.zhanglong.sg.result.Error error = new com.zhanglong.sg.result.Error();
-                error.setCode(com.zhanglong.sg.result.Error.ERROR_BUY_OVER_NUM);
-                error.setMessage("元宝不足，前去充值？");
-                return new ErrorResult(error);
+            	return this.returnError(this.lineNum(), "元宝不足，前去充值？");
             } else {
             	this.addGold1(roleId);
             }
 
         }
 
-        roleDao.subGold(role, gold, "购买竞技场挑战次数", FinanceLog.STATUS_ARENA_BUY);
-        roleDao.update(role, result);
+        Result result = new Result();
 
-        this.arenaDao.update(arenaTable);
+        this.roleDao.subGold(role, gold, "购买竞技场挑战次数", FinanceLog.STATUS_ARENA_BUY);
+        this.roleDao.update(role, result);
+
+       // this.dateNumDao.save(roleId, dateNumModel);
+   //     this.arenaDao.update(arenaTable);
 
         HashMap<String, Object> playinfo = new HashMap<String,Object>();
-        playinfo.put("challenge", arenaTable.getBattleNum());
+        playinfo.put("challenge", dateNumModel.arenaBattleNum);
         playinfo.put("challengetime", 0);
 
         result.setValue("playinfo", playinfo);
         result.setValue("good1", this.gold1(roleId));
         result.setValue("good2", this.gold2(roleId));
-        return result.toMap();
+        return this.success(result.toMap());
     }
 
     /**
@@ -371,23 +402,25 @@ public class ArenaService extends BaseClass {
 
         Integer heRoleId = list.get(rank - 1);
         if (heRoleId != playerId) {
-            throw new Throwable("排名有变动");
+            return this.returnError(this.lineNum(), "排名有变动");
         }
 
 		ArenaLog log = this.arenaLogDao.findByRoleId2(playerId);
         if (log != null && log.getBattleResult() == BattleLog.BATTLE_LOG_INIT && System.currentTimeMillis() - log.getBeginTime() < BATTLE_MAX_TIME) {
-            throw new Throwable("该玩家正在被其他人挑战");
+            return this.returnError(this.lineNum(), "该玩家正在被其他人挑战");
         }
 
-        Arena arenaTable = this.arenaDao.findOne(myRoleId, serverId);
-        if (System.currentTimeMillis() < arenaTable.getBattleTime()) {
-            throw new Throwable("挑战时间未到");
-        } else if (arenaTable.getBattleNum() >= MAXCHALLENGER_NUM) {
-            throw new Throwable("挑战次数不足");
+        DateNumModel dateNumModel = this.dateNumDao.findOne(myRoleId);
+
+        if (System.currentTimeMillis() < dateNumModel.arenaTime) {
+            return this.returnError(this.lineNum(), "挑战时间未到");
+        } else if (dateNumModel.arenaBattleNum >= MAXCHALLENGER_NUM) {
+            return this.returnError(this.lineNum(), "挑战次数不足");
         } else {
-            arenaTable.setBattleNum(arenaTable.getBattleNum() + 1);
-            arenaTable.setBattleTime(System.currentTimeMillis() + (long)600 * 1000);
-            this.arenaDao.update(arenaTable);
+        	dateNumModel.arenaBattleNum += 1;
+        	dateNumModel.arenaTime = System.currentTimeMillis() + 600l * 1000l;
+
+            this.dateNumDao.save(myRoleId, dateNumModel);
         }
 
         ArenaLog arenaLogTable = new ArenaLog();
@@ -418,7 +451,7 @@ public class ArenaService extends BaseClass {
         Result result = new Result();
         result.setValue("hero", arenaPlayerModel.generalList);
         result.setValue("battle_id", arenaLogTable.getId());
-        return result.toMap();
+        return this.success(result.toMap());
     }
     
     /**
@@ -437,9 +470,9 @@ public class ArenaService extends BaseClass {
         ArenaLog log = this.arenaLogDao.findOne(battleId);
 
         if (log == null) {
-            throw new Throwable("参数出错,没有这场战斗");
+            return this.returnError(this.lineNum(), "参数出错,没有这场战斗");
         } else if (log.getBattleResult() != BattleLog.BATTLE_LOG_INIT) {
-            throw new Throwable("不能重复提交结果");
+            return this.returnError(this.lineNum(), "不能重复提交结果");
         }
 
         Result result = new Result();
@@ -459,14 +492,14 @@ public class ArenaService extends BaseClass {
             log.setBattleResult(BattleLog.BATTLE_LOG_LOST);
 
             this.arenaLogDao.update(log);
-            return result.toMap();
+            return this.success(result.toMap());
         }
 
         long time = System.currentTimeMillis();
         if (time - log.getBeginTime() > BATTLE_MAX_TIME) {
 
         	result.setValue("overtime", true);
-        	return result.toMap();
+        	return this.success(result.toMap());
         }
 
         log.setBattleResult(BattleLog.BATTLE_LOG_WIN);
@@ -522,7 +555,7 @@ public class ArenaService extends BaseClass {
         result.setValue("win", true);
         result.setValue("newrank", log.getRank2());
         result.setValue("oldrank", log.getRank1());
-        return result.toMap();
+        return this.success(result.toMap());
     }
 
     /**
@@ -588,7 +621,7 @@ public class ArenaService extends BaseClass {
 
         Result result = new Result();
         result.setValue("logs", logs);
-        return result.toMap();
+        return this.success(result.toMap());
     }
 
     /**
@@ -597,170 +630,19 @@ public class ArenaService extends BaseClass {
      * @return
      * @throws Throwable
      */
-    public String battleData(int logId) throws Throwable {
+    public Object battleData(int logId) throws Throwable {
 
         ArenaLog log = this.arenaLogDao.findOne(logId);
 
         if (log == null) {
-            throw new Throwable("参数出错,没有这场战斗");
+            return this.returnError(this.lineNum(), "参数出错,没有这场战斗");
         } else if (log.getData().equals(null)) {
-            throw new Throwable("没有战斗数据");
+            return this.returnError(this.lineNum(), "没有战斗数据");
         }
 
-        return log.getData();
+        return this.success(log.getData());
     }
 
-//    /**
-//     * 实时排名
-//     * @param tokenS
-//     * @return
-//     * @throws Throwable
-//     */
-////    public HashMap<String, Object> rank(String tokenS) throws Throwable {
-////
-////        int roleId = this.roleId();
-////
-////        ArenaModel arenaModel = new ArenaModel(roleId);
-////        List<String> list = arenaModel.getList();
-////
-////        int max = 20;
-////        if (list.size() < max) {
-////            max = list.size();
-////        }
-////
-////        ArrayList<String> newList = new ArrayList<String>();
-////        for (int i = 0 ; i < max ; i++) {
-////        	newList.add(list.get(i));
-////        }
-////        
-////        ArrayList<ArenaPlayerModel> players = arenaModel.getPlayers(newList);
-////
-////        int i = 0;
-////        for (ArenaPlayerModel arenaPlayerModel : players) {
-////			i++;
-////			arenaPlayerModel.rank = i;
-////		}
-////
-////        Result result = new Result();
-////        HashMap<String, Object> map = result.returnMap();
-////        map.put("players", players);
-////        map.put("myrank", arenaModel.getIndex(roleId) + 1);
-////        return map;
-////    }    
-////
-////    /**
-////     * 上次排名
-////     * @param tokenS
-////     * @return
-////     * @throws Throwable
-////     */
-////    public HashMap<String, Object> lastRank(String tokenS) throws Throwable {
-////
-////        int roleId = this.roleId();
-////
-////        Token T = TokenInstance.getToken(this.context.getRedisHandle());
-////        String serverId = T.getServerId(tokenS);
-////        
-////        ArenaModel Arena = new ArenaModel(roleId);
-////        List<String> list = Arena.getLastRank(Integer.valueOf(serverId));
-////
-////        int max = 20;
-////        if (list.size() < max) {
-////            max = list.size();
-////        }
-////
-////        int myIndex = list.size() - 1;
-////        for (int i = 0 ; i < list.size() ; i++) {
-////            if (list.get(i).equals(roleId)) {
-////                myIndex = i;
-////                break;
-////            }
-////        }
-////
-////        ArenaPlayerModel[] players = Arena.getLastPlayerRank();
-////
-////        int i = 0;
-////        for (ArenaPlayerModel arenaPlayerModel : players) {
-////			i++;
-////			arenaPlayerModel.rank = i;
-////		}
-////
-////        Result result = new Result();
-////        HashMap<String, Object> map = result.returnMap();
-////        map.put("players", players);
-////        map.put("myrank", myIndex + 1);
-////        return map;
-////    }
-////
-////    /**
-////     * 等级排行
-////     * @param tokenS
-////     * @return
-////     * @throws Throwable
-////     */
-////    public Object levelRank(String tokenS) throws Throwable {
-////
-////        int roleId = this.roleId();
-////
-////        Token T = TokenInstance.getToken(this.context.getRedisHandle());
-////        String serverId = T.getServerId(tokenS);
-////
-////        String sql = "SELECT * FROM role WHERE server_id = ? ORDER BY role_exp DESC LIMIT ? OFFSET ?";
-////
-////        EntityManager em = this.context.getEntityManager();
-////        Query query = em.createNativeQuery(sql, Role.class);
-////
-////        query.setParameter(1, serverId);
-////        query.setParameter(2, 20);
-////        query.setParameter(3, 0);
-////
-////        @SuppressWarnings("unchecked")
-////        List<Role> list = query.getResultList();
-////
-////        List<String> roleIds = new ArrayList<String>();
-////        for (Role roleTable : list) {
-////        	roleIds.add(roleTable.getRoleId());
-////		}
-////
-////        ArenaModel arenaModel = new ArenaModel(roleId);
-////        ArrayList<ArenaPlayerModel> playerList = arenaModel.getPlayers(roleIds);
-////
-////        int myIndex = 0;
-////
-////        for (int index = 0 ; index < playerList.size() ; index++) {
-////
-////            if (playerList.get(index).roleId.equals(roleId)) {
-////            	myIndex = index + 1;
-////            }
-////        }
-////
-////        if (myIndex == 0) {
-////    		query = em.createNativeQuery("SELECT COUNT(*) AS n FROM `role` WHERE `role_exp` > ? ");
-////    		
-////    		RoleModel Role = new RoleModel(roleId);
-////    		query.setParameter(1, Role.exp);
-////
-////    		@SuppressWarnings("unchecked")
-////    		List<Object> data = query.getResultList();
-////    		Object dat = data.get(0);
-////    		BigInteger c = (BigInteger)dat;
-////    		c.intValue();
-////    		myIndex = c.intValue() + 1;
-////        }
-////
-////        int i = 0;
-////        for (ArenaPlayerModel arenaPlayerModel : playerList) {
-////			i++;
-////			arenaPlayerModel.rank = i;
-////		}
-////
-////		Result result = new Result();
-////		HashMap<String, Object> map = result.returnMap();
-////		map.put("players", playerList);
-////		map.put("myrank", myIndex);
-////		return map;
-////    }
-//    
     /**
      * 三个排行一起发
      * @return
@@ -797,30 +679,12 @@ public class ArenaService extends BaseClass {
         	set.add(role.getRoleId());
 		}
 
-        // 昨天排行
-        List<Integer> yesterdayList = this.arenaDao.getLastRank(serverId);
-        int myYesterdayIndex = yesterdayList.size();
-        for (int i = 0 ; i < yesterdayList.size() ; i++) {
-            if (yesterdayList.get(i).equals(roleId)) {
-            	myYesterdayIndex = i + 1;
-                break;
-            }
-        }
-
-        if (yesterdayList.size() > 0) {
-        	yesterdayList = yesterdayList.subList(0, 20);
-        }
-
-        for (Integer id : yesterdayList) {
-			set.add(id);
-		}
-
         List<Integer> roleIds = new ArrayList<Integer>();
         for (Integer id : set) {
         	roleIds.add(id);
 		}
 
-        ArrayList<ArenaPlayerModel> players = this.arenaDao.getPlayers(roleIds, serverId);
+        List<ArenaPlayerModel> players = this.arenaDao.getPlayers(roleIds, serverId);
 
         ArrayList<ArenaPlayerModel> nowPlayers = new ArrayList<ArenaPlayerModel>();
         for (int i = 0 ; i < newList.size() ; i++) {
@@ -867,27 +731,35 @@ public class ArenaService extends BaseClass {
 
         levelMap.put("myrank", myLevelIndex);
 
-        ArrayList<ArenaPlayerModel> yesterdayPlayers = new ArrayList<ArenaPlayerModel>();
-        for (int i = 0 ; i < yesterdayList.size() ; i++) {
-        	for (ArenaPlayerModel player : players) {
-        		if (player.roleId == yesterdayList.get(i)) {
-        			ArenaPlayerModel newPlayer = (ArenaPlayerModel) player.clone();
-        			newPlayer.rank = i + 1;
-        			yesterdayPlayers.add(newPlayer);
-        			break;
-        		}
+        RankLog rankLog = this.arenaDao.getLastRank(serverId);
+        ObjectMapper objectMapper = new ObjectMapper();
+
+        List<ArenaPlayerModel> yesterdayPlayers = new ArrayList<ArenaPlayerModel>();
+        if (rankLog != null) {
+        	yesterdayPlayers = objectMapper.readValue(rankLog.getData(),  new TypeReference<List<ArenaPlayerModel>>(){});
+        }
+
+        List<Integer> yesterdayRank = new ArrayList<Integer>();
+        if (rankLog != null) {
+        	yesterdayRank = objectMapper.readValue(rankLog.getRank(),  new TypeReference<List<Integer>>(){});
+        }
+
+        int myRank = 0;
+        for (int i = 0 ; i < yesterdayRank.size() ; i++) {
+			if (roleId == yesterdayRank.get(i)) {
+				myRank = i + 1;
 			}
 		}
 
         HashMap<String, Object> yesterDayMap = new HashMap<String, Object>();
         yesterDayMap.put("players", yesterdayPlayers);
-        yesterDayMap.put("myrank", myYesterdayIndex);
+        yesterDayMap.put("myrank", myRank);
 
         Result result = new Result();
         result.setValue("now", nowMap);
         result.setValue("yesterday", yesterDayMap);
         result.setValue("level", levelMap);
-        return result.toMap();
+        return this.success(result.toMap());
     }
 
 //    // 清除时间的
@@ -939,9 +811,166 @@ public class ArenaService extends BaseClass {
     private void addGold2(int roleId) {
 
     	DateNumModel dateNumModel = this.dateNumDao.findOne(roleId);
-
-    	dateNumModel.setArenaNum(dateNumModel.getArenaNum() + 1);
+    	dateNumModel.buyArenaNum += 1;
 
     	this.dateNumDao.save(roleId, dateNumModel);
     }
+    
+    
+
+	public void sendMail() {
+		// TODO Auto-generated method stub
+
+
+		@SuppressWarnings("unchecked")
+		List<Server> list = this.serverDao.findAll();
+		for (Server server : list) {
+			
+			int serverId = server.getId();
+			try {
+
+				// ArenaDao arenaDao = ContextLoader.getCurrentWebApplicationContext().getBean(ArenaDao.class);
+				//arenaDao.setLastRank(session, server.getId());
+
+				List<Integer> intList = this.arenaDao.getList(serverId);
+				
+				
+				intList = intList.subList(0, 20);
+				List<ArenaPlayerModel> players = this.arenaDao.getPlayers(intList, server.getId());
+
+				ObjectMapper objectMapper = new ObjectMapper();
+				RankLog rankLog = new RankLog();
+				rankLog.setData(objectMapper.writeValueAsString(players));
+			//	rankLog.setRank(objectMapper.writeValueAsString(arenaDao.getList(server.getId())));
+				rankLog.setServerId(server.getId());
+				rankLog.setDate(Integer.valueOf(Utils.date()));
+				this.arenaDao.setLastRank(serverId);
+
+				//this.sendMail(session, server.getId());
+			} catch (Exception e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
+	}
+
+	private void sendMail(Session session, int serverId) throws IOException {
+
+		ArenaDao arenaDao = ContextLoader.getCurrentWebApplicationContext().getBean(ArenaDao.class);
+
+		ArrayList<int[]> configs = arenaDao.rewardConfig();
+
+        List<Integer> list = new ArrayList<Integer>();
+
+		Criteria criteria = session.createCriteria(RankLog.class);
+		@SuppressWarnings("unchecked")
+		List<RankLog> rankList = criteria.add(Restrictions.eq("serverId", serverId)).addOrder(Order.desc("id")).list();
+
+		ObjectMapper objectMapper = new ObjectMapper();
+
+		if (rankList.size() != 0) {
+			list = objectMapper.readValue(rankList.get(0).getRank(),  new TypeReference<List<Integer>>(){});
+		}
+
+		long time = System.currentTimeMillis();
+
+		for (int[] config : configs) {
+
+			int[] itemId = new int[]{config[7]};
+			int[] itemNum = new int[]{config[8]};
+
+				if (config[0] == 1) {
+					itemId = new int[]{config[7] , 4018};
+					itemNum = new int[]{config[8] , 30};
+				} else if (config[0] == 2) {
+					itemId = new int[]{config[7] , 4013};
+					itemNum = new int[]{config[8] , 20};
+				} else if (config[0] == 3) {
+					itemId = new int[]{config[7] , 4018};
+					itemNum = new int[]{config[8] , 20};
+				} else if (config[0] == 4) {
+					itemId = new int[]{config[7] , 4013};
+					itemNum = new int[]{config[8] , 10};
+				} else if (config[0] == 5) {
+					itemId = new int[]{config[7] , 4001};
+					itemNum = new int[]{config[8] , 10};
+				}
+			
+
+			Reward reward = new Reward();
+			reward.setCoin(config[5]);
+			reward.setGold(config[3]);
+			reward.setMoney3(config[6]);
+			reward.setItem_id(itemId);
+			reward.setItem_num(itemNum);
+
+			String json = objectMapper.writeValueAsString(reward);
+
+			int max = config[2];
+			if (max > list.size()) {
+				max = list.size();
+			}
+			
+			if (max < config[1]) {
+				break;
+			}
+
+			String sql = "";
+
+			String from_name = "游戏管理员";
+			String title = "竞技场每日排名奖励";
+
+			int parameters = 0;
+
+			for (int rank = config[1] ; rank <= max; rank++) {
+
+				int roleId = list.get(rank - 1);
+
+				if (roleId < 20000) {
+					continue;
+				}
+
+		    	String content = "截止今天21：00，你的竞技场排名为：" + rank + "名。\n" + 
+		    			"鉴于您在竞技场的优秀表现。竞技场管理处将授予您以下奖励。\n\n" + 
+		    			"竞技场教官：吕小布";
+
+				if (sql.equals("")) {
+					sql = String.format("INSERT INTO `mail`(`attach_status`,`status`,`to_name`,`type`,`attchment`,`content`,`from_name`,`send_time`,`title`,`to_id`) VALUES (0,0,'',1,?,'%s','%s','%s','%s','%s')",
+							content, from_name, time, title, roleId);
+				} else {
+					sql += String.format(",(0,0,'',1,?,'%s','%s','%s','%s','%s')", content, from_name, time, title, roleId);
+				}
+
+				parameters++;
+
+				if (parameters >= 500) {
+					// 1000条拼成一条
+					SQLQuery query = session.createSQLQuery(sql);
+
+					for (int i = 0 ; i < parameters; i++) {
+
+						query.setParameter(i, json);
+					}
+
+					query.executeUpdate();
+					
+					parameters = 1;
+					sql = "";
+				}
+			}
+
+			if (sql.equals("")) {
+				continue;
+			}
+
+			SQLQuery query = session.createSQLQuery(sql);
+
+			for (int i = 0 ; i < parameters; i++) {
+
+				query.setParameter(i, json);
+			}
+
+		    query.executeUpdate();
+		}
+	}
 }

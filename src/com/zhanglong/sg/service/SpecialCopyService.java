@@ -26,10 +26,11 @@ import com.zhanglong.sg.entity.Role;
 import com.zhanglong.sg.model.DateNumModel;
 import com.zhanglong.sg.model.SpecialCopyModel;
 import com.zhanglong.sg.result.Result;
+import com.zhanglong.sg.utils.MD5;
 
 @Service
-@JsonRpcService("/specialcopy")
-public class SpecialCopyService extends BaseClass {
+@JsonRpcService("/specialCopy")
+public class SpecialCopyService extends BaseService {
 
     public static int MAX_NUM = 3;
 
@@ -56,6 +57,10 @@ public class SpecialCopyService extends BaseClass {
         List<SpecialCopyModel> copys3 = new ArrayList<SpecialCopyModel>();
         List<SpecialCopyModel> copys4 = new ArrayList<SpecialCopyModel>();
 
+        List<SpecialCopyModel> copys5 = new ArrayList<SpecialCopyModel>();
+        List<SpecialCopyModel> copys6 = new ArrayList<SpecialCopyModel>();
+        List<SpecialCopyModel> copys7 = new ArrayList<SpecialCopyModel>();
+        
         for (int i = 0 ; i < baseStoryList.size() ; i++) {
 
             if (i == 0) {
@@ -84,6 +89,12 @@ public class SpecialCopyService extends BaseClass {
                 copys3.add(specialCopyModel);
             } else if (baseStory.getId() < 400) {
                 copys4.add(specialCopyModel);
+            } else if (baseStory.getId() >= 500 && baseStory.getId() < 600) {
+                copys5.add(specialCopyModel);
+            } else if (baseStory.getId() < 700) {
+                copys6.add(specialCopyModel);
+            } else if (baseStory.getId() < 800) {
+                copys7.add(specialCopyModel);
             }
         }
 
@@ -155,16 +166,71 @@ public class SpecialCopyService extends BaseClass {
         hashMap4.put("copys", copys4);
         hashMap4.put("coolTime", coolTime < 0 ? 0 : coolTime);
 
+
+        // 保卫主公
+        enable = false;
+        for (BaseSpecialCopy baseSpecialCopy : baseList) {
+            if (baseSpecialCopy.getType() == 5) {
+                enable = true;
+            }
+        }
+
+        coolTime = dateNum.getSpecialCopyCoolTime5() - System.currentTimeMillis();
+
+        HashMap<String, Object> hashMap5 = new HashMap<String, Object>();
+        hashMap5.put("num", dateNum.getSpecialCopy5());
+        hashMap5.put("numDate", MAX_NUM);
+        hashMap5.put("enable", enable);
+        hashMap5.put("copys", copys5);
+        hashMap5.put("coolTime", coolTime < 0 ? 0 : coolTime);
+        
+        // 妖怪哪里跑
+        enable = false;
+        for (BaseSpecialCopy baseSpecialCopy : baseList) {
+            if (baseSpecialCopy.getType() == 6) {
+                enable = true;
+            }
+        }
+
+        coolTime = dateNum.getSpecialCopyCoolTime6() - System.currentTimeMillis();
+
+        HashMap<String, Object> hashMap6 = new HashMap<String, Object>();
+        hashMap6.put("num", dateNum.getSpecialCopy6());
+        hashMap6.put("numDate", MAX_NUM);
+        hashMap6.put("enable", enable);
+        hashMap6.put("copys", copys6);
+        hashMap6.put("coolTime", coolTime < 0 ? 0 : coolTime);
+
+        enable = false;
+        for (BaseSpecialCopy baseSpecialCopy : baseList) {
+            if (baseSpecialCopy.getType() == 7) {
+                enable = true;
+            }
+        }
+
+        coolTime = dateNum.getSpecialCopyCoolTime7() - System.currentTimeMillis();
+
+        HashMap<String, Object> hashMap7 = new HashMap<String, Object>();
+        hashMap7.put("num", dateNum.getSpecialCopy7());
+        hashMap7.put("numDate", MAX_NUM);
+        hashMap7.put("enable", enable);
+        hashMap7.put("copys", copys7);
+        hashMap7.put("coolTime", coolTime < 0 ? 0 : coolTime);
+
         List<HashMap<String, Object>> list = new ArrayList<HashMap<String,Object>>();
         list.add(hashMap1);
         list.add(hashMap2);
         list.add(hashMap3);
         list.add(hashMap4);
 
+        list.add(hashMap5);
+        list.add(hashMap6);
+        list.add(hashMap7);
+
         Result result = new Result();
         result.setValue("list", list);
         
-        return result.toMap();
+        return this.success(result.toMap());
     }
 //        
 ////        SpecialCopy.SpecialCopys.Builder specialCopyBuild = SpecialCopy.SpecialCopys.newBuilder();
@@ -217,13 +283,13 @@ public class SpecialCopyService extends BaseClass {
         BaseStory baseStory = this.baseStoryDao.findOne(copyId, BaseStory.SPECIAL_COPY_TYPE);
 
         if (baseStory == null) {
-            throw new Throwable("没有这关");
+            return this.returnError(this.lineNum(), "没有这关");
         }
 
         Role role = this.roleDao.findOne(roleId);
 
         if (role.getPhysicalStrength() < baseStory.getTeamExp()) {
-        	throw new Throwable("体力不足");
+        	return this.returnError(this.lineNum(), "体力不足");
         }
 
         List<Hero> heros = this.heroDao.findAll(roleId);
@@ -253,7 +319,7 @@ public class SpecialCopyService extends BaseClass {
         }
 
         if (heroId1 != 0 && !find1 || heroId2 != 0 && !find2 || heroId3 != 0 && !find3 || heroId4 != 0 && !find4) {
-            throw new Throwable("未拥有的武将 ");
+            return this.returnError(this.lineNum(), "未拥有的武将 ");
         }
 
         this.powerDao.save(role, power, heros);
@@ -283,9 +349,9 @@ public class SpecialCopyService extends BaseClass {
         }
 
         if (num >= MAX_NUM) {
-            throw new Throwable("关卡攻打次数已用尽");
+            return this.returnError(this.lineNum(), "关卡攻打次数已用尽");
         } else if (coolTime - System.currentTimeMillis() > 0) {
-        	throw new Throwable("冷却时间未结束");
+        	return this.returnError(this.lineNum(), "冷却时间未结束");
         }
 
         Result result = new Result();
@@ -360,10 +426,10 @@ public class SpecialCopyService extends BaseClass {
 
         BattleLog battleLog = new BattleLog();
         battleLog.setRoleId(roleId);
-        battleLog.setGeneralBaseId1(heroId1);
-        battleLog.setGeneralBaseId2(heroId2);
-        battleLog.setGeneralBaseId3(heroId3);
-        battleLog.setGeneralBaseId4(heroId4);
+        battleLog.setHeroId1(heroId1);
+        battleLog.setHeroId2(heroId2);
+        battleLog.setHeroId3(heroId3);
+        battleLog.setHeroId4(heroId4);
         battleLog.setStoryType(BaseStory.SPECIAL_COPY_TYPE);
         battleLog.setStoryId(copyId);
         
@@ -373,7 +439,7 @@ public class SpecialCopyService extends BaseClass {
         this.battleLogDao.create(battleLog);
 
         result.setValue("battle_id", battleLog.getId());
-        return result.toMap();
+        return this.success(result.toMap());
     }
 
     /**
@@ -390,12 +456,12 @@ public class SpecialCopyService extends BaseClass {
         BattleLog battleLog = this.battleLogDao.findOne(battleId);
 
         if (battleLog == null) {
-            throw new Throwable("参数出错,没有此战斗");
+            return this.returnError(this.lineNum(), "参数出错,没有此战斗");
         }
 
         if (battleLog.getBattleResult() != 0) {
             if (battleLog.getData().equals("")) {
-                throw new Throwable("战斗已提交");
+                return this.returnError(this.lineNum(), "战斗已提交");
             } else {
                 ObjectMapper objectMapper = new ObjectMapper();
                 HashMap<String, Object> object = objectMapper.readValue(battleLog.getData(), new TypeReference<Map<String, Object>>(){});
@@ -416,14 +482,14 @@ public class SpecialCopyService extends BaseClass {
         Result result = new Result();
         if (!win) {
 
-            role.setPhysicalStrength(role.getPhysicalStrength() - 1);
+        	this.roleDao.subAp(role, 1, result);
 
             this.roleDao.update(role, result);
 
             ObjectMapper objectMapper = new ObjectMapper();
             battleLog.setData(objectMapper.writeValueAsString(result.toMap()));
             battleLogDao.update(battleLog);
-            return result.toMap();
+            return this.success(result.toMap());
         } else {
             battleLogDao.update(battleLog);
         }
@@ -436,7 +502,7 @@ public class SpecialCopyService extends BaseClass {
 
         BaseStory baseStory = this.baseStoryDao.findOne(copyId, BaseStory.SPECIAL_COPY_TYPE);
 
-    	role.setPhysicalStrength(role.getPhysicalStrength() - baseStory.getTeamExp());
+        this.roleDao.subAp(role, baseStory.getTeamExp(), result);
     	this.roleDao.update(role, result);
         // -------------------------------  扣体力 -----------------------------  //
 
@@ -494,6 +560,140 @@ public class SpecialCopyService extends BaseClass {
         battleLog.setData(objectMapper.writeValueAsString(result.toMap()));
         battleLogDao.update(battleLog);
 
-        return result.toMap();
+        return this.success(result.toMap());
+    }
+
+    /**
+     * 乱斗堂
+     * @param copyId
+     * @param heroId1
+     * @param heroId2
+     * @param heroId3
+     * @param heroId4
+     * @param power
+     * @return
+     * @throws Throwable
+     */
+    public Object battleBegin2(int copyId, int heroId1, int heroId2, int heroId3, int heroId4, int power) throws Throwable {
+
+    	int roleId = this.roleId();
+
+        int num = 0;
+
+        DateNumModel dateNum = this.dateNumDao.findOne(roleId);
+
+        long coolTime = 0l;
+        
+        if (copyId < 600) {
+
+            num = dateNum.getSpecialCopy5();
+            coolTime = dateNum.getSpecialCopyCoolTime5();
+        } else if (copyId < 700) {
+
+            num = dateNum.getSpecialCopy6();
+            coolTime = dateNum.getSpecialCopyCoolTime6();
+        } else if (copyId < 800) {
+
+            num = dateNum.getSpecialCopy7();
+            coolTime = dateNum.getSpecialCopyCoolTime7();
+        } else {
+        	return this.returnError(this.lineNum(), "参数出错");
+        }
+
+        if (num >= MAX_NUM) {
+            return this.returnError(this.lineNum(), "关卡攻打次数已用尽");
+        } else if (coolTime - System.currentTimeMillis() > 0) {
+        	return this.returnError(this.lineNum(), "冷却时间未结束");
+        }
+
+        BattleLog battleLog = new BattleLog();
+        battleLog.setRoleId(roleId);
+        battleLog.setHeroId1(heroId1);
+        battleLog.setHeroId2(heroId2);
+        battleLog.setHeroId3(heroId3);
+        battleLog.setHeroId4(heroId4);
+        battleLog.setStoryType(BaseStory.SPECIAL_COPY_TYPE);
+        battleLog.setStoryId(copyId);
+
+        this.battleLogDao.create(battleLog);
+
+        Result result = new Result();
+        
+        result.setValue("battle_id", battleLog.getId());
+        return this.success(result.toMap());
+    }
+
+    public Object battleEnd2(int battleId, int coin, int[] itemIds, int[] itemNums) throws Throwable {
+
+    //	String sign = this.request().getHeader("Sign");
+
+       // if (!MD5.digest(Data + "20150505").equals(sign)) {
+           // return this.returnError(this.lineNum(), "数据效验失败!");
+       // }
+
+        int roleId = this.roleId();
+
+        BattleLog battleLog = this.battleLogDao.findOne(battleId);
+
+        if (battleLog == null) {
+            return this.returnError(this.lineNum(), "参数出错,没有此战斗");
+        }
+
+        Result result = new Result();
+
+        if (battleLog.getBattleResult() != 0) {
+        	return this.success(result.toMap());
+        }
+        
+        battleLog.setBattleResult(BattleLog.BATTLE_LOG_WIN);
+        battleLog.setEndTime((int)(System.currentTimeMillis() / 1000));
+        battleLogDao.update(battleLog);
+
+        int todayNum = 0;
+        
+        DateNumModel dateNum = this.dateNumDao.findOne(roleId);
+
+        int type = 5;
+        long coolTime = 5l * 60l * 1000l;
+        if (battleLog.getStoryId() < 600) {
+
+            dateNum.setSpecialCopy5(dateNum.getSpecialCopy5() + 1);
+            dateNum.setSpecialCopyCoolTime5(coolTime + System.currentTimeMillis());
+            this.dateNumDao.save(roleId, dateNum);
+            todayNum = dateNum.getSpecialCopy5();
+
+        } else if (battleLog.getStoryId() < 700) {
+
+        	type = 6;
+            dateNum.setSpecialCopy6(dateNum.getSpecialCopy6() + 1);
+            dateNum.setSpecialCopyCoolTime6(coolTime + System.currentTimeMillis());
+            this.dateNumDao.save(roleId, dateNum);
+            todayNum = dateNum.getSpecialCopy6();
+
+        } else if (battleLog.getStoryId() < 800) {
+
+        	type = 7;
+            dateNum.setSpecialCopy7(dateNum.getSpecialCopy7() + 1);
+            dateNum.setSpecialCopyCoolTime7(coolTime + System.currentTimeMillis());
+            this.dateNumDao.save(roleId, dateNum);
+            todayNum = dateNum.getSpecialCopy7();
+        }
+
+        Role role = this.roleDao.findOne(roleId);
+        this.roleDao.addCoin(role, coin, "乱斗堂 type<" + type + ">", 0, result);
+        
+        this.roleDao.update(role, result);
+
+        if (itemIds != null) {
+            for (int i = 0 ; i < itemIds.length ; i++) {
+            	this.itemDao.addItem(roleId, i, itemNums[i], result);
+    		}
+        }
+
+        result.setValue("num", todayNum);
+        result.setValue("type", type);
+        result.setValue("coolTime", coolTime);
+
+        return this.success(result.toMap());
     }
 }

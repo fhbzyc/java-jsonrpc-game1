@@ -1,5 +1,6 @@
 package com.zhanglong.sg.dao;
 
+import java.sql.Timestamp;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
@@ -23,14 +24,27 @@ public class UserDao extends BaseDao {
 
     	Session session = this.getSessionFactory().getCurrentSession();
 
-    	SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-    	user.setTime(simpleDateFormat.format(new Date()));
+    	Timestamp timestamp = new Timestamp(System.currentTimeMillis());
+    	user.setTime(timestamp);
     	session.save(user);
+    }
+
+    public User getByUsername(String username) {
+
+    	Session session = this.getSessionFactory().getCurrentSession();
+    	List<User> list = session.createCriteria(User.class).add(Restrictions.eq("name", username)).setMaxResults(1).list();
+
+    	if (list.size() == 0) {
+    		return null;
+    	}
+
+    	return list.get(0);
     }
     
     public User getByUsername(int platformId, String username) {
 
     	Session session = this.getSessionFactory().getCurrentSession();
+
     	List<User> list = session.createCriteria(User.class).add(Restrictions.eq("platformId", platformId)).add(Restrictions.eq("name", username)).setMaxResults(1).list();
     	if (list.size() == 0) {
     		return null;
