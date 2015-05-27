@@ -22,6 +22,10 @@ public class BaseCheckin implements Serializable {
 	@Column(name = "reward" , nullable = false , columnDefinition = "text")
 	private String reward;
 
+	// 累计签到奖励
+	@Column(name = "lj" , nullable = false , columnDefinition = "text")
+	private String lj;
+
 	public Integer getMonth() {
 		return month;
 	}
@@ -36,5 +40,13 @@ public class BaseCheckin implements Serializable {
 
 	public void setReward(String reward) {
 		this.reward = reward;
+	}
+
+	public String getLj() {
+		return lj;
+	}
+
+	public void setLj(String lj) {
+		this.lj = lj;
 	}
 }

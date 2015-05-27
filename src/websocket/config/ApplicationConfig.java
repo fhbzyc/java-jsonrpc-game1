@@ -15,8 +15,5 @@ public class ApplicationConfig implements WebSocketConfigurer {
     public void registerWebSocketHandlers(WebSocketHandlerRegistry registry)
     {
         registry.addHandler(new EchoHandler(), "/echo");
-        // セッションごとにオブジェクトを分ける場合は以下のように書く
-        // registry.addHandler(new PerConnectionWebSocketHandler(XxxHandler.class), "/echo");
     }
-
 }

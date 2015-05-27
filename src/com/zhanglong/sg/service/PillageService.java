@@ -219,7 +219,7 @@ public class PillageService extends BaseService {
 		}
 
 		if (role.gold < 10 * n) {
-			return this.success(ErrorResult.NotEnoughGold);
+			return this.returnError(2, ErrorResult.NotEnoughGold);
 		}
 
 		this.roleDao.subGold(role, 10 * n, "购买掠夺次数", 0);
@@ -255,7 +255,7 @@ public class PillageService extends BaseService {
 
 		Role role = this.roleDao.findOne(roleId);
 		if (role.gold < gold) {
-			return this.success(ErrorResult.NotEnoughGold);
+			return this.returnError(2, ErrorResult.NotEnoughGold);
 		}
 		this.roleDao.subGold(role, gold, "免疫掠夺", 0);
 		role.pillageTime = (int)((time + System.currentTimeMillis()) / 1000);
@@ -265,6 +265,10 @@ public class PillageService extends BaseService {
 
 		result.setValue("protect_time", time);
 		return this.success(result.toMap());
+	}
+
+	public void addP() {
+		this.roleDao.addPillage(20);
 	}
 
 	private int buyNum(int vip, int todayNum) {

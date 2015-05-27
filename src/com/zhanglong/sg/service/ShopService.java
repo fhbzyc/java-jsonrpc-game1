@@ -9,9 +9,9 @@ import org.springframework.stereotype.Service;
 import com.googlecode.jsonrpc4j.JsonRpcService;
 import com.zhanglong.sg.dao.BaseItemDao;
 import com.zhanglong.sg.dao.ItemShopDao;
-import com.zhanglong.sg.entity.BaseItemShop;
 import com.zhanglong.sg.entity.FinanceLog;
 import com.zhanglong.sg.entity.Role;
+import com.zhanglong.sg.entity2.BaseItemShop;
 import com.zhanglong.sg.model.ItemShopModel;
 import com.zhanglong.sg.result.ErrorResult;
 import com.zhanglong.sg.result.Result;
@@ -109,7 +109,7 @@ public class ShopService extends BaseService {
 
          int gold = this.getRefreshGold(itemShopModel.getRefreshNum());
          if (role.getGold() < gold) {
-        	 return this.success(ErrorResult.NotEnoughGold);
+        	 return this.returnError(2, ErrorResult.NotEnoughGold);
          }
 
          Result result = new Result();
@@ -141,7 +141,7 @@ public class ShopService extends BaseService {
 
         int gold = this.getRefreshGold(itemShopModel.getRefreshNum());
         if (role.getGold() < gold) {
-       	 return this.success(ErrorResult.NotEnoughGold);
+        	return this.returnError(2, ErrorResult.NotEnoughGold);
         }
 
         Result result = new Result();
@@ -175,7 +175,7 @@ public class ShopService extends BaseService {
 
         int gold = this.getRefreshGold(itemShopModel.getRefreshNum());
         if (role.getGold() < gold) {
-        	return this.success(ErrorResult.NotEnoughGold);
+        	return this.returnError(2, ErrorResult.NotEnoughGold);
         }
 
         Result result = new Result();
@@ -234,7 +234,7 @@ public class ShopService extends BaseService {
 
         } else if (unit == BaseItemShop.MONEY_TYPE_GOLD) {
             if(role.getCoin() < shopItem.getPrice()) {
-            	return this.success(ErrorResult.NotEnoughGold);
+            	return this.returnError(2, ErrorResult.NotEnoughGold);
             } else {
 
             	this.roleDao.subGold(role, shopItem.getPrice(), "普通商店购买道具<" + this.baseItemDao.findOne(shopItem.getItemId()).getName() + ">", FinanceLog.STATUS_SHOP_BUY_GOLD);

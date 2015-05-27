@@ -5,7 +5,6 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
-import java.util.HashMap;
 import java.util.Random;
 
 import javax.annotation.Resource;
@@ -13,22 +12,26 @@ import javax.annotation.Resource;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import websocket.handler.EchoHandler;
+
 import com.googlecode.jsonrpc4j.JsonRpcService;
 import com.zhanglong.sg.model.DateNumModel;
+import com.zhanglong.sg.protocol.Response;
 import com.zhanglong.sg.result.ErrorResult;
 import com.zhanglong.sg.dao.BaseHeroEquipDao;
 import com.zhanglong.sg.dao.BaseHeroShopDao;
 import com.zhanglong.sg.dao.BaseMakeItemDao;
-import com.zhanglong.sg.entity.BaseHero;
-import com.zhanglong.sg.entity.BaseHeroEquip;
-import com.zhanglong.sg.entity.BaseHeroShop;
-import com.zhanglong.sg.entity.BaseItem;
-import com.zhanglong.sg.entity.BaseMakeItem;
-import com.zhanglong.sg.entity.BaseSkill;
+import com.zhanglong.sg.dao.FinanceLogDao;
 import com.zhanglong.sg.entity.FinanceLog;
 import com.zhanglong.sg.entity.Hero;
 import com.zhanglong.sg.entity.Item;
 import com.zhanglong.sg.entity.Role;
+import com.zhanglong.sg.entity2.BaseHero;
+import com.zhanglong.sg.entity2.BaseHeroEquip;
+import com.zhanglong.sg.entity2.BaseHeroShop;
+import com.zhanglong.sg.entity2.BaseItem;
+import com.zhanglong.sg.entity2.BaseMakeItem;
+import com.zhanglong.sg.entity2.BaseSkill;
 import com.zhanglong.sg.result.Result;
 import com.zhanglong.sg.utils.Utils;
 
@@ -45,16 +48,18 @@ public class HeroService extends BaseService {
     @Resource
     private BaseMakeItemDao baseMakeItemDao;
 
-    
+    @Resource
+    private FinanceLogDao financeLogDao;
+
     public static int TYPE_COIN_RANDOM = 1;
     public static int TYPE_GOLD_RANDOM = 2;
 
     /**
      * 
      * @return
-     * @throws Throwable
+     * @throws Exception
      */
-    public Object list() throws Throwable {
+    public Object list() throws Exception {
 
         int roleId = this.roleId();
 
@@ -74,9 +79,9 @@ public class HeroService extends BaseService {
      * @param heroId
      * @param skillIndex
      * @return
-     * @throws Throwable
+     * @throws Exception
      */
-    public Object skillLevelUp(int heroId, int skillIndex) throws Throwable {
+    public Object skillLevelUp(int heroId, int skillIndex) throws Exception {
 
     	int roleId = this.roleId();
 
@@ -179,13 +184,12 @@ public class HeroService extends BaseService {
 
     /**
      * 加属性点
-     * @param tokenS
      * @param generalId
      * @param points
      * @return
-     * @throws Throwable
+     * @throws Exception
      */
-    public Object addPoint(int heroId, int[] points) throws Throwable {
+    public Object addPoint(int heroId, int[] points) throws Exception {
 
     	int roleId = this.roleId();
 
@@ -221,9 +225,9 @@ public class HeroService extends BaseService {
     /**
      * 升星
      * @param heroId
-     * @throws Throwable
+     * @throws Exception
      */
-    public Object starUp(int heroId) throws Throwable {
+    public Object starUp(int heroId) throws Exception {
 
     	int roleId = this.roleId();
 
@@ -283,9 +287,9 @@ public class HeroService extends BaseService {
      * 升阶
      * @param heroId
      * @return
-     * @throws Throwable
+     * @throws Exception
      */
-    public Object classUp(int heroId) throws Throwable {
+    public Object classUp(int heroId) throws Exception {
 
     	int roleId = this.roleId();
 
@@ -339,10 +343,9 @@ public class HeroService extends BaseService {
      * @param equipId
      * @param index
      * @return
-     * @throws Throwable
+     * @throws Exception
      */
-    @Transactional(rollbackFor = Throwable.class)
-    public Object equipment(int heroId, int equipId, int index) throws Throwable {
+    public Object equipment(int heroId, int equipId, int index) throws Exception {
 
     	int roleId = this.roleId();
 
@@ -419,10 +422,9 @@ public class HeroService extends BaseService {
     /**
      * 酒馆随机一次武将
      * @return
-     * @throws Throwable
+     * @throws Exception
      */
-    @Transactional(rollbackFor = Throwable.class)
-    public Object randomGeneral(int type) throws Throwable {
+    public Object randomGeneral(int type) throws Exception {
 
     	int roleId = this.roleId();
 
@@ -440,14 +442,21 @@ public class HeroService extends BaseService {
         if (heros.size() == 1) {
         	itemId = 10009;
         } else if (heros.size() == 2) {
-        	itemId = 10012;
+        	itemId = 10016;
         } else {
             // 随机一个将出来
+
             int[] rate;
             if (type == TYPE_COIN_RANDOM) {
             	rate = this.baseHeroShopDao.coinRandom();
             } else {
-            	rate = this.baseHeroShopDao.goldRandom();
+
+            	if (this.financeLogDao.count(roleId, FinanceLog.STATUS_RANDOM_GEN_ONE_TIMES_GOLD) == 0) {
+            		int heroId = this.baseHeroShopDao.randomGeneral(2)[0];
+            		rate = new int[]{heroId , 1};
+            	} else {
+            		rate = this.baseHeroShopDao.goldRandom();
+            	}
             }
             itemId = rate[0];
             num = rate[1];
@@ -477,7 +486,7 @@ public class HeroService extends BaseService {
                 if (role.getCoin() < coin) {
                 	return returnError(lineNum(), "铜钱不足");
                 } else {
-                	roleDao.subCoin(role, coin, desc, FinanceLog.STATUS_RANDOM_GEN_ONE_TIMES_COIN);
+                	this.roleDao.subCoin(role, coin, desc, FinanceLog.STATUS_RANDOM_GEN_ONE_TIMES_COIN);
                 }
         	} else {
         		// 酒馆每日免费刷新次数加一
@@ -496,7 +505,7 @@ public class HeroService extends BaseService {
 
         	if (System.currentTimeMillis() / 1000 < role.getBarGoldTime()) {
                 if (role.getGold() < gold) {
-                	return this.success(ErrorResult.NotEnoughGold);
+                	return this.returnError(2, ErrorResult.NotEnoughGold);
                 } else {
                 	this.roleDao.subGold(role, gold, desc, FinanceLog.STATUS_RANDOM_GEN_ONE_TIMES_GOLD);
 
@@ -521,16 +530,20 @@ public class HeroService extends BaseService {
             if (!find) {
             	this.heroDao.create(role, itemId, result);
 
-            	int serverId = role.getServerId();
-
             	// 滚动消息
             	if (this.baseHeroDao.findOne(itemId).getStar() >= 3) {
-          //  		message.saveMessage(Role.name + "通过点将招募到了[" + this.baseHeroDao.findOne(itemId).getName() + "]", serverId);
+
+            		String msgs = "通过点将招募到了[" + this.baseHeroDao.findOne(itemId).getName() + "]";
+            		Result r = new Result();
+            		r.setValue("msgs", msgs);
+            		String msg = Response.marshalSuccess(0, r.toMap());
+            		int serverId = role.getServerId();
+            		EchoHandler.broadcast(serverId, msg);
             	}
             	
             } else {
 
-            	this.itemDao.addItem(roleId, itemId - 6000, this.soulNumByStar(itemId), result);
+            	this.itemDao.addSoul(roleId, itemId - 6000, this.soulNumByStar(itemId), result);
             }
         } else {
         	this.itemDao.addItem(roleId, itemId, num, result);
@@ -550,12 +563,11 @@ public class HeroService extends BaseService {
 
     /**
      * 酒馆随机十次武将
-     * @param tokenS
      * @return
-     * @throws Throwable
+     * @throws Exception
      */
-    @Transactional(rollbackFor = Throwable.class)
-    public Object random10Times(int type) throws Throwable {
+    @Transactional(rollbackFor = Exception.class)
+    public Object random10Times(int type) throws Exception {
 
     	int roleId = this.roleId();
 
@@ -573,7 +585,7 @@ public class HeroService extends BaseService {
             }
         } else {
             if (role.getGold() < gold) {
-            	return this.success(ErrorResult.NotEnoughGold);
+            	return this.returnError(2, ErrorResult.NotEnoughGold);
             }
         }
 
@@ -654,25 +666,29 @@ public class HeroService extends BaseService {
         desc += "酒馆十连抽,获得<";
         for (int[] is : randomResult) {
 			if (is[0] >= 10000) {
-				int generalId = is[0];
+				int heroId = is[0];
 				
-        		Hero general = this.heroDao.findOne(roleId, generalId);
-        		if (general != null) {
+        		Hero hero = this.heroDao.findOne(roleId, heroId);
+        		if (hero != null) {
 
-        			int itemId = generalId - 6000;
-        			this.itemDao.addItem(roleId, itemId, this.soulNumByStar(generalId), result);
+        			int itemId = heroId - 6000;
+        			this.itemDao.addSoul(roleId, itemId, this.soulNumByStar(heroId), result);
     				desc += "," + this.baseItemDao.findOne(itemId).getName() + "x" + is[1];
         			
         		} else {
 	                // 发武将
-        			this.heroDao.create(role, generalId, result);
-	                desc += "," + this.baseHeroDao.findOne(generalId).getName();
+        			this.heroDao.create(role, heroId, result);
+	                desc += "," + this.baseHeroDao.findOne(heroId).getName();
 
-	                int serverId = role.getServerId();
-	                
 	            	// 滚动消息
-	            	if (this.baseHeroDao.findOne(generalId).getStar() >= 3) {
-	        //    		message.saveMessage(Role.name + "招募到了[" + this.baseHeroDao.findOne(generalId).getName() + "]", serverId);
+	            	if (this.baseHeroDao.findOne(heroId).getStar() >= 3) {
+
+	            		String msgs = "通过点将招募到了[" + this.baseHeroDao.findOne(heroId).getName() + "]";
+	            		Result r = new Result();
+	            		r.setValue("msgs", msgs);
+	            		String msg = Response.marshalSuccess(0, r.toMap());
+	            		int serverId = role.getServerId();
+	            		EchoHandler.broadcast(serverId, msg);
 	            	}
         		}
 
@@ -785,7 +801,7 @@ public class HeroService extends BaseService {
 
         Role role = this.roleDao.findOne(roleId);
         if (role.getGold() < gold) {
-        	return this.success(ErrorResult.NotEnoughGold);
+        	return this.returnError(2, ErrorResult.NotEnoughGold);
         } else {
         	this.roleDao.addCoin(role, coin, "重置技能退铜钱", FinanceLog.STATUS_RESET_SKILL, result);
         	this.roleDao.subGold(role, gold, "重置技能<" + this.baseHeroDao.findOne(generalId).getName() + ">", FinanceLog.STATUS_RESET_SKILL);
@@ -824,7 +840,7 @@ public class HeroService extends BaseService {
 
         Role role = this.roleDao.findOne(roleId);
         if (role.getGold() < gold) {
-        	return this.success(ErrorResult.NotEnoughGold);
+        	return this.returnError(2, ErrorResult.NotEnoughGold);
         } else {
         	this.roleDao.subGold(role, gold, "重置属性点<" + this.baseHeroDao.findOne(generalId).getName() + ">", FinanceLog.STATUS_RESET_POINT);
         	this.roleDao.update(role, result);
@@ -857,7 +873,7 @@ public class HeroService extends BaseService {
 
             return this.returnError(com.zhanglong.sg.result.Error.ERROR_BUY_OVER_NUM, "需要VIP11可解锁魂石商店，前去充值？");
         } else if (role.getGold() < gold) {
-            return this.success(ErrorResult.NotEnoughGold);
+        	return this.returnError(2, ErrorResult.NotEnoughGold);
         }
 
         List<BaseHeroShop> soulList = this.baseHeroShopDao.findAll("soul");
@@ -1162,7 +1178,7 @@ public class HeroService extends BaseService {
 
         Role role = this.roleDao.findOne(roleId);
         if (role.gold < exp) {
-        	return this.success(ErrorResult.NotEnoughGold);
+        	return this.returnError(2, ErrorResult.NotEnoughGold);
         }
 
         this.roleDao.subGold(role, exp, hero.getCLASS() + "阶<" + baseHeroDao.findOne(heroId).getName() + ">锻造<" + index , FinanceLog.STATUS_COIN_EQUIP_EXP);

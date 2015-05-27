@@ -28,6 +28,15 @@ public class Reward implements Serializable {
 	private Integer money4; // 讨伐天下的币
 
 	@JsonSerialize(include = Inclusion.NON_NULL)
+	private Integer ap; // 体力
+
+	@JsonSerialize(include = Inclusion.NON_NULL)
+	private Integer vip; // 体力
+
+	@JsonSerialize(include = Inclusion.NON_NULL)
+	private Integer card; // 体力
+
+	@JsonSerialize(include = Inclusion.NON_NULL)
 	private int[] item_id;
 
 	@JsonSerialize(include = Inclusion.NON_NULL)
@@ -98,6 +107,30 @@ public class Reward implements Serializable {
 
 	public void setHas(Boolean has) {
 		this.has = has;
+	}
+
+	public Integer getAp() {
+		return ap;
+	}
+
+	public void setAp(Integer ap) {
+		this.ap = ap;
+	}
+
+	public Integer getVip() {
+		return vip;
+	}
+
+	public void setVip(Integer vip) {
+		this.vip = vip;
+	}
+
+	public Integer getCard() {
+		return card;
+	}
+
+	public void setCard(Integer card) {
+		this.card = card;
 	}
 }
 

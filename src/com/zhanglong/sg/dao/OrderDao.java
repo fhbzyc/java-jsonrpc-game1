@@ -1,18 +1,16 @@
 package com.zhanglong.sg.dao;
 
 import java.math.BigInteger;
+import java.sql.Timestamp;
 import java.util.List;
 
 import org.hibernate.Criteria;
-import org.hibernate.Query;
 import org.hibernate.SQLQuery;
 import org.hibernate.Session;
 import org.hibernate.criterion.Restrictions;
 import org.springframework.stereotype.Repository;
 
-import com.zhanglong.sg.entity.Hero;
 import com.zhanglong.sg.entity.Order;
-
 
 @Repository
 public class OrderDao extends BaseDao {
@@ -26,12 +24,13 @@ public class OrderDao extends BaseDao {
 		return (Order)object;
 	}
 
-
 	public List<Order> findComplateList(int roleId) {
 
 		Session session = this.getSessionFactory().getCurrentSession();
 		Criteria criteria = session.createCriteria(Order.class);
-		return criteria.add(Restrictions.eq("roleId", roleId)).add(Restrictions.eq("status", Order.STATUS_SUCCESS)).list();
+		@SuppressWarnings("unchecked")
+		List<Order> list = criteria.add(Restrictions.eq("roleId", roleId)).add(Restrictions.eq("status", Order.STATUS_SUCCESS)).list();
+		return list;
 	}
 
 	public int sum(int roleId) {
@@ -65,6 +64,7 @@ public class OrderDao extends BaseDao {
 	}
 
 	public void create(Order order) {
+		order.setTime(new Timestamp(System.currentTimeMillis()));
 		Session session = this.getSessionFactory().getCurrentSession();
 		session.save(order);
 	}

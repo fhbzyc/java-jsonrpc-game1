@@ -16,11 +16,14 @@ public class RewardDao extends BaseDao {
 
 	@Resource
 	private RoleDao roleDao;
-	
+
+	@Resource
+	private DailyTaskDao dailyTaskDao;
+
     public RewardDao() {
     }
 
-    public void get(Role role, Reward reward, String desc, int financeStatus, Result result) throws Throwable {
+    public void get(Role role, Reward reward, String desc, int financeStatus, Result result) throws Exception {
 
         int[] items = reward.getItem_id();
         if (items != null) {
@@ -34,70 +37,61 @@ public class RewardDao extends BaseDao {
         }
 
         boolean set = false;
-        Integer exp = (Integer)reward.getExp();
+        Integer exp = reward.getExp();
         if (exp != null) {
         	this.roleDao.addExp(role, exp, result);
         	set = true;
         }
 
-        Integer coin = (Integer)reward.getCoin();
+        Integer coin = reward.getCoin();
         if (coin != null) {
         	this.roleDao.addCoin(role, coin, desc, financeStatus, result);
         	set = true;
         }
 
-        Integer gold = (Integer)reward.getGold();
+        Integer gold = reward.getGold();
         if (gold != null) {
         	this.roleDao.addGold(role, gold, desc, financeStatus, result);
         	set = true;
         }
 
+        Integer money3 = reward.getMoney3();
+        if (money3 != null) {
+        	this.roleDao.addMoney3(role, gold, desc, financeStatus, result);
+        	set = true;
+        }
+
+        Integer money4 = reward.getMoney4();
+        if (money4 != null) {
+        	this.roleDao.addMoney4(role, gold, desc, financeStatus, result);
+        	set = true;
+        }
+
+        Integer ap = reward.getAp();
+        if (ap != null) {
+        	this.roleDao.addAp(role, ap, result);
+        	set = true;
+        }
+
+        Integer vip = reward.getVip();
+        if (vip != null && vip > role.vip) {
+    		role.vip = vip;
+    		set = true;
+
+    		this.dailyTaskDao.addVip(role, result);
+
+            result.setValue("vip", role.vip());
+        }
+
+        Integer card = reward.getCard();
+        if (card != null) {
+    		role.cardTime = (int)(System.currentTimeMillis() / 1000l) + 86400 * 30;
+    		set = true;
+    		this.dailyTaskDao.addMoonCard(role, result);
+        }
+
         if (set) {
         	this.roleDao.update(role, result);
         }
-
-        Integer money3 = (Integer)reward.getMoney3();
-        if (money3 != null) {
-//        	ArenaModel arenaModel = new ArenaModel(this.roleId);
-//        	arenaModel.addMoney(arena_money, result);
-        }
-
-        Integer money4 = (Integer)reward.getMoney4();
-        if (money4 != null) {
-//        	ArenaModel arenaModel = new ArenaModel(this.roleId);
-//        	arenaModel.addMoney(arena_money, result);
-        }
-
-        
     }
-//
-//    public String getJson(int[] itemId, int[]itemNum, Integer coin, Integer gold, Integer heroId, Integer arena_money) throws JsonProcessingException  {
-//
-//    	Reward reward = new Reward();
-//    	
-//        HashMap<String, Object> map = new HashMap<String, Object>();
-//        if (itemId != null && itemId.length > 0) {
-//            map.put("item_id", itemId);
-//            map.put("item_num", itemNum);
-//        }
-//        if (coin != null && coin > 0) {
-//            map.put("coin", coin);
-//        }
-//        if (gold != null && gold > 0) {
-//            map.put("gold", gold);
-//        }
-//        if (heroId != null && heroId > 0) {
-//            map.put("hero", heroId);
-//        }
-//
-//        if (arena_money != null && arena_money > 0) {
-//            map.put("arena_money", arena_money);
-//        }
-//
-//        HashMap<String, Object> reward = new HashMap<String, Object>();
-//        reward.put("reward", map);
-//
-//        ObjectMapper mapper = new ObjectMapper();
-//        return mapper.writeValueAsString(reward);
-//    }
 }

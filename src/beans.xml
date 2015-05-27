@@ -5,6 +5,7 @@
     xmlns:tx="http://www.springframework.org/schema/tx"
     xmlns:aop="http://www.springframework.org/schema/aop"
     xmlns:websocket="http://www.springframework.org/schema/websocket"
+    xmlns:mvc="http://www.springframework.org/schema/mvc"
     xsi:schemaLocation="
         http://www.springframework.org/schema/beans     
         http://www.springframework.org/schema/beans/spring-beans.xsd
@@ -15,7 +16,9 @@
         http://www.springframework.org/schema/aop   
         http://www.springframework.org/schema/aop/spring-aop.xsd
         http://www.springframework.org/schema/websocket
-        http://www.springframework.org/schema/websocket/spring-websocket.xsd">
+        http://www.springframework.org/schema/websocket/spring-websocket.xsd
+        http://www.springframework.org/schema/mvc
+        http://www.springframework.org/schema/mvc/spring-mvc.xsd">
 
     <websocket:handlers>
         <websocket:mapping path="/echo" handler="echoHandler"/>
@@ -23,7 +26,14 @@
 
     <bean id="echoHandler" class="websocket.handler.EchoHandler"/>
 
-    <!-- <context:component-scan base-package="com.zhanglong.sg.controller"/> -->
+    <mvc:annotation-driven enable-matrix-variables="true"/>
+
+    <bean class="com.googlecode.jsonrpc4j.spring.AutoJsonRpcServiceExporter"/>
+
+    <context:component-scan base-package="com.zhanglong.sg.controller" />
+
+    <context:component-scan base-package="com.zhanglong.sg.dao" />
+    <context:component-scan base-package="com.zhanglong.sg.service" />
 
     <bean id="sessionFactory" class="org.springframework.orm.hibernate4.LocalSessionFactoryBean">
         <property name="dataSource" ref="dataSource" />
@@ -36,20 +46,52 @@
             <props>
                 <!-- <prop key="hibernate.dialect">org.hibernate.dialect.MySQL5Dialect</prop> -->
                 <prop key="hibernate.dialect">org.hibernate.dialect.PostgreSQLDialect</prop>
-                   <prop key="hibernate.hbm2ddl.auto">update</prop>
-                <prop key="hibernate.show_sql">true</prop>      
+                <prop key="hibernate.hbm2ddl.auto">update</prop>
+                <prop key="hibernate.show_sql">false</prop>      
+            </props>
+        </property>
+    </bean>
+
+    <bean id="baseSessionFactory" class="org.springframework.orm.hibernate4.LocalSessionFactoryBean">
+        <property name="dataSource" ref="baseDataSource" />
+        <property name="packagesToScan">
+            <list>
+                <value>com.zhanglong.sg.entity2</value>
+            </list>
+        </property>
+        <property name="hibernateProperties">
+            <props>
+                <!-- <prop key="hibernate.dialect">org.hibernate.dialect.MySQL5Dialect</prop> -->
+                <prop key="hibernate.dialect">org.hibernate.dialect.PostgreSQLDialect</prop>
+                <prop key="hibernate.hbm2ddl.auto">update</prop>
+                <prop key="hibernate.show_sql">false</prop>      
             </props>
         </property>
     </bean>
 
     <!-- 数据库映射 -->
-    <bean id="dataSource" class="org.springframework.jdbc.datasource.DriverManagerDataSource">
+    <bean id="baseDataSource" class="org.apache.commons.dbcp2.BasicDataSource">
       <!-- <property name="driverClassName" value="com.mysql.jdbc.Driver" /> -->
       <property name="driverClassName" value="org.postgresql.Driver" />
       <!-- <property name="url" value="jdbc:mysql://localhost:3306/sgdbz?useUnicode=true&amp;characterEncoding=UTF-8" /> -->
-      <property name="url" value="jdbc:postgresql://192.168.1.166:5432/sgdbz?useUnicode=true&amp;characterEncoding=UTF-8" />
-      <property name="username" value="sgdbz" />
-      <property name="password" value="123456" />
+      <property name="url" value="jdbc:postgresql://127.0.0.1:5432/base?useUnicode=true&amp;characterEncoding=UTF-8" />
+      <property name="username" value="postgres" />
+      <property name="password" value="postgres" />
+      <property name="maxIdle" value="80"/>
+      <property name="minIdle" value="10"/>
+      <property name="initialSize" value="10"/>
+    </bean>
+
+    <bean id="dataSource" class="org.apache.commons.dbcp2.BasicDataSource">
+      <!-- <property name="driverClassName" value="com.mysql.jdbc.Driver" /> -->
+      <property name="driverClassName" value="org.postgresql.Driver" />
+      <!-- <property name="url" value="jdbc:mysql://localhost:3306/sgdbz?useUnicode=true&amp;characterEncoding=UTF-8" /> -->
+      <property name="url" value="jdbc:postgresql://127.0.0.1:5432/sgdbz?useUnicode=true&amp;characterEncoding=UTF-8" />
+      <property name="username" value="postgres" />
+      <property name="password" value="postgres" />
+      <property name="maxIdle" value="80"/>
+      <property name="minIdle" value="10"/>
+      <property name="initialSize" value="10"/>
     </bean>
 
        <bean id="hibernateTemplate" class="org.springframework.orm.hibernate4.HibernateTemplate">
@@ -71,18 +113,13 @@
         </tx:attributes>
     </tx:advice> 
 
-    <context:component-scan base-package="com.zhanglong.sg.dao" />
-    <context:component-scan base-package="com.zhanglong.sg.service" />
-
-    <!-- <bean class="com.googlecode.jsonrpc4j.spring.AutoJsonRpcServiceExporter"/> -->
-
     <aop:config expose-proxy="true">
-        <aop:pointcut id="txPointcut" expression="execution(* com.zhanglong.sg.service..*.*(..))" />
+        <aop:pointcut id="txPointcut" expression="execution(* com.zhanglong.sg.service..*.*(..)) or execution(* com.zhanglong.sg.controller..*.*(..))" />
         <aop:advisor pointcut-ref="txPointcut" advice-ref="txAdvice"/>
     </aop:config>
 
     <bean id="jedisConnectionFactory" class="org.springframework.data.redis.connection.jedis.JedisConnectionFactory">
-        <property name="hostName" value="192.168.1.166"/>
+        <property name="hostName" value="127.0.0.1"/>
         <property name="port" value="6379"/>
     </bean>
 
@@ -98,7 +135,7 @@
 
     <bean id="cronTrigger1" class="org.springframework.scheduling.quartz.CronTriggerFactoryBean">
        <property name="jobDetail" ref="job1" />
-       <property name="cronExpression" value="0/59 * * * * ?" />
+       <property name="cronExpression" value="0 0 4 * * ?" />
     </bean>
 
     <bean id="job2" class="org.springframework.scheduling.quartz.JobDetailFactoryBean">
@@ -108,14 +145,35 @@
 
     <bean id="cronTrigger2" class="org.springframework.scheduling.quartz.CronTriggerFactoryBean">
        <property name="jobDetail" ref="job2" />
-       <property name="cronExpression" value="0/59 * * * * ?" />
+       <property name="cronExpression" value="0 0 21 * * ?" />
+    </bean>
+
+    <bean id="job3" class="org.springframework.scheduling.quartz.JobDetailFactoryBean">
+        <property name="durability" value="true" />  
+        <property name="jobClass" value="com.zhanglong.sg.task.AddPillage"></property>
+    </bean>
+
+    <bean id="cronTrigger3" class="org.springframework.scheduling.quartz.CronTriggerFactoryBean">
+       <property name="jobDetail" ref="job3" />
+       <property name="cronExpression" value="0 0 0 * * ?" />
+    </bean>
+
+    <bean id="job4" class="org.springframework.scheduling.quartz.JobDetailFactoryBean">
+        <property name="durability" value="true" />  
+        <property name="jobClass" value="com.zhanglong.sg.task.Online"></property>
+    </bean>
+
+    <bean id="cronTrigger4" class="org.springframework.scheduling.quartz.CronTriggerFactoryBean">
+       <property name="jobDetail" ref="job4" />
+       <property name="cronExpression" value="0 */5 * * * ?" />
     </bean>
 
     <bean class="org.springframework.scheduling.quartz.SchedulerFactoryBean">
         <property name="triggers">
             <list>
-
-                <!-- <ref bean="cronTrigger2" /> -->
+                 <ref bean="cronTrigger2" />
+                 <ref bean="cronTrigger3" />
+                 <ref bean="cronTrigger4" />
             </list>
         </property>
     </bean>

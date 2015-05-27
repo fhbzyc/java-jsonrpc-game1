@@ -1,5 +1,6 @@
 package com.zhanglong.sg.dao;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -10,22 +11,28 @@ import org.hibernate.Session;
 import org.hibernate.criterion.Order;
 import org.springframework.stereotype.Repository;
 
+import com.fasterxml.jackson.core.JsonParseException;
+import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.zhanglong.sg.entity.BaseStory;
+import com.zhanglong.sg.entity2.BaseStory;
+import com.zhanglong.sg.model.DateNumModel;
 
 @Repository
-public class BaseStoryDao extends BaseDao {
+public class BaseStoryDao extends BaseDao2 {
 
 	@Resource
 	private BaseItemDao baseItemDao;
 	
+	@Resource
+	private DateNumDao dateNumDao;
+
 	private static List<BaseStory> copys;
 	
 	@SuppressWarnings("unchecked")
 	public List<BaseStory> findAll() {
 
 		if (copys == null) {
-			Session session = this.getSessionFactory().getCurrentSession();
+			Session session = this.getBaseSessionFactory().getCurrentSession();
 			copys = session.createCriteria(BaseStory.class).addOrder(Order.asc("id")).list();
 		}
 		return copys;
@@ -81,8 +88,11 @@ public class BaseStoryDao extends BaseDao {
      * [[id, num , rate]]
      * @param baseStory
      * @return
+     * @throws IOException 
+     * @throws JsonMappingException 
+     * @throws JsonParseException 
      */
-    public int[][] itemIds(BaseStory baseStory) throws Throwable {
+    public int[][] itemIds(BaseStory baseStory) throws JsonParseException, JsonMappingException, IOException {
 
         ObjectMapper mapper = new ObjectMapper();
         int[][] items = mapper.readValue(baseStory.getItems(), int[][].class);
@@ -98,15 +108,34 @@ public class BaseStoryDao extends BaseDao {
      */
     public ArrayList<ArrayList<int[]>> randomItems(int roleId, BaseStory baseStory, int times) throws Throwable {
 
-        int[][] ite = this.itemIds(baseStory);
+        int[][] ite = itemIds(baseStory);
         int[] must = ite[0];
 
+        boolean doubleTime = isDoubleTime(baseStory);
+        if (doubleTime) {
+        	must[1] *= 2;
+        }
+
         ArrayList<ArrayList<int[]>> result = new ArrayList<ArrayList<int[]>>();
+
         int num = 0;
         int heroN = 0;
 
+        long saveTime = 0l;
+
+        DateNumModel dateNumModel = null;
+        
+        if (baseStory.getType() == BaseStory.HERO_COPY_TYPE) {
+            dateNumModel = this.dateNumDao.findOne(roleId);
+
+            if (System.currentTimeMillis() - dateNumModel.dropItemTime < 600l * 1000l) {
+                saveTime = dateNumModel.dropItemTime;
+                heroN = dateNumModel.dropItemNum;
+            }
+        }
+
         for (int i = 1 ; i <= times ; i++) {
-            ArrayList<int[]> item = this.randomItems(baseStory);
+            ArrayList<int[]> item = randomItems(baseStory, doubleTime);
             if (i == 10) {
                 if (num == 0) {
                     item = new ArrayList<int[]>();
@@ -119,7 +148,51 @@ public class BaseStoryDao extends BaseDao {
                         item.add(must);
                     }
                 }
-            } 
+            } else if (baseStory.getType() == BaseStory.HERO_COPY_TYPE) {
+                boolean find = false;
+                for (int[] js : item) {
+                    if (js[0] == must[0]) {
+                        find = true;
+                    }
+                }
+                if (!find) {
+
+                    if (heroN == 2) {
+                        Random random = new Random();
+                        int r = random.nextInt(10);
+                        if (r < 8) {
+                        	// 两次没给魂石 80% 给魂石
+                            item = new ArrayList<int[]>();
+                            item.add(must);
+                        }
+
+                    } else if (heroN >= 3) {
+                        item = new ArrayList<int[]>();
+                        item.add(must);
+                    }
+                }
+
+                long time = System.currentTimeMillis();
+                if (time - saveTime >= 600l * 1000l) {
+                    saveTime = time;
+                }
+
+                find = false;
+                for (int[] js : item) {
+                    if (js[0] == must[0]) {
+                        find = true;
+                    }
+                }
+                if (find) {
+                    heroN = 0;
+                } else {
+                	heroN++;
+                }
+
+                dateNumModel.dropItemNum = heroN;
+                dateNumModel.dropItemTime = saveTime;
+                this.dateNumDao.save(roleId, dateNumModel);
+            }
 
             boolean find = false;
             for (int[] js : item) {
@@ -160,9 +233,9 @@ public class BaseStoryDao extends BaseDao {
      * 
      * @param baseStory
      * @return
-     * @throws Throwable
+     * @throws Exception
      */
-    private ArrayList<int[]> randomItems(BaseStory baseStory) throws Throwable {
+    private ArrayList<int[]> randomItems(BaseStory baseStory, boolean doubleTime) throws Exception {
 
         int[][] li = this.itemIds(baseStory);
         ArrayList<int[]> items = new ArrayList<int[]>();

@@ -455,7 +455,7 @@ public class CrusadeService extends BaseService {
             }
 
             if (role.getGold() < gold) {
-                return this.success(ErrorResult.NotEnoughGold);
+                return this.returnError(2, ErrorResult.NotEnoughGold);
             } else {
                 this.roleDao.subGold(role, gold, "讨伐天下第<" + (index + 1) + ">关,第<" + (n + 1) + ">次抽奖", FinanceLog.STATUS_BATTLE_IN_WORLD);
                 this.roleDao.update(role, result);

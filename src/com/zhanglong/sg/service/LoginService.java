@@ -7,14 +7,13 @@ import javax.annotation.Resource;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.googlecode.jsonrpc4j.JsonRpcService;
 import com.zhanglong.sg.dao.TokenDao;
 import com.zhanglong.sg.dao.UserDao;
 import com.zhanglong.sg.entity.User;
 import com.zhanglong.sg.model.Token;
+import com.zhanglong.sg.utils.MD5;
 
 @Service
-@JsonRpcService("/login")
 public class LoginService extends BaseService {
 
 	@Resource
@@ -24,7 +23,7 @@ public class LoginService extends BaseService {
 	private UserDao userDao;
 
 	@Transactional(rollbackFor = Throwable.class)
-	public Object register(String username, String password, String imei) throws Throwable {
+	public Object register(String username, String password, String imei) throws Exception {
 
 		User user = this.userDao.getByUsername(username);
 		if (user != null) {
@@ -33,8 +32,8 @@ public class LoginService extends BaseService {
 		}
 
 		user = new User();
-		user.setName(username);
-		user.setPassword(password);
+		user.setUserName(username);
+		user.setPassword(MD5.digest(password));
 		user.setImei(imei);
 		user.setMac("");
 
@@ -43,30 +42,20 @@ public class LoginService extends BaseService {
 		return this.signin(username, password);
 	}
 
-	public Object signin(String username, String password) throws Throwable {
+	public Object signin(String username, String password) throws Exception {
 
 		User user = this.userDao.getByUsername(username);
 		if (user == null) {
 
-			System.out.print("\n 登陆继续走 lineNum: " + this.lineNum());
-
 			return this.returnError(this.lineNum(), "用户名错误");
-		} else if (!user.getPassword().equals(password)) {
-
-			System.out.print("\n 登陆继续走 lineNum: " + this.lineNum());
+		} else if (!user.getPassword().equals(MD5.digest(password))) {
 
 			return this.returnError(this.lineNum(), "密码错误");
 		}
 
-		System.out.print("\n 登陆继续走 lineNum: " + this.lineNum());
-
 		this.getHandler().userId = user.getId();
 
-		System.out.print("\n 登陆继续走 lineNum: " + this.lineNum());
-		
 		Token token2 = this.tokenDao.create(user.getId());
-
-		System.out.print("\n 登陆继续走 lineNum: " + this.lineNum());
 
 		return this.success(token2.getTokenS());
 	}
@@ -79,7 +68,18 @@ public class LoginService extends BaseService {
 	 * @return
 	 * @throws Throwable
 	 */
-	public Object oneKeyLoign(String imei, String iccid, String mac) throws Throwable {
+	public Object oneKeyLogin(String imei, String iccid, String mac) throws Throwable {
+
+		String password = "123456";
+
+		User user = this.userDao.getByImei(imei);
+		if (user != null) {
+
+			User user2 = user.clone();
+			user2.token = this.tokenDao.create(user2.getId()).getTokenS();
+			user2.setPassword(password);
+			return this.success(user2);
+		}
 
 		Random random = new Random();
 		String username = "Z";
@@ -89,24 +89,115 @@ public class LoginService extends BaseService {
 			username += (char)r;
 		}
 
-		User user = this.userDao.getByUsername(username);
+		username = username.toLowerCase();
+		user = this.userDao.getByUsername(username);
 		if (user != null) {
 
 			return this.returnError(this.lineNum(), "用户名已注册");
 		}
 
-		String password = "123456";
-
 		user = new User();
-		user.setName(username);
-		user.setPassword(password);
+		user.setUserName(username);
+		user.setPassword(MD5.digest(password));
 		user.setImei(imei);
 		user.setMac("");
-		user.setRegisterType(1);
+		user.setRegisterType(User.QUICK_REG);
 
 		this.userDao.create(user);
 
-		user.token = (String) this.signin(username, password);
-		return user;
+		User user2 = user.clone();
+		user2.token = this.tokenDao.create(user2.getId()).getTokenS();
+		user2.setPassword(password);
+		return this.success(user2);
+	}
+
+	/**
+	 * platform - 2
+	 * @param imei
+	 * @param uid
+	 * @param session
+	 * @return
+	 * @throws Exception
+	 */
+	public Object mi(String imei, long uid, String session) throws Exception {
+
+		int platform = 2;
+
+		String username = String.valueOf(uid);
+
+		User user = this.userDao.getByUsername(platform, username);
+
+		if (user == null) {
+			user = new User();
+			user.setUserName(username);
+			user.setPassword(MD5.digest(""));
+			user.setImei(imei);
+			user.setMac("");
+			user.setPlatformId(platform);
+
+			this.userDao.create(user);
+		}
+
+		return this.signin(username, "");
+	}
+
+	/**
+	 * platform - 3
+	 * @param imei
+	 * @param uid
+	 * @param session
+	 * @return
+	 * @throws Exception
+	 */
+	public Object ky(String imei, String uid, String session) throws Exception {
+
+		int platform = 3;
+
+		String username = String.valueOf(uid);
+
+		User user = this.userDao.getByUsername(platform, username);
+
+		if (user == null) {
+			user = new User();
+			user.setUserName(username);
+			user.setPassword(MD5.digest(""));
+			user.setImei(imei);
+			user.setMac("");
+			user.setPlatformId(platform);
+
+			this.userDao.create(user);
+		}
+
+		return this.signin(username, "");
+	}
+
+	/**
+	 * platform - 4
+	 * @param imei
+	 * @param uid
+	 * @param session
+	 * @return
+	 * @throws Exception
+	 */
+	public Object uuc(String imei, String uid, String session) throws Exception {
+
+		int platform = 4;
+
+		String username = String.valueOf(uid);
+
+		User user = this.userDao.getByUsername(platform, username);
+
+		if (user == null) {
+			user = new User();
+			user.setUserName(username);
+			user.setPassword(MD5.digest(""));
+			user.setImei(imei);
+			user.setMac("");
+			user.setPlatformId(platform);
+
+			this.userDao.create(user);
+		}
+
+		return this.signin(username, "");
 	}
 }

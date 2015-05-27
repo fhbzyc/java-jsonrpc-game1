@@ -12,7 +12,7 @@ import javax.persistence.Table;
 
 @Entity
 @Table(name = "base_activity")
-public class BaseActivity implements Serializable {
+public class BaseActivity implements Serializable , Cloneable {
 
 	/**
 	 * 
@@ -151,5 +151,11 @@ public class BaseActivity implements Serializable {
 
 	public void setContent(String content) {
 		this.content = content;
+	}
+
+	@Override
+	public BaseActivity clone() throws CloneNotSupportedException {
+		// TODO Auto-generated method stub
+		return (BaseActivity) super.clone();
 	}
 }

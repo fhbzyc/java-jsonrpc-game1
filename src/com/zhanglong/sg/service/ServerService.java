@@ -8,6 +8,7 @@ import javax.annotation.Resource;
 import org.springframework.stereotype.Service;
 
 import com.googlecode.jsonrpc4j.JsonRpcService;
+import com.zhanglong.sg.controller.VersionController;
 import com.zhanglong.sg.dao.ServerDao;
 import com.zhanglong.sg.entity.Server;
 import com.zhanglong.sg.model.Token;
@@ -21,7 +22,7 @@ public class ServerService extends BaseService {
 	
 	public Object list(String imei) throws Throwable {
 
-		boolean find = VersionService.inWriteList(imei);
+		boolean find = VersionController.inWriteList(imei);
 
 		int param = 0;
 		if (find) {
@@ -42,6 +43,9 @@ public class ServerService extends BaseService {
 	public Object conn(String tokenS) throws Throwable {
 
 		Token token = this.tokenDao.findOne(tokenS);
+		if (token == null) {
+			this.returnError(-1, "TOKEN ERROE");
+		}
 
 		this.getHandler().userId = token.getUserId();
 		this.getHandler().serverId = token.getServerId();

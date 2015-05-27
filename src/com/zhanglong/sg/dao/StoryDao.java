@@ -8,9 +8,9 @@ import org.hibernate.Session;
 import org.hibernate.criterion.Restrictions;
 import org.springframework.stereotype.Repository;
 
-import com.zhanglong.sg.entity.BaseStory;
 import com.zhanglong.sg.entity.Role;
 import com.zhanglong.sg.entity.Story;
+import com.zhanglong.sg.entity2.BaseStory;
 import com.zhanglong.sg.result.Result;
 
 @Repository
@@ -69,7 +69,7 @@ public class StoryDao extends BaseDao {
     	return story;
     }
 
-    public void update(Story story, Result result) {
+    public void update(Story story, Result result) throws Exception {
     	Session session = this.getSessionFactory().getCurrentSession();
     	session.update(story);
     	result.addCopy(story);
@@ -80,8 +80,9 @@ public class StoryDao extends BaseDao {
      * @param story
      * @param num
      * @param result
+     * @throws Exception 
      */
-    public void addNum(Role role, Story story, int num, Result result) {
+    public void addNum(Role role, Story story, int num, Result result) throws Exception {
 
     	story.init();
     	story.setNum(story.getNum() + num);
@@ -106,7 +107,7 @@ public class StoryDao extends BaseDao {
         this.save(story, result);
     }
 
-    public void save(Story story, Result result) {
+    public void save(Story story, Result result) throws Exception {
     	Session session = this.getSessionFactory().getCurrentSession();
     	session.update(story);
         result.addCopy(story);

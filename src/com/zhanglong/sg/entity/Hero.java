@@ -14,6 +14,8 @@ import org.springframework.web.context.ContextLoader;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.zhanglong.sg.dao.BaseHeroDao;
 import com.zhanglong.sg.dao.BaseHeroEquipDao;
+import com.zhanglong.sg.entity2.BaseHeroEquip;
+import com.zhanglong.sg.entity2.BaseSkill;
 
 @Entity
 @IdClass(HeroPK.class)

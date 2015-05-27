@@ -5,10 +5,10 @@ import java.util.List;
 import org.hibernate.Session;
 import org.springframework.stereotype.Repository;
 
-import com.zhanglong.sg.entity.BaseHero;
+import com.zhanglong.sg.entity2.BaseHero;
 
 @Repository
-public class BaseHeroDao extends BaseDao {
+public class BaseHeroDao extends BaseDao2 {
 
 	private static List<BaseHero> heros;
 
@@ -16,7 +16,7 @@ public class BaseHeroDao extends BaseDao {
 	public List<BaseHero> findAll() {
 
 		if (heros == null) {
-			Session session = this.getSessionFactory().getCurrentSession();
+			Session session = this.getBaseSessionFactory().getCurrentSession();
 			heros = session.createCriteria(BaseHero.class).list();
 		}
 

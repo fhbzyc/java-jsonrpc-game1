@@ -7,8 +7,8 @@ import javax.annotation.Resource;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Repository;
 
-import com.zhanglong.sg.entity.BaseDailyTask;
 import com.zhanglong.sg.entity.Role;
+import com.zhanglong.sg.entity2.BaseDailyTask;
 import com.zhanglong.sg.model.DailyTaskModel;
 import com.zhanglong.sg.result.Result;
 import com.zhanglong.sg.utils.Utils;
@@ -16,21 +16,13 @@ import com.zhanglong.sg.utils.Utils;
 @Repository
 public class DailyTaskDao extends BaseDao {
 
-	private static String RedisKey = "DAILY_TASK_";
-//
-//	private Role role;
-//
-//	private DailyTaskModel dailyTaskModel;
+	private static String RedisKey = "DAILY_TASK2_";
 
 	@Resource
+	private BaseDailyTaskDao baseDailyTaskDao;
+	
+	@Resource
 	private RedisTemplate<String, DailyTaskModel> redisTemplate;
-
-//	public static DailyTaskDao instance(Role role) {
-//		ClassPathXmlApplicationContext applicationContext = new ClassPathXmlApplicationContext("beans.xml");
-//		DailyTaskDao dailyTaskDao = (DailyTaskDao) applicationContext.getBean("dailyTaskDao");
-//		dailyTaskDao.setRole(role);
-//		return dailyTaskDao;
-//	}
 
 	public DailyTaskModel getDailyTaskModel(Role role) {
 
@@ -39,11 +31,18 @@ public class DailyTaskDao extends BaseDao {
     	DailyTaskModel dailyTaskModel = (DailyTaskModel) this.redisTemplate.opsForHash().get(RedisKey, role.getRoleId());
     	if (dailyTaskModel == null || todayDate != dailyTaskModel.getDate()) {
 
-    		BaseDailyTaskDao baseDailyTaskDao = new BaseDailyTaskDao();
-    		baseDailyTaskDao.setSessionFactory(this.getSessionFactory());
+    		List<BaseDailyTask> dailyTasks = this.baseDailyTaskDao.findAll();
+    		for (BaseDailyTask baseDailyTask : dailyTasks) {
+				if (baseDailyTask.getType().equals("card") && role.vip > 0) {
+					baseDailyTask.setNum(1);
+				}
+				if (baseDailyTask.getType().equals("gold") && role.cardTime > (int)(System.currentTimeMillis() / 1000l)) {
+					baseDailyTask.setNum(1);
+				}
+			}
 
     		dailyTaskModel = new DailyTaskModel();
-    		dailyTaskModel.setTaskList(baseDailyTaskDao.findAll());
+    		dailyTaskModel.setTaskList(dailyTasks);
     		dailyTaskModel.setDate(Integer.valueOf(Utils.date()));
     		this.save(role.getRoleId(), dailyTaskModel);
     	}
@@ -126,39 +125,18 @@ public class DailyTaskDao extends BaseDao {
 			result.addDailyTask(dailyTask);
 		}
 	}
-//
-//	/**
-//	 * VIP月卡
-//	 * @return
-//	 */
+
+	/**
+	 * VIP月卡
+	 * @return
+	 */
 	public void addMoonCard(Role role, Result result) {
-//		try {
-//
-//			long addTime = 86400l * 1000l * 31l;
-//
-//			this.taskList();
-//	        if (this.vipTime < System.currentTimeMillis()) {
-//		        
-//				Date date = new SimpleDateFormat("yyyyMMdd").parse(Utils.date());
-//		        long todayBenginTime = date.getTime();
-//				this.vipTime = todayBenginTime + addTime;
-//
-//				DailyTask dailyTask = addNum("gold", 1);
-//				if (dailyTask != null) {
-//					result.addDailyTask(dailyTask);
-//				}
-//	        } else {
-//	        	this.vipTime += addTime;
-//	        }
-//
-//	        this.save();
-//	        
-//		} catch (ParseException e) {
-//			// TODO Auto-generated catch block
-//			e.printStackTrace();
-//		}
+		BaseDailyTask dailyTask = this.addNum(role, "gold", 1);
+		if (dailyTask != null) {
+			result.addDailyTask(dailyTask);
+		}
 	}
-//
+
 	/**
 	 * 剿匪令
 	 * @return

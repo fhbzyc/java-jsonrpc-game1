@@ -20,4 +20,10 @@ public class BasePayShopDao extends BaseDao {
 
 		return criteria.addOrder(Order.desc("order")).list();
 	}
+
+	public BasePayShop findOne(int id) {
+
+		Session session = this.sessionFactory.getCurrentSession();
+		return (BasePayShop) session.get(BasePayShop.class, id);
+	}
 }

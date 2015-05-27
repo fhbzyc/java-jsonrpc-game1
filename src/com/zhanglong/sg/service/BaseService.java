@@ -102,7 +102,10 @@ public class BaseService {
     		result = ReflectionUtils.invokeMethod(mh, result, new Object[]{});
     	}
 
-    	String str = Response.marshalSuccess(this.getHandler().requestId, result);
+    	Handler handler = this.getHandler();
+    	
+    	int request = handler.requestId;
+    	String str = Response.marshalSuccess(request, result);
     	try {
 			this.getHandler().session.sendMessage(new TextMessage(str));
 		} catch (IOException e) {

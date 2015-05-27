@@ -9,12 +9,12 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.googlecode.jsonrpc4j.JsonRpcService;
 import com.zhanglong.sg.dao.BaseMakeItemDao;
-import com.zhanglong.sg.entity.BaseItem;
-import com.zhanglong.sg.entity.BaseMakeItem;
 import com.zhanglong.sg.entity.FinanceLog;
 import com.zhanglong.sg.entity.Hero;
 import com.zhanglong.sg.entity.Item;
 import com.zhanglong.sg.entity.Role;
+import com.zhanglong.sg.entity2.BaseItem;
+import com.zhanglong.sg.entity2.BaseMakeItem;
 import com.zhanglong.sg.result.Result;
 
 @Service

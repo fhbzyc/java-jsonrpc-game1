@@ -3,6 +3,7 @@ package websocket.handler;
 import java.io.IOException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -14,6 +15,8 @@ import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
 import org.springframework.web.socket.handler.TextWebSocketHandler;
 
+import com.fasterxml.jackson.core.JsonParseException;
+import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.zhanglong.sg.protocol.Request;
 import com.zhanglong.sg.protocol.Response;
@@ -22,64 +25,84 @@ public class EchoHandler extends TextWebSocketHandler {
 
 	public static ThreadLocal<Handler> connections = new ThreadLocal<Handler>(); 
 
-    private Map<String, Handler> sessionMap = new ConcurrentHashMap<>();
+    private static Map<String, Handler> sessionMap = new ConcurrentHashMap<>();
+
+    public static void broadcast(int serverId, String msg) throws JsonParseException, JsonMappingException, IOException {
+        for (Iterator<Map.Entry<String, Handler>> iter = EchoHandler.sessionMap.entrySet().iterator(); iter.hasNext();) {
+            Map.Entry<String, Handler> entry = iter.next();
+            Handler handler = entry.getValue();
+            if (handler.serverId == serverId) {
+            	handler.getSession().sendMessage(new TextMessage(msg));
+            }
+		}
+    }
+
+    public static int size() {
+    	return sessionMap.size();
+    }
+
+    // 单发
+    public static void pri(int roleId, String msg) throws JsonParseException, JsonMappingException, IOException {
+        for (Iterator<Map.Entry<String, Handler>> iter = EchoHandler.sessionMap.entrySet().iterator(); iter.hasNext();) {
+            Map.Entry<String, Handler> entry = iter.next();
+            Handler handler = entry.getValue();
+            if (handler.roleId == roleId) {
+            	handler.getSession().sendMessage(new TextMessage(msg));
+            	break;
+            }
+		}
+    }
 
     @Override
     public void afterConnectionEstablished(WebSocketSession session) {
 
     	Handler handler = new Handler();
     	handler.setSession(session);
-    	this.sessionMap.put(session.getId(), handler);
+    	EchoHandler.sessionMap.put(session.getId(), handler);
     }
 
     @Override
     public void afterConnectionClosed(WebSocketSession session, CloseStatus status) {
 
-        this.sessionMap.remove(session.getId());
+    	EchoHandler.sessionMap.remove(session.getId());
     }
 
     @Override
     public void handleTextMessage(WebSocketSession session, TextMessage message) {
 
-    	Handler handler = this.sessionMap.get(session.getId());
+    	Handler handler = EchoHandler.sessionMap.get(session.getId());
     	EchoHandler.connections.set(handler);
 
 		String content = message.getPayload();
 
-    	int requestId = 0;
-
+    	Request request = null;
 	   	try {
-
 	   		// 解析请求
-			Request request = this.unmarshal(content);
-			requestId = request.getId();
-
-			handler.requestId = requestId;
-
-			// 执行对应的方法
-			this.run(session, request);
-
+			request = this.unmarshal(content);
+			
 	   	} catch (Exception e) {
 			try {
-				session.sendMessage(new TextMessage(Response.marshalError(requestId, -32600, e.getMessage())));
+				session.sendMessage(new TextMessage(Response.marshalError(0, -32600, "Invalid Request")));
 			} catch (IOException e1) {
-
 			}
+	   	}
+
+	   	if (request != null) {
+	   		handler.requestId = request.getId();
+	   		this.run(session, request);
 	   	}
     }
 
     private void run(WebSocketSession session, Request request) {
-
 		// 首字母大写
 		String name = request.getService();
 		
-		if (!name.equals("login") && !name.equals("server") &&  !name.equals("notice") && !(name.equals("role") && request.getMethod().equals("getPlayer"))) {
+		if (!name.equals("login") && !name.equals("server") && !name.equals("notice") && !(name.equals("role") && request.getMethod().equals("getPlayer"))) {
 			if (EchoHandler.connections.get().roleId == 0) {
 				try {
-					session.sendMessage(new TextMessage(Response.marshalError(request.getId(), -1, "连接无效")));
+					session.sendMessage(new TextMessage(Response.marshalError(request.getId(), -1, "Session disconnect")));
 				} catch (IOException e) {
 					// TODO Auto-generated catch block
-					e.printStackTrace();
 					return ;
 				}
 			}
@@ -114,7 +137,7 @@ public class EchoHandler extends TextWebSocketHandler {
 
 		if (method == null) {
 			try {
-				session.sendMessage(new TextMessage(Response.marshalError(request.getId(), -32601, "该方法不存在或无效")));
+				session.sendMessage(new TextMessage(Response.marshalError(request.getId(), -32601, "Method not found")));
 			} catch (IOException e1) {
 			}
 			return ;
@@ -143,12 +166,32 @@ public class EchoHandler extends TextWebSocketHandler {
 			}
 		}
 
-		ReflectionUtils.invokeMethod(method, service, params);
+//		try {
+			ReflectionUtils.invokeMethod(method, service, params);
+//		} catch (Throwable e) {
+//			// TODO: handle exception
+//			try {
+//				session.sendMessage(new TextMessage(Response.marshalError(request.getId(), -20000, e.getMessage())));
+//			} catch (IOException e1) {
+//			}
+//		}
     }
 
-    public Request unmarshal(String content) throws Exception {
+    public Request unmarshal(String content) throws JsonParseException, JsonMappingException, IOException {
 
     	ObjectMapper mapper = new ObjectMapper();
     	return mapper.readValue(content, Request.class);
+    }
+
+    public static void close(WebSocketSession session, int roleId) throws IOException {
+        for (Iterator<Map.Entry<String, Handler>> iter = EchoHandler.sessionMap.entrySet().iterator(); iter.hasNext();) {
+            Map.Entry<String, Handler> entry = iter.next();
+            Handler handler = entry.getValue();
+            if (!session.getId().equals(handler.getSession().getId()) && handler.roleId == roleId) {
+            	String str = Response.marshalError(0, -1, "Session disconnect");
+            	handler.getSession().sendMessage(new TextMessage(str));
+            	handler.getSession().close();
+            }
+        }
     }
 }

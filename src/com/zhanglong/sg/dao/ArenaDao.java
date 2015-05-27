@@ -14,6 +14,8 @@ import org.hibernate.criterion.Restrictions;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Repository;
 
+import websocket.handler.EchoHandler;
+
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonMappingException;
@@ -24,6 +26,7 @@ import com.zhanglong.sg.entity.Mail;
 import com.zhanglong.sg.entity.Role;
 import com.zhanglong.sg.model.ArenaPlayerModel;
 import com.zhanglong.sg.model.Reward;
+import com.zhanglong.sg.protocol.Response;
 import com.zhanglong.sg.result.Result;
 import com.zhanglong.sg.service.RoleService;
 import com.zhanglong.sg.utils.Utils;
@@ -48,7 +51,7 @@ public class ArenaDao extends BaseDao {
 	public ArenaDao() {
 	}
 
-	public void changeIndex(int roleId, int loserId, int serverId) {
+	public void changeIndex(int roleId, int loserId, int serverId) throws JsonParseException, JsonMappingException, IOException {
 
 		// 交换位置
 		int myIndex = this.getIndex(roleId, serverId);
@@ -60,7 +63,7 @@ public class ArenaDao extends BaseDao {
 
 		int oldRank = role.getRank();
 		int newRank = newIndex + 1;
-        if (newRank < oldRank) {
+        if (newIndex < myIndex) {
         	role.rank = newRank;
 
     	    // 历史排名上升发奖励
@@ -90,6 +93,15 @@ public class ArenaDao extends BaseDao {
 
     	role.winNum += 1;
     	this.roleDao.update(role, new Result());
+
+		if (newIndex == 0) {
+
+    		String msgs = "恭喜" + role.name + "在竞技场中登顶第1名!";
+    		Result r = new Result();
+    		r.setValue("msgs", msgs);
+    		String msg = Response.marshalSuccess(0, r.toMap());
+    		EchoHandler.broadcast(serverId, msg);
+		}
 	}
 
 	public List<Integer> getList(int serverId) {
@@ -196,7 +208,7 @@ public class ArenaDao extends BaseDao {
 			for (int i = 0; i < roleIds.size(); i++) {
 				ArenaPlayerModel player = new ArenaPlayerModel();
 				player.roleId = roleIds.get(i);
-				ArenaDao.toPlayer(player, serverId);
+				this.toPlayer(player, serverId);
 				result.add(player);
 			}
 
@@ -255,7 +267,7 @@ public class ArenaDao extends BaseDao {
 			player.roleId = roleId;
 
             if (roleId <= 20000) {
-            	ArenaDao.toPlayer(player, serverId);
+            	this.toPlayer(player, serverId);
 
             } else {
             	for (Role role : roles) {
@@ -374,7 +386,7 @@ public class ArenaDao extends BaseDao {
 //		result.setArenaMoney(arenaTable.getMoney());
 	}
 
-	public static void toPlayer(ArenaPlayerModel player, int serverId) throws Exception  {
+	public void toPlayer(ArenaPlayerModel player, int serverId) throws Exception {
 
 		int rank = player.roleId;
 		player.avatar = rank % 9;
@@ -444,17 +456,17 @@ public class ArenaDao extends BaseDao {
 					maxLevel = g4[1];
 				}
 
-				player.generalList.add(ArenaDao.toHero(rank, g1));
-				player.generalList.add(ArenaDao.toHero(rank, g2));
-				player.generalList.add(ArenaDao.toHero(rank, g3));
-				player.generalList.add(ArenaDao.toHero(rank, g4));
+				player.generalList.add(this.toHero(rank, g1));
+				player.generalList.add(this.toHero(rank, g2));
+				player.generalList.add(this.toHero(rank, g3));
+				player.generalList.add(this.toHero(rank, g4));
 				player.level = maxLevel;
 				return ;
 			}
 		}
 	}
 
-	public static Object[] toHero(int rank, int[] config) throws Exception {
+	public Object[] toHero(int rank, int[] config) throws Exception {
 
 		int heroId = config[0];
 		int level = config[1];

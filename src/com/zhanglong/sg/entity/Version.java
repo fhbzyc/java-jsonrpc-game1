@@ -17,21 +17,23 @@ public class Version {
 	public static int ENABLE = 1;
 
 	@Id
-	//@GeneratedValue(strategy = GenerationType.IDENTITY) //
 	@Column(name = "version_code")
 	private Integer versionCode;
 
 	@Column(name = "version_type" , nullable = false , columnDefinition = "smallint default 0")
 	private Integer versionType;
 
-	@Column(name = "version_name" , nullable = false) 
+	@Column(name = "version_name" , nullable = false , columnDefinition = "varchar(255) default ''")
 	private String versionName;
 
-	@Column(name = "version_url" , nullable = false)
+	@Column(name = "version_url" , nullable = false , columnDefinition = "varchar(255) default ''")
 	private String versionUrl;
 
 	@Column(name = "version_enable" , nullable = false , columnDefinition = "smallint default 0")
 	private Integer versionEnable;
+
+	@Column(name = "version_channel" , nullable = false , columnDefinition = "int default 0")
+	private Integer channel;
 
 	public void setVersionCode(Integer versionCode) {
 		this.versionCode = versionCode;
@@ -71,5 +73,13 @@ public class Version {
 
 	public Integer getVersionEnable() {
 		return this.versionEnable;
+	}
+
+	public Integer getChannel() {
+		return channel;
+	}
+
+	public void setChannel(Integer channel) {
+		this.channel = channel;
 	}
 }

@@ -1,21 +1,28 @@
 package com.zhanglong.sg.service;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import javax.annotation.Resource;
 
 import org.springframework.stereotype.Service;
 
+import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.googlecode.jsonrpc4j.JsonRpcService;
 import com.zhanglong.sg.dao.BaseCheckinDao;
 import com.zhanglong.sg.dao.CheckinDao;
+import com.zhanglong.sg.entity.BaseCheckin;
 import com.zhanglong.sg.entity.Checkin;
 import com.zhanglong.sg.entity.FinanceLog;
 import com.zhanglong.sg.entity.Hero;
+import com.zhanglong.sg.entity.LjCheckin;
 import com.zhanglong.sg.entity.Role;
+import com.zhanglong.sg.model.Reward;
 import com.zhanglong.sg.result.Result;
 import com.zhanglong.sg.utils.Utils;
 
@@ -29,19 +36,15 @@ public class CheckinService extends BaseService {
 	@Resource
 	private CheckinDao checkinDao;
 
-	/**
-	 * 获取签到板
-	 * @return
-	 */
-	public Object getCheckBoard() throws Throwable {
+	public Object list() throws Exception {
 
 		int roleId = this.roleId();
 
 		int month = this.checkinDao.month();
-		String json = this.baseCheckinDao.findOne(month).getReward();
+		BaseCheckin baseCheckin = this.baseCheckinDao.findOne(month);
 
         ObjectMapper mapper = new ObjectMapper();
-        HashMap<String, Integer>[] data = mapper.readValue(json, new TypeReference<HashMap<String, Integer>[]>(){});
+        HashMap<String, Integer>[] data = mapper.readValue(baseCheckin.getReward(), new TypeReference<HashMap<String, Integer>[]>(){});
 
         int num = 0;
 
@@ -66,15 +69,23 @@ public class CheckinService extends BaseService {
         result.setValue("reward", data);
         result.setValue("status", num);
 
+		// 累计签到
+		HashMap<Integer, Reward> obj = mapper.readValue(baseCheckin.getLj(), new TypeReference<Map<Integer, Reward>>(){});
+
+		int needLj = this.ljNum(roleId);
+
+        result.setValue("lj", obj.get(needLj));
+        result.setValue("lj_num", new int[]{list.size() , needLj});
+
         return this.success(result.toMap());
 	}
 
 	/**
 	 * 
 	 * @return
-	 * @throws Throwable
+	 * @throws Exception
 	 */
-	public Object checkin() throws Throwable {
+	public Object checkin() throws Exception {
 
 		int roleId = this.roleId();
 
@@ -82,6 +93,9 @@ public class CheckinService extends BaseService {
 		boolean find = false;
 		int status = 0;
         List<Checkin> list = this.checkinDao.findAll(roleId);
+
+        int ljNum = list.size();
+
         for (Checkin temp : list) {
 			if ((int)temp.getDay() == Integer.valueOf(Utils.date())) {
 				status = temp.getNum();
@@ -95,6 +109,8 @@ public class CheckinService extends BaseService {
 
         int month = this.checkinDao.month();
         if (!find) {
+
+        	ljNum++;
 
         	checkin.setMonth(month);
         	checkin.setDay(Integer.valueOf(Utils.date()));
@@ -189,6 +205,69 @@ public class CheckinService extends BaseService {
 
     	result.setValue("sign_times", days);
     	result.setValue("status", status);
+    	result.setValue("lj_num", new int[]{ljNum , this.ljNum(roleId)});
 		return this.success(result.toMap());
+	}
+
+	public Object lj() throws Exception {
+
+		int roleId = this.roleId();
+
+		LjCheckin ljCheckin = this.checkinDao.findLj(roleId);
+		int lj_num = ljCheckin.getNum();
+		if (lj_num == 0) {
+			lj_num = 3;
+		}
+
+		List<Checkin> list = this.checkinDao.findAll(roleId);
+		int days = list.size();
+
+		ObjectMapper mapper = new ObjectMapper();
+		Result result = new Result();
+		
+		int month = this.checkinDao.month();
+		BaseCheckin baseCheckin = this.baseCheckinDao.findOne(month);
+
+		HashMap<Integer, Reward> obj = mapper.readValue(baseCheckin.getLj(), new TypeReference<Map<Integer, Reward>>(){});
+
+		if (days >= lj_num) {
+
+			Reward reward = obj.get(lj_num);
+	        if (reward != null) {
+
+	        	int oldNum = lj_num;
+	        	if (lj_num % 7 == 0) {
+	        		lj_num += 3;
+	        	} else {
+	        		lj_num += 2;
+	        	}
+
+	        	ljCheckin.setNum(lj_num);
+
+	        	this.checkinDao.updateLj(ljCheckin);
+
+	        	Role role = this.roleDao.findOne(roleId);
+	        	this.rewardDao.get(role, reward, "累计签到<" + oldNum + ">", 0, result);
+	        }
+
+		} else {
+			this.returnError(this.lineNum(), "天数不够不能领奖");
+		}
+
+        result.setValue("lj", obj.get(lj_num));
+        result.setValue("lj_num", new int[]{days , lj_num});
+
+		
+		return this.success(result.toMap());
+	}
+
+	private int ljNum(int roleId) throws JsonParseException, JsonMappingException, IOException {
+
+		int num = this.checkinDao.findLj(roleId).getNum();
+		if (num == 0) {
+			num = 3;
+		}
+
+		return num;
 	}
 }

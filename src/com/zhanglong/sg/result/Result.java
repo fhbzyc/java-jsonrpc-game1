@@ -11,15 +11,14 @@ import org.springframework.web.context.ContextLoader;
 import com.zhanglong.sg.dao.BaseItemDao;
 import com.zhanglong.sg.dao.BaseStoryDao;
 import com.zhanglong.sg.dao.HeroDao;
-import com.zhanglong.sg.entity.BaseDailyTask;
-import com.zhanglong.sg.entity.BaseItem;
-import com.zhanglong.sg.entity.BaseMission;
-import com.zhanglong.sg.entity.BaseStory;
 import com.zhanglong.sg.entity.Hero;
 import com.zhanglong.sg.entity.Item;
 import com.zhanglong.sg.entity.Role;
 import com.zhanglong.sg.entity.Story;
-import com.zhanglong.sg.utils.Utils;
+import com.zhanglong.sg.entity2.BaseDailyTask;
+import com.zhanglong.sg.entity2.BaseItem;
+import com.zhanglong.sg.entity2.BaseMission;
+import com.zhanglong.sg.entity2.BaseStory;
 
 public class Result {
 
@@ -149,7 +148,7 @@ public class Result {
         this.random_result.add(item);
     }
 
-    public void addCopy(Story story) {
+    public void addCopy(Story story) throws Exception {
         
         story.init();
 
@@ -157,6 +156,10 @@ public class Result {
 
         	BaseStoryDao baseStoryDao = ContextLoader.getCurrentWebApplicationContext().getBean(BaseStoryDao.class);
             BaseStory baseStory = baseStoryDao.findOne(story.getStoryId(), BaseStory.COPY_TYPE);
+
+            if (baseStory == null) {
+            	throw new Exception("不存在的关卡 , 普通[" + story.getStoryId() + "]");
+            }
 
             this.copyList.add(new int[]{story.getStoryId() , story.getStar() , 0 , baseStory.getTeamExp() , 0 , 0});
         } else if (story.getType() == BaseStory.HERO_COPY_TYPE) {
@@ -168,6 +171,10 @@ public class Result {
 
         	BaseStoryDao baseStoryDao = ContextLoader.getCurrentWebApplicationContext().getBean(BaseStoryDao.class);
             BaseStory baseStory = baseStoryDao.findOne(story.getStoryId(), BaseStory.HERO_COPY_TYPE);
+
+            if (baseStory == null) {
+            	throw new Exception("不存在的关卡 , 精英[" + story.getStoryId() + "]");
+            }
 
             this.heroCopyList.add(new int[]{story.getStoryId() , story.getStar() , num , baseStory.getTeamExp() , story.needGold() , story.getBuyNum()});
         }

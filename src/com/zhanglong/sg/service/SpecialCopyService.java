@@ -18,15 +18,14 @@ import com.zhanglong.sg.dao.BaseSpecialCopyDao;
 import com.zhanglong.sg.dao.BaseStoryDao;
 import com.zhanglong.sg.dao.BattleLogDao;
 import com.zhanglong.sg.dao.PowerDao;
-import com.zhanglong.sg.entity.BaseSpecialCopy;
-import com.zhanglong.sg.entity.BaseStory;
 import com.zhanglong.sg.entity.BattleLog;
 import com.zhanglong.sg.entity.Hero;
 import com.zhanglong.sg.entity.Role;
+import com.zhanglong.sg.entity2.BaseSpecialCopy;
+import com.zhanglong.sg.entity2.BaseStory;
 import com.zhanglong.sg.model.DateNumModel;
 import com.zhanglong.sg.model.SpecialCopyModel;
 import com.zhanglong.sg.result.Result;
-import com.zhanglong.sg.utils.MD5;
 
 @Service
 @JsonRpcService("/specialCopy")
@@ -288,7 +287,7 @@ public class SpecialCopyService extends BaseService {
 
         Role role = this.roleDao.findOne(roleId);
 
-        if (role.getPhysicalStrength() < baseStory.getTeamExp()) {
+        if (role.ap() < baseStory.getTeamExp()) {
         	return this.returnError(this.lineNum(), "体力不足");
         }
 
@@ -432,7 +431,7 @@ public class SpecialCopyService extends BaseService {
         battleLog.setHeroId4(heroId4);
         battleLog.setStoryType(BaseStory.SPECIAL_COPY_TYPE);
         battleLog.setStoryId(copyId);
-        
+
         ObjectMapper objectMapper = new ObjectMapper();
         battleLog.setData(objectMapper.writeValueAsString(itemss));
 
@@ -580,6 +579,19 @@ public class SpecialCopyService extends BaseService {
 
         int num = 0;
 
+        BaseStory baseStory = this.baseStoryDao.findOne(copyId, BaseStory.SPECIAL_COPY_TYPE);
+
+        Result result = new Result();
+
+        Role role = this.roleDao.findOne(roleId);
+
+        if (role.ap() < baseStory.getTeamExp()) {
+        	return this.returnError(this.lineNum(), "体力不足");
+        } else {
+        	this.roleDao.subAp(role, baseStory.getTeamExp(), result);
+        	this.roleDao.update(role, result);
+        }
+        
         DateNumModel dateNum = this.dateNumDao.findOne(roleId);
 
         long coolTime = 0l;
@@ -617,19 +629,11 @@ public class SpecialCopyService extends BaseService {
 
         this.battleLogDao.create(battleLog);
 
-        Result result = new Result();
-        
         result.setValue("battle_id", battleLog.getId());
         return this.success(result.toMap());
     }
 
     public Object battleEnd2(int battleId, int coin, int[] itemIds, int[] itemNums) throws Throwable {
-
-    //	String sign = this.request().getHeader("Sign");
-
-       // if (!MD5.digest(Data + "20150505").equals(sign)) {
-           // return this.returnError(this.lineNum(), "数据效验失败!");
-       // }
 
         int roleId = this.roleId();
 
@@ -686,7 +690,7 @@ public class SpecialCopyService extends BaseService {
 
         if (itemIds != null) {
             for (int i = 0 ; i < itemIds.length ; i++) {
-            	this.itemDao.addItem(roleId, i, itemNums[i], result);
+            	this.itemDao.addItem(roleId, itemIds[i], itemNums[i], result);
     		}
         }
 

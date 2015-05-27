@@ -24,7 +24,18 @@ public class DateNumDao {
 
         if (dateNumModel == null || dateNumModel.getDate() != date) {
 
+        	int dropItemNum = 0;
+        	long dropItemTime = 0l;
+        	
+        	if (dateNumModel != null) {
+            	dropItemNum = dateNumModel.dropItemNum;
+            	dropItemTime = dateNumModel.dropItemTime;
+        	}
+
         	dateNumModel = new DateNumModel();
+
+        	dateNumModel.dropItemNum = dropItemNum;
+        	dateNumModel.dropItemTime = dropItemTime;
         	dateNumModel.setDate(date);
         }
 

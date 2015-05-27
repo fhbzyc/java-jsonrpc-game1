@@ -11,11 +11,11 @@ import javax.annotation.Resource;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Repository;
 
-import com.zhanglong.sg.entity.BaseMission;
-import com.zhanglong.sg.entity.BaseStory;
 import com.zhanglong.sg.entity.Hero;
 import com.zhanglong.sg.entity.Role;
 import com.zhanglong.sg.entity.Story;
+import com.zhanglong.sg.entity2.BaseMission;
+import com.zhanglong.sg.entity2.BaseStory;
 import com.zhanglong.sg.model.MissionModel;
 import com.zhanglong.sg.result.Result;
 
@@ -45,7 +45,7 @@ public class MissionDao extends BaseDao {
 	public static String TYPE_HERO_CLASS = "general_class";
 	public static String TYPE_CALL_HERO = "call_hero";
 
-    private static String RedisKey = "MISSION_MAP_";
+    private static String RedisKey = "MISSION_MAP1_";
 
     public List<BaseMission> findAll(Role role) throws Exception {
 

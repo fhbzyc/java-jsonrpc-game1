@@ -74,6 +74,12 @@ public class DateNumModel implements Serializable {
 
 	private long arenaCd;
 
+	@JsonSerialize(include = Inclusion.NON_NULL)
+	public long dropItemTime = 0l;
+
+	@JsonSerialize(include = Inclusion.NON_NULL)
+	public int dropItemNum = 0;
+
 	public int getDate() {
 		return date;
 	}
@@ -272,6 +278,22 @@ public class DateNumModel implements Serializable {
 
 	public void setBarTime(long barTime) {
 		this.barTime = barTime;
+	}
+
+	public long getDropItemTime() {
+		return dropItemTime;
+	}
+
+	public void setDropItemTime(long dropItemTime) {
+		this.dropItemTime = dropItemTime;
+	}
+
+	public int getDropItemNum() {
+		return dropItemNum;
+	}
+
+	public void setDropItemNum(int dropItemNum) {
+		this.dropItemNum = dropItemNum;
 	}
 
 	public int buyApNeedGold() {

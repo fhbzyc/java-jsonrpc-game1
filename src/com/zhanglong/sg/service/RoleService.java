@@ -1,6 +1,5 @@
 package com.zhanglong.sg.service;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -10,31 +9,33 @@ import javax.annotation.Resource;
 import org.springframework.stereotype.Service;
 import org.springframework.web.context.ContextLoader;
 
-import com.googlecode.jsonrpc4j.JsonRpcService;
+import websocket.handler.EchoHandler;
+
+import com.zhanglong.sg.dao.ArenaDao;
 import com.zhanglong.sg.dao.BaseHeroShopDao;
 import com.zhanglong.sg.dao.BaseStoryDao;
 import com.zhanglong.sg.dao.OrderDao;
 import com.zhanglong.sg.dao.ServerDao;
 import com.zhanglong.sg.dao.StoryDao;
 import com.zhanglong.sg.dao.TokenDao;
-import com.zhanglong.sg.entity.BaseHeroShop;
-import com.zhanglong.sg.entity.BaseStory;
 import com.zhanglong.sg.entity.FinanceLog;
 import com.zhanglong.sg.entity.Hero;
 import com.zhanglong.sg.entity.Item;
 import com.zhanglong.sg.entity.Role;
 import com.zhanglong.sg.entity.Server;
 import com.zhanglong.sg.entity.Story;
+import com.zhanglong.sg.entity2.BaseHeroShop;
+import com.zhanglong.sg.entity2.BaseStory;
+import com.zhanglong.sg.model.ArenaPlayerModel;
 import com.zhanglong.sg.model.DateNumModel;
 import com.zhanglong.sg.model.Token;
 import com.zhanglong.sg.result.ErrorResult;
 import com.zhanglong.sg.result.Result;
 
 @Service
-@JsonRpcService("/role")
 public class RoleService extends BaseService {
 
-	private static String[] names = new String[]{
+	public static String[] sensitives = new String[]{
 	        "www.5a5a5a.com",
 	        "三国大爆炸",
 	        "掌龙",
@@ -3577,6 +3578,9 @@ public class RoleService extends BaseService {
 	        "坐台"};
 
 	@Resource
+	private ArenaDao arenaDao;
+
+	@Resource
 	private TokenDao tokenDao;
 
 	@Resource
@@ -3758,12 +3762,14 @@ public class RoleService extends BaseService {
         this.getHandler().roleId = roleId;
         this.getHandler().serverId = serverId;
 
+        EchoHandler.close(this.getHandler().getSession(), roleId);
+
         token.setRoleId(roleId);
         token.setServerId(serverId);
 
         this.tokenDao.setToken(token);
 
-        result.setPhysicalStrength(role.getPhysicalStrength(), role.apCoolTime());
+        result.setPhysicalStrength(role.ap(), role.apCoolTime());
         result.setMoney(role.getCoin(), role.getGold());
         result.setTeam(role.getExp());
 
@@ -3835,14 +3841,7 @@ public class RoleService extends BaseService {
         // 普通招募冷却时间
         result.setValue("bar_coin_time", dateNumModel.barTime > time ? dateNumModel.barTime - time : 0);
 
-//        List<Order> list = orderDao.findComplateList(roleId);
-//
-//        int countGold = 0;
-//        for (Order order : list) {
-//            countGold += order.getGold();
-//        }
-
-        result.setValue("vip", this.roleDao.vip(role.getCountGold()));
+        result.setValue("vip", role.vip());
         result.setValue("progress", role.getProgress());
 
         result.setValue("setstring", role.getStr());
@@ -3857,8 +3856,35 @@ public class RoleService extends BaseService {
         result.setValue("online_coin", OnlineService.coin(online_num));
         result.setValue("online_gold", OnlineService.gold(online_num));
 
-        return this.success(result.toMap());
+        // 竞技场排名第一的那个
+        int No1Id = this.arenaDao.getList(serverId).get(0);
 
+        if (this.roleDao.isPlayer(No1Id)) {
+        	result.setValue("No1name", this.roleDao.findOne(No1Id));
+        	
+        	List<Hero> heros = this.heroDao.findAll(No1Id);
+        	
+        	int hId = 0;
+        	for (Hero hero : heros) {
+				if (hero.getIsBattle() && hero.getPosition() == 1) {
+					hId = hero.getHeroId();
+				}
+			}
+        	result.setValue("No1hero", hId);
+
+        } else {
+        	ArenaPlayerModel p = new ArenaPlayerModel();
+        	p.roleId = No1Id;
+        	this.arenaDao.toPlayer(p, serverId);
+            result.setValue("No1name", p.name);
+            
+            Object o = p.generalList.get(0);
+            Object[] oo = (Object[])o;
+
+            result.setValue("No1hero", (int)oo[0]);
+        }
+
+        return this.success(result.toMap());
     }
 
     /**
@@ -3885,7 +3911,7 @@ public class RoleService extends BaseService {
             return this.returnError(this.lineNum(), "名字不能有回车");
         }
 
-        for (String string : names) {
+        for (String string : sensitives) {
             if (name.indexOf(string) >= 0) {
                 return this.returnError(this.lineNum(), "包含敏感词请重新起名你懂的~");
             }
@@ -3903,7 +3929,7 @@ public class RoleService extends BaseService {
         	int gold = 100;
 
             if (role.getGold() < gold) {
-            	return this.success(ErrorResult.NotEnoughGold);
+            	return this.returnError(2, ErrorResult.NotEnoughGold);
             } else {
             	this.roleDao.subGold(role, gold, "修改名字->" + name , FinanceLog.STATUS_UPDATE_NAME);
             }

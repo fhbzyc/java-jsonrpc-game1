@@ -1,7 +1,6 @@
 package com.zhanglong.sg.dao;
 
-import java.text.SimpleDateFormat;
-import java.util.Date;
+import java.sql.Timestamp;
 
 import org.hibernate.Session;
 import org.springframework.stereotype.Repository;
@@ -41,7 +40,7 @@ public class GiftDao extends BaseDao {
 		giftLog.setRoleName(role.getName());
 		giftLog.setGiftId(giftTemplate.getId());
 		giftLog.setCode(code);
-		giftLog.setTime(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date()));
+		giftLog.setTime(new Timestamp(System.currentTimeMillis()));
 
 		session.save(giftLog);
 	}

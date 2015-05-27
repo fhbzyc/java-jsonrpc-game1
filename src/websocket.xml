@@ -25,6 +25,11 @@
 	    <url-pattern>/echo</url-pattern>
     </servlet-mapping>
 
+    <servlet-mapping>
+	    <servlet-name>dispatcher</servlet-name>
+	    <url-pattern>/version</url-pattern>
+    </servlet-mapping>
+
     <listener>
         <listener-class>org.springframework.web.context.ContextLoaderListener</listener-class>
     </listener>

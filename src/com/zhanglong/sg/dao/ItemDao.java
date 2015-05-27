@@ -44,12 +44,19 @@ public class ItemDao extends BaseDao {
 		return list.get(0);
     }
 
-    public Item addItem(int roleId, int itemId, int num, Result result) throws Throwable {
+    public Item addSoul(int roleId, int itemId, int num, Result result) throws Exception {
 
-    	return this.addItem(roleId, itemId, num, false, result);
+    	result.addRandomItem(new int[]{itemId + 6000 , 1});
+    	return this.additem(roleId, itemId, num, result);
     }
 
-    public Item subItem(Item item, int num, Result result) throws Throwable {
+    public Item addItem(int roleId, int itemId, int num, Result result) throws Exception {
+
+    	result.addRandomItem(new int[]{itemId , num});
+    	return this.additem(roleId, itemId, num, result);
+    }
+
+    public Item subItem(Item item, int num, Result result) throws Exception {
 
         if (item == null) {
             return item;
@@ -73,7 +80,7 @@ public class ItemDao extends BaseDao {
         return item;
     }
 
-    private Item addItem(int roleId, int itemId, int num, boolean isSoulStone, Result result) throws Throwable {
+    public Item additem(int roleId, int itemId, int num, Result result) throws Exception {
 
         Item item = this.findOneByItemId(roleId, itemId);
 
@@ -93,30 +100,6 @@ public class ItemDao extends BaseDao {
         }
         result.addItem(item);
 
-    	// 收集物品的主线任务
-//    	TaskDao Task = new TaskDao(this.roleId);
-//    	Task.checkItemTask(itemBaseId, num, result);
-//
-//    	if (isSoulStone) {
-//    		itemBaseId += 6000;
-//    	}
-    	result.addRandomItem(new int[]{itemId , num});
-
         return item;
     }
-
-//    private ItemTable objectToItem(Object object) throws Throwable {
-//
-//    	Object[] arr = (Object[]) object;
-//    	
-//    	BaseItem baseItem = BaseItemInstance.getBaseItem((Integer)arr[3]);
-//
-//    	ItemTable item = new ItemTable();
-//    	item.setId((Integer)arr[0]);
-//    	item.setLevel((Integer)arr[1]);
-//    	item.setNum((Integer)arr[2]);
-//    	item.setBaseId(baseItem.getBaseId());
-//    	item.setRoleId((String)arr[4]);
-//    	return item;
-//    }
 }

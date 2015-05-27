@@ -14,7 +14,7 @@ import javax.persistence.Transient;
 
 @Entity
 @Table(name = "users" , indexes = {@Index(columnList="user_name" , unique = false)})
-public class User implements Serializable {
+public class User implements Serializable , Cloneable {
 
 	public static int NORMAL_REG = 0;
 	public static int QUICK_REG = 1;
@@ -39,7 +39,7 @@ public class User implements Serializable {
     private int platformId;
 
     @Column(name = "user_name" , nullable = false , columnDefinition = "varchar(32) default ''")
-    private String name;
+    private String userName;
 
     @Column(name = "user_register_type" , nullable = false , columnDefinition = "smallint default 0")
     private int registerType;
@@ -93,12 +93,12 @@ public class User implements Serializable {
 		this.platformId = platformId;
 	}
 
-	public String getName() {
-		return name;
+	public String getUserName() {
+		return userName;
 	}
 
-	public void setName(String name) {
-		this.name = name;
+	public void setUserName(String name) {
+		this.userName = name;
 	}
 
 	public int getRegisterType() {
@@ -115,5 +115,11 @@ public class User implements Serializable {
 
 	public void setTime(Timestamp time) {
 		this.time = time;
+	}
+
+	@Override
+	public User clone() throws CloneNotSupportedException {
+		// TODO Auto-generated method stub
+		return (User) super.clone();
 	}
 }

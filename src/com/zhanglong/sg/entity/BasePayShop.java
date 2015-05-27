@@ -34,7 +34,7 @@ public class BasePayShop implements Serializable {
     private String name;
 
 	@Column(name = "pay_add_gold" , nullable = false , columnDefinition = "int default 0")
-    private Integer teamExp;
+    private Integer addGold;
 
 	@Column(name = "pay_gold" , nullable = false , columnDefinition = "int default 0")
     private Integer gold;
@@ -79,12 +79,12 @@ public class BasePayShop implements Serializable {
 		this.name = name;
 	}
 
-	public Integer getTeamExp() {
-		return teamExp;
+	public Integer getAddGold() {
+		return addGold;
 	}
 
-	public void setTeamExp(Integer teamExp) {
-		this.teamExp = teamExp;
+	public void setAddGold(Integer teamExp) {
+		this.addGold = teamExp;
 	}
 
 	public Integer getGold() {

@@ -1,6 +1,7 @@
 package com.zhanglong.sg.entity;
 
 import java.io.Serializable;
+import java.sql.Timestamp;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
@@ -35,7 +36,7 @@ public class GiftLog implements Serializable {
     private String roleName;
 
     @Column(name = "gift_time" , nullable = false , columnDefinition = "timestamp")
-    private String time;
+    private Timestamp time;
 
 	public Integer getId() {
 		return id;
@@ -77,11 +78,11 @@ public class GiftLog implements Serializable {
 		this.roleName = roleName;
 	}
 
-	public String getTime() {
+	public Timestamp getTime() {
 		return time;
 	}
 
-	public void setTime(String time) {
+	public void setTime(Timestamp time) {
 		this.time = time;
 	}
 }

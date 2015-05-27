@@ -15,7 +15,6 @@ import com.zhanglong.sg.dao.BaseStoryDao;
 import com.zhanglong.sg.dao.BattleLogDao;
 import com.zhanglong.sg.dao.CopyStarDao;
 import com.zhanglong.sg.dao.StoryDao;
-import com.zhanglong.sg.entity.BaseStory;
 import com.zhanglong.sg.entity.BattleLog;
 import com.zhanglong.sg.entity.CopyStar;
 import com.zhanglong.sg.entity.FinanceLog;
@@ -23,6 +22,7 @@ import com.zhanglong.sg.entity.Hero;
 import com.zhanglong.sg.entity.Item;
 import com.zhanglong.sg.entity.Role;
 import com.zhanglong.sg.entity.Story;
+import com.zhanglong.sg.entity2.BaseStory;
 import com.zhanglong.sg.model.CopyStarModel;
 import com.zhanglong.sg.model.DateNumModel;
 import com.zhanglong.sg.utils.Utils;
@@ -259,7 +259,7 @@ public class StoryService extends BaseService {
 
         BaseStory baseStory = baseStoryList.get(storyId - 1);
         
-        int physicalStrength = role.getPhysicalStrength();
+        int physicalStrength = role.ap();
         if (physicalStrength < baseStory.getTeamExp()) {
             return this.returnError(this.lineNum(), "体力不足,不能攻打");
         }
@@ -293,8 +293,9 @@ public class StoryService extends BaseService {
             items.add(new int[]{is[0] , is[1] , 100});
         }
         
-        if (items.size() == 0) {
-        	items.add(new int[]{300 , 1 , 100});
+        if (items.size() == 0 && storyId == 1 && storyType == Story.COPY_TYPE) {
+        	// 第一关至少掉一个道具
+        	items.add(new int[]{3000 , 1 , 100});
         }
 
         result.setValue("items", items);
@@ -332,7 +333,7 @@ public class StoryService extends BaseService {
             } else {
             	ObjectMapper objectMapper = new ObjectMapper();
             	HashMap<String, Object> object = objectMapper.readValue(battleLog.getData(), new TypeReference<Map<String, Object>>(){});
-            	return object;
+            	return this.success(object);
 			}
         }
 
@@ -358,23 +359,23 @@ public class StoryService extends BaseService {
 
         BaseStory baseStory = baseStoryList.get(storyId - 1);
 
-        Role role = roleDao.findOne(roleId);
+        Role role = this.roleDao.findOne(roleId);
 
         Result result = new Result();
         if (!win) {
 
         	this.roleDao.subAp(role, 1, result);
 
-            roleDao.update(role, result);
+        	this.roleDao.update(role, result);
       
             Object object = result.toMap();
             ObjectMapper objectMapper = new ObjectMapper();
             battleLog.setData(objectMapper.writeValueAsString(object));
-            battleLogDao.update(battleLog);
+            this.battleLogDao.update(battleLog);
 
-            return object;
+            return this.success(object);
         } else {
-        	battleLogDao.update(battleLog);
+        	this.battleLogDao.update(battleLog);
         }
 
         int teamExp = baseStory.getTeamExp();
@@ -504,9 +505,9 @@ public class StoryService extends BaseService {
         }
 
         if (role.getVip() < 4 && times == 10) {
-            return new ErrorResult(new com.zhanglong.sg.result.Error(com.zhanglong.sg.result.Error.ERROR_BUY_OVER_NUM, "升级到VIP4可立即开启【扫荡10次】功能，前去升级？"));
+            return returnError(2, "升级到VIP4可立即开启【扫荡10次】功能，前去升级？");
         } else if (role.getVip() < 4 && times > 1) {
-        	 return new ErrorResult(new com.zhanglong.sg.result.Error(com.zhanglong.sg.result.Error.ERROR_BUY_OVER_NUM, "升级到VIP4可立即开启【扫荡3次】功能，前去升级？"));
+        	 return returnError(2, "升级到VIP4可立即开启【扫荡3次】功能，前去升级？");
         }
 
         Result result = new Result();
@@ -514,7 +515,7 @@ public class StoryService extends BaseService {
         BaseStory baseStory = this.baseStoryDao.findOne(storyId, type);
 
         int exp = baseStory.getTeamExp() * times;
-        if (role.getPhysicalStrength() < exp) {
+        if (role.ap() < exp) {
             return this.returnError(this.lineNum(), "体力不足");
         } else {
         	this.roleDao.subAp(role, exp, result);
@@ -535,11 +536,11 @@ public class StoryService extends BaseService {
         } else {
 
             if (role.getVip() < 1) {
-                return new ErrorResult(new com.zhanglong.sg.result.Error(com.zhanglong.sg.result.Error.ERROR_BUY_OVER_NUM, "【剿匪令】数量不足，要开启元宝扫荡，请升级到VIP1用户，前去充值？"));
+            	return this.returnError(2, "【剿匪令】数量不足，要开启元宝扫荡，请升级到VIP1用户，前去充值？");
             }
 
             if (role.getGold() < times) {
-                return ErrorResult.NotEnoughGold;
+            	return this.returnError(2, ErrorResult.NotEnoughGold);
             } else {
             	this.roleDao.subGold(role, times, "扫荡<" + baseStory.getName() + "><" + times + ">次", FinanceLog.STATUS_GOLD_WIPE_OUT);
             }
@@ -621,11 +622,7 @@ public class StoryService extends BaseService {
         DateNumModel dateNumModel = this.dateNumDao.findOne(roleId);
 
         if (dateNumModel.getBuyApNum() >= role.maxBuyPsNum()) {
-            com.zhanglong.sg.result.Error error = new com.zhanglong.sg.result.Error();
-            error.setCode(com.zhanglong.sg.result.Error.ERROR_BUY_OVER_NUM);
-            error.setMessage("购买体力次数已用完，提升VIP等级，可增加购买体力次数，前去充值？");
-            ErrorResult result = new ErrorResult(error);
-            return this.success(result);
+            return this.returnError(2, "购买体力次数已用完，提升VIP等级，可增加购买体力次数，前去充值？");
         }
 
         int gold = dateNumModel.buyApNeedGold();
@@ -633,7 +630,7 @@ public class StoryService extends BaseService {
         Result result = new Result();
 
         if (role.getGold() < gold) {
-            return ErrorResult.NotEnoughGold;
+        	return this.returnError(2, ErrorResult.NotEnoughGold);
         } else {
         	this.roleDao.addAp(role, 120, result);
 
@@ -672,13 +669,13 @@ public class StoryService extends BaseService {
         Role role = this.roleDao.findOne(roleId);
 
         if (role.getVip() < dayNum + 2) {
-            return new ErrorResult(new com.zhanglong.sg.result.Error(com.zhanglong.sg.result.Error.ERROR_BUY_OVER_NUM, "购买次数不足"));
+            return returnError(2, "购买次数不足");
         }
 
         Result result = new Result();
 
         if (role.getGold() < gold) {
-        	return ErrorResult.NotEnoughGold;
+        	return this.returnError(2, ErrorResult.NotEnoughGold);
         } else {
         	this.roleDao.subGold(role, gold, "购买扫荡次数,第<" + storyId + ">关," + this.baseStoryDao.findOne(storyId, BaseStory.HERO_COPY_TYPE).getName(), FinanceLog.STATUS_BUY_WIPE_OUT);
         	this.roleDao.update(role, result);

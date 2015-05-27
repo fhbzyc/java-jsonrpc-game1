@@ -9,10 +9,10 @@ import javax.annotation.Resource;
 import org.hibernate.Session;
 import org.springframework.stereotype.Repository;
 
-import com.zhanglong.sg.entity.BaseHeroShop;
+import com.zhanglong.sg.entity2.BaseHeroShop;
 
 @Repository
-public class BaseHeroShopDao extends BaseDao {
+public class BaseHeroShopDao extends BaseDao2 {
 
 	private static List<BaseHeroShop> list;
 
@@ -23,7 +23,7 @@ public class BaseHeroShopDao extends BaseDao {
 	public List<BaseHeroShop> findAll() {
 
 		if (BaseHeroShopDao.list == null) {
-			Session session = this.getSessionFactory().getCurrentSession();
+			Session session = this.getBaseSessionFactory().getCurrentSession();
 			BaseHeroShopDao.list = session.createCriteria(BaseHeroShop.class).list();
 		}
 
@@ -48,38 +48,37 @@ public class BaseHeroShopDao extends BaseDao {
 
 		List<BaseHeroShop> list = this.findAll("coin");
 
-		int w = 0;
-		ArrayList<int[]> coinRandomList = new ArrayList<int[]>();
+		List<int[]> randomList = new ArrayList<int[]>();
 
         Random random = new Random();
         int r = random.nextInt(100);
 
-		for (BaseHeroShop item : list) {
-			
-			int q = item.getQuality();
+		int q = 0;
 
-	        if (r < 50 && q == 1) {
+        if (r < 50) {
+        	q = 1;
+        } else if (r < 79) {
+        	q = 2;
+        } else if (r < 89) {
+        	q = 3;
+        } else if (r < 94) {
+        	q = 4;
+        } else if (r < 98) {
+        	q = 5;
+        } else {
+        	q = 6;
+        }
+
+		int w = 0;
+		for (BaseHeroShop item : list) {
+
+			if (q == item.getQuality()) {
 	        	w += item.getWeight();
-	            coinRandomList.add(new int[]{w , item.getItemId() , item.getMinNum() , item.getMaxNum()});
-	        } else if (r < 79 && q == 2) {
-	        	w += item.getWeight();
-	            coinRandomList.add(new int[]{w , item.getItemId() , item.getMinNum() , item.getMaxNum()});
-	        } else if (r < 89 && q == 3) {
-	        	w += item.getWeight();
-	            coinRandomList.add(new int[]{w , item.getItemId() , item.getMinNum() , item.getMaxNum()});
-	        } else if (r < 94 && q == 4) {
-	        	w += item.getWeight();
-	            coinRandomList.add(new int[]{w , item.getItemId() , item.getMinNum() , item.getMaxNum()});
-	        } else if (r < 98 && q == 5) {
-	        	w += item.getWeight();
-	            coinRandomList.add(new int[]{w , item.getItemId() , item.getMinNum() , item.getMaxNum()});
-	        } else if (q == 6) {
-	        	w += item.getWeight();
-	            coinRandomList.add(new int[]{w , item.getItemId() , item.getMinNum() , item.getMaxNum()});
-	        }
+	        	randomList.add(new int[]{w , item.getItemId() , item.getMinNum() , item.getMaxNum()});
+			}
 		}
 
-        return randomFromList(coinRandomList);
+        return randomFromList(randomList);
     }
 
     public int[] goldRandom() {
@@ -89,39 +88,37 @@ public class BaseHeroShopDao extends BaseDao {
         Random random = new Random();
         int r = random.nextInt(100);
 
-        ArrayList<int[]> goldRandomList = new ArrayList<int[]>();
+        List<int[]> randomList = new ArrayList<int[]>();
+
+		int q = 0;
+
+        if (r < 20) {
+        	q = 2;
+        } else if (r < 50) {
+        	q = 3;
+        } else if (r < 65) {
+        	q = 4;
+        } else if (r < 80) {
+        	q = 5;
+        } else if (r < 88) {
+        	q = 6;
+        } else {
+        	q = 7;
+        }
 
         int w = 0;
-        
-        for (BaseHeroShop baseHeroShop : list) {
+        for (BaseHeroShop item : list) {
         	
-        	int q = baseHeroShop.getQuality();
-
-            if (r < 20 && q == 2) {
-            	w += baseHeroShop.getWeight();
-            	goldRandomList.add(new int[]{w , Integer.valueOf(baseHeroShop.getItemId()) , baseHeroShop.getMinNum() , baseHeroShop.getMaxNum()});
-            } else if (r < 50 && q == 3) {
-            	w += baseHeroShop.getWeight();
-            	goldRandomList.add(new int[]{w , Integer.valueOf(baseHeroShop.getItemId()) , baseHeroShop.getMinNum() , baseHeroShop.getMaxNum()});
-            } else if (r < 65 && q == 4) {
-            	w += baseHeroShop.getWeight();
-            	goldRandomList.add(new int[]{w , Integer.valueOf(baseHeroShop.getItemId()) , baseHeroShop.getMinNum() , baseHeroShop.getMaxNum()});
-            } else if (r < 80 && q == 5) {
-            	w += baseHeroShop.getWeight();
-            	goldRandomList.add(new int[]{w , Integer.valueOf(baseHeroShop.getItemId()) , baseHeroShop.getMinNum() , baseHeroShop.getMaxNum()});
-            } else if (r < 88 && q == 6) {
-            	w += baseHeroShop.getWeight();
-            	goldRandomList.add(new int[]{w , Integer.valueOf(baseHeroShop.getItemId()) , baseHeroShop.getMinNum() , baseHeroShop.getMaxNum()});
-            } else {
-            	w += baseHeroShop.getWeight();
-            	goldRandomList.add(new int[]{w , Integer.valueOf(baseHeroShop.getItemId()) , baseHeroShop.getMinNum() , baseHeroShop.getMaxNum()});
-            }
+			if (q == item.getQuality()) {
+	        	w += item.getWeight();
+	        	randomList.add(new int[]{w , item.getItemId() , item.getMinNum() , item.getMaxNum()});
+			}
 		}
 
-        return randomFromList(goldRandomList);
+        return randomFromList(randomList);
     }
 
-    private int[] randomFromList(ArrayList<int[]> randomList) {
+    private int[] randomFromList(List<int[]> randomList) {
 
     	Random random = new Random();
 
@@ -162,7 +159,7 @@ public class BaseHeroShopDao extends BaseDao {
     	return randomFromList(goldRandom6);
     }
 
-    public int[] randomGeneral(int star) throws Throwable {
+    public int[] randomGeneral(int star) throws Exception {
 
 		ArrayList<int[]> goldRandom6 = new ArrayList<int[]>();
 

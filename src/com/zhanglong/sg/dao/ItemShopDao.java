@@ -12,14 +12,17 @@ import javax.annotation.Resource;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Repository;
 
-import com.zhanglong.sg.entity.BaseItemShop;
+import com.zhanglong.sg.entity2.BaseItemShop;
 import com.zhanglong.sg.model.ItemShopModel;
 import com.zhanglong.sg.utils.Utils;
 
 @Repository
 public class ItemShopDao extends BaseDao {
 
-	private static String RedisKey = "ITEM_SHOP_";
+	private static String RedisKey = "ITEM_SHOP1_";
+
+	@Resource
+	private BaseItemShopDao baseItemShopDao;
 
 	@Resource
 	private RedisTemplate<String, ItemShopModel> redisTemplate;
@@ -44,9 +47,7 @@ public class ItemShopDao extends BaseDao {
 
 			int num = 8;
 
-	    	BaseItemShopDao baseItemShopDao = new BaseItemShopDao();
-	    	baseItemShopDao.setSessionFactory(this.getSessionFactory());
-	        int discount = baseItemShopDao.getDiscount(type);
+	        int discount = this.baseItemShopDao.getDiscount(type);
 
 			BaseItemShop[] items = this.ref(type, num, discount);
 
@@ -78,9 +79,7 @@ public class ItemShopDao extends BaseDao {
 
 		int num = 8;
 
-    	BaseItemShopDao baseItemShopDao = new BaseItemShopDao();
-    	baseItemShopDao.setSessionFactory(this.getSessionFactory());
-        int discount = baseItemShopDao.getDiscount(type);
+        int discount = this.baseItemShopDao.getDiscount(type);
 
 		BaseItemShop[] items = this.ref(type, num, discount);
 
@@ -100,10 +99,7 @@ public class ItemShopDao extends BaseDao {
 
     private BaseItemShop[] ref(int type, int num, int discount) throws Throwable {
 
-    	BaseItemShopDao baseItemShopDao = new BaseItemShopDao();
-    	baseItemShopDao.setSessionFactory(this.getSessionFactory());
-
-    	List<BaseItemShop> shopItemList = baseItemShopDao.findByType(type);
+    	List<BaseItemShop> shopItemList = this.baseItemShopDao.findByType(type);
 
         if (shopItemList.size() <= num) {
         	throw new Throwable("商店配置出错,无法刷新");

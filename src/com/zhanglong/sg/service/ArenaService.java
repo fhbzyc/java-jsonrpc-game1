@@ -1,7 +1,9 @@
 package com.zhanglong.sg.service;
 
 import java.io.IOException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -16,16 +18,10 @@ import com.googlecode.jsonrpc4j.JsonRpcService;
 import org.hibernate.Criteria;
 import org.hibernate.SQLQuery;
 import org.hibernate.Session;
-import org.hibernate.SessionFactory;
-import org.hibernate.Transaction;
 import org.hibernate.criterion.Order;
 import org.hibernate.criterion.Restrictions;
-import org.quartz.JobExecutionContext;
-import org.quartz.JobExecutionException;
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.context.ContextLoader;
 
 import com.zhanglong.sg.dao.ArenaDao;
 import com.zhanglong.sg.dao.ArenaLogDao;
@@ -64,11 +60,11 @@ public class ArenaService extends BaseService {
     private ServerDao serverDao;
 
     /**
-     * 刷新5个对手
+     * 
      * @return
-     * @throws Throwable
+     * @throws Exception
      */
-    public Object list() throws Throwable {
+    public Object list() throws Exception {
 
         int roleId = this.roleId();
         int serverId = this.serverId();
@@ -89,6 +85,10 @@ public class ArenaService extends BaseService {
         HashMap<String, Object> playinfo = new HashMap<String,Object>();
 
 		int myIndex = this.arenaDao.getIndex(roleId, serverId);
+
+		if (role.rank == 0) {
+			role.rank = myIndex + 1;
+		}
 
 		List<Integer> roleIds = this.arenaDao.getList(serverId);
 
@@ -164,30 +164,6 @@ public class ArenaService extends BaseService {
 				}
 			}
 		}
-//		for (Object object : me.generalList) {
-//			Object[] objects = (Object[])object;
-//			if ((Integer)objects[0] == (int)arenaTable.getGeneralId1()) {
-//				heros.add(object);
-//			}
-//		}
-//		for (Object object : me.generalList) {
-//			Object[] objects = (Object[])object;
-//			if ((Integer)objects[0] == (int)arenaTable.getGeneralId2()) {
-//				heros.add(object);
-//			}
-//		}
-//		for (Object object : me.generalList) {
-//			Object[] objects = (Object[])object;
-//			if ((Integer)objects[0] == (int)arenaTable.getGeneralId3()) {
-//				heros.add(object);
-//			}
-//		}
-//		for (Object object : me.generalList) {
-//			Object[] objects = (Object[])object;
-//			if ((Integer)objects[0] == (int)arenaTable.getGeneralId4()) {
-//				heros.add(object);
-//			}
-//		}
 
         playinfo.put("maxrank", role.rank);
         playinfo.put("playrank", myIndex + 1);
@@ -202,8 +178,6 @@ public class ArenaService extends BaseService {
         result.setValue("gold1", this.gold1(roleId));
         result.setValue("gold2", this.gold2(roleId));
 
-        //Utils.addCustomEvent("jingJiChang", "jinRu", new SimpleDateFormat("HH").format(new Date()), roleId);
-
         return this.success(result.toMap());
     }
 
@@ -214,9 +188,9 @@ public class ArenaService extends BaseService {
      * @param heroId3
      * @param heroId4
      * @return
-     * @throws Throwable
+     * @throws Exception
      */
-    public Object setDefense(int heroId1, int heroId2, int heroId3, int heroId4) throws Throwable {
+    public Object setDefense(int heroId1, int heroId2, int heroId3, int heroId4) throws Exception {
 
         int roleId = this.roleId();
 
@@ -228,54 +202,34 @@ public class ArenaService extends BaseService {
     	  
       	    int id = hero.getHeroId();
 
-      	    if (hero.getIsBattle()) {
+		    if (id != heroId1 && id != heroId2 && id != heroId3 && id != heroId4) {
+		    	hero.setIsBattle(false);
+		    	hero.setPosition(0);
+            	this.heroDao.update(hero, result);
+		    } else {
 
-    		    if (id != heroId1 && id != heroId2 && id != heroId3 && id != heroId4) {
-    		    	hero.setIsBattle(false);
-    		    	hero.setPosition(0);
-                	this.heroDao.update(hero, result);
-    		    }
-    	    } else {
-    		    if (id == heroId1 || id == heroId2 || id == heroId3 || id == heroId4) {
-    		    	hero.setIsBattle(true);
+		    	hero.setIsBattle(true);
 
-    		    	if (id == heroId1) {
-    		    		hero.setPosition(1);
-    		    	} else if (id == heroId2) {
-    		    		hero.setPosition(2);
-    		    	} else if (id == heroId3) {
-    		    		hero.setPosition(3);
-    		    	} else if (id == heroId4) {
-    		    		hero.setPosition(4);
-    		    	}
+		    	if (id == heroId1) {
+		    		hero.setPosition(1);
+		    	} else if (id == heroId2) {
+		    		hero.setPosition(2);
+		    	} else if (id == heroId3) {
+		    		hero.setPosition(3);
+		    	} else if (id == heroId4) {
+		    		hero.setPosition(4);
+		    	}
 
-                    this.heroDao.update(hero, result);
-    		    }
+                this.heroDao.update(hero, result);
     	    }
         }
 
         ArrayList<Object> heros = new ArrayList<Object>();
 
         for (Hero hero : list) {
-        	if (hero.getHeroId() == heroId1) {
-        		heros.add(hero.toArray());
-        	}
-	    }
-
-        for (Hero hero : list) {
-        	if (hero.getHeroId() == heroId2) {
-        		heros.add(hero.toArray());
-        	}
-	    }
-        
-        for (Hero hero : list) {
-        	if (hero.getHeroId() == heroId3) {
-        		heros.add(hero.toArray());
-        	}
-	    }
-        
-        for (Hero hero : list) {
-        	if (hero.getHeroId() == heroId4) {
+        	
+        	int id = hero.getHeroId();
+        	if (id == heroId1 || id == heroId2 || id == heroId3 || id == heroId4) {
         		heros.add(hero.toArray());
         	}
 	    }
@@ -287,13 +241,11 @@ public class ArenaService extends BaseService {
     /**
      * 清除冷却时间
      * @return
-     * @throws Throwable
+     * @throws Exception
      */
-    public Object reset() throws Throwable {
+    public Object reset() throws Exception {
 
         int roleId = this.roleId();
-
-      //  Arena arenaTable = arenaDao.findOne(roleId, serverId);
 
         int gold = 50;
 
@@ -301,16 +253,13 @@ public class ArenaService extends BaseService {
 
         DateNumModel dateNumModel = this.dateNumDao.findOne(roleId);
 
-        dateNumModel.arenaTime = System.currentTimeMillis();
-        this.dateNumDao.save(roleId, dateNumModel);
-
         if (dateNumModel.arenaBattleNum >= MAXCHALLENGER_NUM) {
 
             if (role.getVip() < 3) {
-            	return this.returnError(this.lineNum(), "需要VIP等级为3时才可购买【竞技场】挑战次数，现在就成为VIP3？");
+            	return this.returnError(2, "需要VIP等级为3时才可购买【竞技场】挑战次数，现在就成为VIP3？");
 
             } else if (dateNumModel.buyArenaNum >= role.getVip() - 2) {
-            	return this.returnError(this.lineNum(), "升级VIP等级可提升【竞技场】购买次数，前去充值？");
+            	return this.returnError(2, "升级VIP等级可提升【竞技场】购买次数，前去充值？");
 
             } else {
 
@@ -322,11 +271,7 @@ public class ArenaService extends BaseService {
                 } else {
                      this.addGold2(roleId);
                 }
-
-               // dateNumModel.buyArenaNum += 1;
             }
-
-           // dateNumModel.buyArenaNum = 0;
 
         } else {
 
@@ -341,7 +286,6 @@ public class ArenaService extends BaseService {
             } else {
             	this.addGold1(roleId);
             }
-
         }
 
         Result result = new Result();
@@ -349,11 +293,8 @@ public class ArenaService extends BaseService {
         this.roleDao.subGold(role, gold, "购买竞技场挑战次数", FinanceLog.STATUS_ARENA_BUY);
         this.roleDao.update(role, result);
 
-       // this.dateNumDao.save(roleId, dateNumModel);
-   //     this.arenaDao.update(arenaTable);
-
         HashMap<String, Object> playinfo = new HashMap<String,Object>();
-        playinfo.put("challenge", dateNumModel.arenaBattleNum);
+        playinfo.put("challenge", this.dateNumDao.findOne(roleId).arenaBattleNum);
         playinfo.put("challengetime", 0);
 
         result.setValue("playinfo", playinfo);
@@ -372,9 +313,9 @@ public class ArenaService extends BaseService {
      * @param heroId4
      * @param power
      * @return
-     * @throws Throwable
+     * @throws Exception
      */
-    public Object battleBegin(int rank, int playerId, int heroId1, int heroId2, int heroId3, int heroId4, int power) throws Throwable {
+    public Object battleBegin(int rank, int playerId, int heroId1, int heroId2, int heroId3, int heroId4, int power) throws Exception {
 
         int myRoleId = this.roleId();
 
@@ -460,10 +401,10 @@ public class ArenaService extends BaseService {
      * @param win
      * @param battleData
      * @return
-     * @throws Throwable
+     * @throws Exception
      */
     @Transactional(rollbackFor = Throwable.class)
-    public Object battleEnd(int battleId, boolean win, String battleData) throws Throwable {
+    public Object battleEnd(int battleId, boolean win, String battleData) throws Exception {
 
         int roleId = this.roleId();
 
@@ -562,9 +503,9 @@ public class ArenaService extends BaseService {
      * 排名变化
      * @param page
      * @return
-     * @throws Throwable
+     * @throws Exception
      */
-    public Object changeLogs(int page) throws Throwable {
+    public Object changeLogs(int page) throws Exception {
 
         int roleId = this.roleId();
 
@@ -628,9 +569,9 @@ public class ArenaService extends BaseService {
      * 查看战斗数据
      * @param logId
      * @return
-     * @throws Throwable
+     * @throws Exception
      */
-    public Object battleData(int logId) throws Throwable {
+    public Object battleData(int logId) throws Exception {
 
         ArenaLog log = this.arenaLogDao.findOne(logId);
 
@@ -646,9 +587,9 @@ public class ArenaService extends BaseService {
     /**
      * 三个排行一起发
      * @return
-     * @throws Throwable
+     * @throws Exception
      */
-    public Object allRank() throws Throwable {
+    public Object allRank() throws Exception {
 
         int roleId = this.roleId();
         int serverId = this.serverId();
@@ -672,7 +613,6 @@ public class ArenaService extends BaseService {
 		}
 
     	// 等级排行
-
         List<Role> levelList = this.roleDao.expTop20(serverId);
 
         for (Role role : levelList) {
@@ -762,7 +702,7 @@ public class ArenaService extends BaseService {
         return this.success(result.toMap());
     }
 
-//    // 清除时间的
+    // 清除时间的
     private int gold1(int roleId) {
 
     	int gold = 50;
@@ -785,6 +725,7 @@ public class ArenaService extends BaseService {
     	DateNumModel dateNumModel = this.dateNumDao.findOne(roleId);
 
     	dateNumModel.setArenaCd(dateNumModel.getArenaCd() + 1);
+    	dateNumModel.arenaTime = System.currentTimeMillis();
 
     	this.dateNumDao.save(roleId, dateNumModel);
     }
@@ -812,6 +753,7 @@ public class ArenaService extends BaseService {
 
     	DateNumModel dateNumModel = this.dateNumDao.findOne(roleId);
     	dateNumModel.buyArenaNum += 1;
+    	dateNumModel.arenaBattleNum = 0;
 
     	this.dateNumDao.save(roleId, dateNumModel);
     }
@@ -819,10 +761,7 @@ public class ArenaService extends BaseService {
     
 
 	public void sendMail() {
-		// TODO Auto-generated method stub
 
-
-		@SuppressWarnings("unchecked")
 		List<Server> list = this.serverDao.findAll();
 		for (Server server : list) {
 			
@@ -846,7 +785,7 @@ public class ArenaService extends BaseService {
 				rankLog.setDate(Integer.valueOf(Utils.date()));
 				this.arenaDao.setLastRank(serverId);
 
-				//this.sendMail(session, server.getId());
+				this.sendMail(server.getId());
 			} catch (Exception e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
@@ -854,13 +793,13 @@ public class ArenaService extends BaseService {
 		}
 	}
 
-	private void sendMail(Session session, int serverId) throws IOException {
+	private void sendMail(int serverId) throws IOException {
 
-		ArenaDao arenaDao = ContextLoader.getCurrentWebApplicationContext().getBean(ArenaDao.class);
-
-		ArrayList<int[]> configs = arenaDao.rewardConfig();
+		ArrayList<int[]> configs = this.arenaDao.rewardConfig();
 
         List<Integer> list = new ArrayList<Integer>();
+
+        Session session = this.arenaDao.getSessionFactory().getCurrentSession();
 
 		Criteria criteria = session.createCriteria(RankLog.class);
 		@SuppressWarnings("unchecked")
@@ -872,30 +811,29 @@ public class ArenaService extends BaseService {
 			list = objectMapper.readValue(rankList.get(0).getRank(),  new TypeReference<List<Integer>>(){});
 		}
 
-		long time = System.currentTimeMillis();
+		String time = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date());
 
 		for (int[] config : configs) {
 
 			int[] itemId = new int[]{config[7]};
 			int[] itemNum = new int[]{config[8]};
 
-				if (config[0] == 1) {
-					itemId = new int[]{config[7] , 4018};
-					itemNum = new int[]{config[8] , 30};
-				} else if (config[0] == 2) {
-					itemId = new int[]{config[7] , 4013};
-					itemNum = new int[]{config[8] , 20};
-				} else if (config[0] == 3) {
-					itemId = new int[]{config[7] , 4018};
-					itemNum = new int[]{config[8] , 20};
-				} else if (config[0] == 4) {
-					itemId = new int[]{config[7] , 4013};
-					itemNum = new int[]{config[8] , 10};
-				} else if (config[0] == 5) {
-					itemId = new int[]{config[7] , 4001};
-					itemNum = new int[]{config[8] , 10};
-				}
-			
+			if (config[0] == 1) {
+				itemId = new int[]{config[7] , 4018};
+				itemNum = new int[]{config[8] , 30};
+			} else if (config[0] == 2) {
+				itemId = new int[]{config[7] , 4013};
+				itemNum = new int[]{config[8] , 20};
+			} else if (config[0] == 3) {
+				itemId = new int[]{config[7] , 4018};
+				itemNum = new int[]{config[8] , 20};
+			} else if (config[0] == 4) {
+				itemId = new int[]{config[7] , 4013};
+				itemNum = new int[]{config[8] , 10};
+			} else if (config[0] == 5) {
+				itemId = new int[]{config[7] , 4001};
+				itemNum = new int[]{config[8] , 10};
+			}
 
 			Reward reward = new Reward();
 			reward.setCoin(config[5]);
@@ -935,10 +873,10 @@ public class ArenaService extends BaseService {
 		    			"竞技场教官：吕小布";
 
 				if (sql.equals("")) {
-					sql = String.format("INSERT INTO `mail`(`attach_status`,`status`,`to_name`,`type`,`attchment`,`content`,`from_name`,`send_time`,`title`,`to_id`) VALUES (0,0,'',1,?,'%s','%s','%s','%s','%s')",
-							content, from_name, time, title, roleId);
+					sql = String.format("INSERT INTO role_mail(mail_status,mail_attchment,mail_content,mail_from_name,mail_time,mail_title,role_id) VALUES (0,'%s','%s','%s','%s','%s','%s')",
+							json, content, from_name, time, title, roleId);
 				} else {
-					sql += String.format(",(0,0,'',1,?,'%s','%s','%s','%s','%s')", content, from_name, time, title, roleId);
+					sql += String.format(",(0,'%s','%s','%s','%s','%s','%s')", json, content, from_name, time, title, roleId);
 				}
 
 				parameters++;
@@ -947,15 +885,10 @@ public class ArenaService extends BaseService {
 					// 1000条拼成一条
 					SQLQuery query = session.createSQLQuery(sql);
 
-					for (int i = 0 ; i < parameters; i++) {
-
-						query.setParameter(i, json);
-					}
-
 					query.executeUpdate();
-					
-					parameters = 1;
+	
 					sql = "";
+					parameters = 0;
 				}
 			}
 
@@ -964,11 +897,6 @@ public class ArenaService extends BaseService {
 			}
 
 			SQLQuery query = session.createSQLQuery(sql);
-
-			for (int i = 0 ; i < parameters; i++) {
-
-				query.setParameter(i, json);
-			}
 
 		    query.executeUpdate();
 		}

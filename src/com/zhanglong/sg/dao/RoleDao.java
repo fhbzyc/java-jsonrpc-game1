@@ -69,6 +69,16 @@ public class RoleDao extends BaseDao {
 		return ((BigInteger) query.list().iterator().next()).intValue();
 	}
 
+	public int addPillage(int num) {
+
+		String sql = "UPDATE role SET role_pillage_num = role_pillage_num + " + num + " WHERE role_level >= 25 AND role_pillage_num < 100";
+
+		Session session = this.getSessionFactory().getCurrentSession();
+		SQLQuery query = session.createSQLQuery(sql);
+
+		return query.executeUpdate();
+	}
+
 	public Role create(int userId, int serverId) {
 
 		Role role = new Role();
@@ -95,7 +105,7 @@ public class RoleDao extends BaseDao {
 
 	public void update(Role role, Result result) {
 		role.level = role.level();
-		role.vip = this.vip(role.countGold)[0];
+		// role.vip = this.vip(role.countGold)[0];
 		Session session = this.getSessionFactory().getCurrentSession();
 		session.update(role);
 		result.setMoney(role.getCoin(), role.getGold());
@@ -310,29 +320,17 @@ public class RoleDao extends BaseDao {
     }
 
 	public void addAp(Role role, int ap, Result result) {
-		int newAp = ap + role.getPhysicalStrength();
+		int newAp = ap + role.ap();
 		role.setNewAp(newAp);
 		result.setPhysicalStrength(newAp, role.apCoolTime());
     }
 
 	public void subAp(Role role, int ap, Result result) {
-		int newAp = role.getPhysicalStrength() - ap;
+		int newAp = role.ap() - ap;
 		role.setNewAp(newAp);
 		result.setPhysicalStrength(newAp, role.apCoolTime());
     }
 
-    public int[] vip(int gold) {
-
-		int[] arr = new int[]{10 , 100 , 300 , 500 , 1000 , 2000 , 3000 , 5000 , 7000 , 10000 , 15000 , 20000 , 40000 , 80000 , 150000};
-
-		for(int i = 0 ; i < arr.length ; i++) {
-			if (gold < arr[i]) {
-				return new int[]{i , gold , arr[i]};
-			}
-		}
-
-		return new int[]{arr.length , gold , arr[arr.length - 1]};
-    }
 
     public Role getByServerId(int userId, int serverId) {
 
@@ -539,5 +537,13 @@ public class RoleDao extends BaseDao {
 		}
 
 		return result;
+	}
+
+	public boolean isPlayer(int roleId) {
+		if (roleId > 20000) {
+			return true;
+		} else {
+			return false;
+		}
 	}
 }

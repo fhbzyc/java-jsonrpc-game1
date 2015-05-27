@@ -5,7 +5,7 @@ package com.zhanglong.sg.result;
  */
 public class ErrorResult {
 	
-    public static ErrorResult NotEnoughGold = new ErrorResult(new Error(Error.ERROR_BUY_OVER_NUM, "元宝不足，前去充值？"));
+    public static String NotEnoughGold = "元宝不足，前去充值？";
 
 	public int id;
 

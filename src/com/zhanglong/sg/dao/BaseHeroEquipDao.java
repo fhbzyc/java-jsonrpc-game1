@@ -7,10 +7,10 @@ import org.hibernate.Session;
 import org.hibernate.criterion.Order;
 import org.springframework.stereotype.Repository;
 
-import com.zhanglong.sg.entity.BaseHeroEquip;
+import com.zhanglong.sg.entity2.BaseHeroEquip;
 
 @Repository
-public class BaseHeroEquipDao extends BaseDao {
+public class BaseHeroEquipDao extends BaseDao2 {
 
 	private static List<BaseHeroEquip> heroEquips;
 
@@ -18,7 +18,7 @@ public class BaseHeroEquipDao extends BaseDao {
 	public List<BaseHeroEquip> findAll() {
 
 		if (heroEquips == null) {
-			Session session = this.getSessionFactory().getCurrentSession();
+			Session session = this.getBaseSessionFactory().getCurrentSession();
 			heroEquips = session.createCriteria(BaseHeroEquip.class).addOrder(Order.asc("pk")).list();
 		}
 

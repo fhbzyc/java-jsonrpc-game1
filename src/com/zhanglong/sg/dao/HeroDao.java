@@ -50,7 +50,7 @@ public class HeroDao extends BaseDao {
 		session.update(hero);
 	}
 	
-	public void update(Hero hero, Result result) throws Throwable {
+	public void update(Hero hero, Result result) throws Exception {
 
 		Session session = this.getSessionFactory().getCurrentSession();
 		session.update(hero);
@@ -103,7 +103,7 @@ public class HeroDao extends BaseDao {
     	return Hero.EXP[maxLevel - 1];
     }
 
-    public int soulNumByStar(int heroId) throws Throwable {
+    public int soulNumByStar(int heroId) throws Exception {
 
     	int star = this.baseHeroDao.findOne(heroId).getStar();
 

@@ -6,11 +6,11 @@ import java.util.List;
 import org.hibernate.Session;
 import org.springframework.stereotype.Repository;
 
-import com.zhanglong.sg.entity.BaseItemShop;
-import com.zhanglong.sg.entity.BaseShopDiscount;
+import com.zhanglong.sg.entity2.BaseItemShop;
+import com.zhanglong.sg.entity2.BaseShopDiscount;
 
 @Repository
-public class BaseItemShopDao extends BaseDao {
+public class BaseItemShopDao extends BaseDao2 {
 
 	private static List<BaseItemShop> list;
 
@@ -18,7 +18,7 @@ public class BaseItemShopDao extends BaseDao {
 	public List<BaseItemShop> findAll() {
 
 		if (BaseItemShopDao.list == null) {
-			Session session = this.getSessionFactory().getCurrentSession();
+			Session session = this.getBaseSessionFactory().getCurrentSession();
 			BaseItemShopDao.list = session.createCriteria(BaseItemShop.class).list();
 		}
 
@@ -39,14 +39,17 @@ public class BaseItemShopDao extends BaseDao {
 
 	public int getDiscount(int type) {
 
-        String sql = String.format("SELECT * FROM base_shop_discount WHERE shop_type = %d AND NOW() BETWEEN begin_time AND end_time", type);
-        @SuppressWarnings("unchecked")
-		List<BaseShopDiscount> list = this.getSessionFactory().getCurrentSession().createSQLQuery(sql).list();
-        
-        if (list.size() == 0) {
-        	return 10;
-        } else {
-        	return list.get(0).getDiscount();
-        }
+		Session session = this.getBaseSessionFactory().getCurrentSession();
+		@SuppressWarnings("unchecked")
+		List<BaseShopDiscount> list = session.createCriteria(BaseShopDiscount.class).list();
+
+		long time = System.currentTimeMillis();
+
+		for (BaseShopDiscount discount : list) {
+			if (discount.getType() == type && discount.getBeginTime().getTime() <= time && discount.getEndTime().getTime() > time) {
+				return discount.getDiscount();
+			}
+		}
+        return 10;
 	}
 }

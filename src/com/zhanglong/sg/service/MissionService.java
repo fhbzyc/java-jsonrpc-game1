@@ -10,13 +10,12 @@ import org.springframework.stereotype.Service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.googlecode.jsonrpc4j.JsonRpcService;
-import com.zhanglong.sg.entity.BaseDailyTask;
-import com.zhanglong.sg.entity.BaseMission;
 import com.zhanglong.sg.entity.FinanceLog;
 import com.zhanglong.sg.entity.Role;
+import com.zhanglong.sg.entity2.BaseDailyTask;
+import com.zhanglong.sg.entity2.BaseMission;
 import com.zhanglong.sg.model.DateNumModel;
 import com.zhanglong.sg.model.Reward;
-import com.zhanglong.sg.result.ErrorResult;
 import com.zhanglong.sg.result.Result;
 import com.zhanglong.sg.utils.Utils;
 
@@ -199,12 +198,6 @@ public class MissionService extends BaseService {
                 return this.returnError(this.lineNum(), "时间已过, 不能领取体力");
             }
 
-            this.dailyTaskDao.complete(role, taskId);
-
-            this.roleDao.addAp(role, 60, result);
-            this.roleDao.update(role, result);
-
-            return this.success(result.toMap());
         }
 
         this.dailyTaskDao.complete(role, taskId);
@@ -237,10 +230,8 @@ public class MissionService extends BaseService {
         DateNumModel dateNumModel = this.dateNumDao.findOne(roleId);
         
         if (dateNumModel.getBuyCoinNum() + times > role.maxGetCoinTimes()) {
-            com.zhanglong.sg.result.Error error = new com.zhanglong.sg.result.Error();
-            error.setCode(com.zhanglong.sg.result.Error.ERROR_BUY_OVER_NUM);
-            error.setMessage("提升VIP等级，可增加每日点金次数，前去充值？");
-            return this.success(new ErrorResult(error));
+
+            return this.returnError(2, "提升VIP等级，可增加每日点金次数，前去充值？");
         }
 
         int gold = 0;
@@ -281,7 +272,7 @@ public class MissionService extends BaseService {
         }
 
         if (role.getGold() < gold) {
-        	return this.success(ErrorResult.NotEnoughGold);
+        	return this.returnError(2, "元宝不足");
         } else {
 
         	this.roleDao.addCoin(role, coin, "点金手", FinanceLog.STATUS_GOLD_BUY_COIN, result);

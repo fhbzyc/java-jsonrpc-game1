@@ -5,7 +5,7 @@ import java.util.HashMap;
 import java.util.List;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.zhanglong.sg.entity.BaseDailyTask;
+import com.zhanglong.sg.entity2.BaseDailyTask;
 
 public class DailyTaskModel implements Serializable {
 

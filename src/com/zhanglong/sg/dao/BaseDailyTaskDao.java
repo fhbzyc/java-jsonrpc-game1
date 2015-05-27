@@ -6,10 +6,10 @@ import java.util.List;
 import org.hibernate.Session;
 import org.springframework.stereotype.Repository;
 
-import com.zhanglong.sg.entity.BaseDailyTask;
+import com.zhanglong.sg.entity2.BaseDailyTask;
 
 @Repository
-public class BaseDailyTaskDao extends BaseDao {
+public class BaseDailyTaskDao extends BaseDao2 {
 
 	private static List<BaseDailyTask> list;
 
@@ -17,7 +17,7 @@ public class BaseDailyTaskDao extends BaseDao {
 	public List<BaseDailyTask> findAll() {
 
 		if (BaseDailyTaskDao.list == null) {
-			Session session = this.sessionFactory.getCurrentSession();
+			Session session = this.getBaseSessionFactory().getCurrentSession();
 			BaseDailyTaskDao.list = session.createCriteria(BaseDailyTask.class).list();
 		}
 

@@ -3,7 +3,7 @@ package com.zhanglong.sg.model;
 import java.io.Serializable;
 import java.util.List;
 
-import com.zhanglong.sg.entity.BaseItemShop;
+import com.zhanglong.sg.entity2.BaseItemShop;
 
 public class ItemShopModel implements Serializable {
 
