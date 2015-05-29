@@ -10,13 +10,13 @@ import com.zhanglong.sg.entity.Notice;
 @Repository
 public class NoticeDao extends BaseDao {
 
-	@SuppressWarnings("unchecked")
 	public Notice findOne() {
 
         Session session = this.getSessionFactory().getCurrentSession();
         String sql = "SELECT * FROM base_notice WHERE NOW() BETWEEN notice_begin_time AND notice_end_time";
 
-        List list = session.createSQLQuery(sql).list();
+        @SuppressWarnings("unchecked")
+		List<Notice> list = session.createSQLQuery(sql).list();
         if (list.size() == 0) {
         	return null;
         }

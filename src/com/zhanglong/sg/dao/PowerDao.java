@@ -23,37 +23,6 @@ public class PowerDao extends BaseDao {
     	return (Power) session.get(Power.class, roleId);
     }
 
-//	public void update(Power power) {
-//
-//		Session session = this.getSessionFactory().getCurrentSession();
-//		session.update(power);
-//	}
-//
-//	public void create(Role role, int power, List<Hero> heros) throws JsonProcessingException {
-//
-//		Power power2 = this.findOne(role.getRoleId());
-//		if (power2 != null) {
-//			if (power <= power2.getPower()) {
-//				return;
-//			}
-//		}
-//
-//		ObjectMapper objectMapper = new ObjectMapper();
-//		String json = objectMapper.writeValueAsString(heros);
-//
-//		power2 = new Power();
-//		power2.setRoleId(role.getRoleId());
-//		power2.setAvatar(role.getAvatar());
-//		power2.setLevel(role.level());
-//		power2.setName(role.getName());
-//		power2.setPower(power);
-//		power2.setData(json);
-//		power2.setServerId(role.getServerId());
-//
-//		Session session = this.getSessionFactory().getCurrentSession();
-//		session.save(power);
-//	}
-
 	public void save(Role role, int power, List<Hero> heros) throws JsonProcessingException {
 		Power power2 = this.findOne(role.getRoleId());
 		
@@ -97,6 +66,7 @@ public class PowerDao extends BaseDao {
 //		sqlQuery.setParameter(3, max);
 //		sqlQuery.setParameter(4, serverId);
 
+		@SuppressWarnings("unchecked")
 		List<Power> list = criteria.list();
 
 		if (list.size() == 0) {

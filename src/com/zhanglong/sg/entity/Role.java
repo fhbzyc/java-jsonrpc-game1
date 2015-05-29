@@ -25,6 +25,8 @@ public class Role implements Serializable {
 	// 经验对应等级
 	public static int[] EXP = new int[]{6,12,24,36,60,90,140,220,300,400,530,660,790,920,1050,1180,1310,1440,1570,1700,1830,1980,2140,2320,2510,2710,2950,3230,3530,3880,4280,4730,5230,5840,6560,7390,8490,9690,10890,12390,13890,15590,17290,18990,20790,22790,24790,26990,29190,31490,33790,36090,38590,41290,43990,46790,49790,52990,56290,59590,62890,66390,69890,73590,77390,81390,85590,89890,94390,99090,103790,108490,113190,117890,122590,127290,131990,136690,141490,147490};
 
+	public static int[] VIP_GOLD = new int[]{10 , 100 , 300 , 500 , 1000 , 2000 , 3000 , 5000 , 7000 , 10000 , 15000 , 20000 , 40000 , 80000 , 150000};
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "role_id")
@@ -415,8 +417,11 @@ public class Role implements Serializable {
 	}
 
     public int[] vip() {
-		int[] arr = new int[]{10 , 100 , 300 , 500 , 1000 , 2000 , 3000 , 5000 , 7000 , 10000 , 15000 , 20000 , 40000 , 80000 , 150000 , 0};
-		return new int[]{this.vip , this.countGold , arr[this.vip]};
+    	int next = this.countGold;
+    	if (this.vip < Role.VIP_GOLD.length) {
+    		next = Role.VIP_GOLD[this.vip];
+    	}
+		return new int[]{this.vip , this.countGold , next};
     }
 
     /**

@@ -95,13 +95,15 @@ public class BaseItem implements Serializable , Cloneable {
 	}
 
 	public int maxExp() {
-		if (this.type == 5) {
+		if (this.type == 5 || this.type == 9) {
 			if (this.color == 1) {
 				return 20;
 			} else if (this.color == 2) {
 				return 270;
 			} else if (this.color == 3) {
-				return 1620;
+				return 1520;
+			} else if (this.color == 4) {
+				return 1520;
 			}
 		}
 

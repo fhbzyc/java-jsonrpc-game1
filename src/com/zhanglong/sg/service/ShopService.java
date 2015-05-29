@@ -6,7 +6,6 @@ import javax.annotation.Resource;
 
 import org.springframework.stereotype.Service;
 
-import com.googlecode.jsonrpc4j.JsonRpcService;
 import com.zhanglong.sg.dao.BaseItemDao;
 import com.zhanglong.sg.dao.ItemShopDao;
 import com.zhanglong.sg.entity.FinanceLog;
@@ -17,7 +16,6 @@ import com.zhanglong.sg.result.ErrorResult;
 import com.zhanglong.sg.result.Result;
 
 @Service
-@JsonRpcService("shop")
 public class ShopService extends BaseService {
 
     @Resource
@@ -28,11 +26,10 @@ public class ShopService extends BaseService {
 
 	/**
      * 普通商店商品列表
-     * @param tokenS
      * @return
      * @throws Throwable
      */
-    public Object defaultShop() throws Throwable {
+    public Object defaultShop() throws Exception {
 
         ItemShopModel itemShopModel = this.itemShopDao.getShopByType(this.roleId(), BaseItemShop.SHOP_TYPE_1);
 
@@ -40,7 +37,7 @@ public class ShopService extends BaseService {
 
         result.setValue("items", itemShopModel.getItemList());
         result.setValue("refresh_times", itemShopModel.getRefreshNum());
-        result.setValue("refresh_money", this.getRefreshGold(itemShopModel.getRefreshNum()));
+        result.setValue("refresh_money", this.gold(itemShopModel.getRefreshNum()));
         result.setValue("discount", itemShopModel.getDiscount());
         return this.success(result.toMap());
     }
@@ -48,9 +45,9 @@ public class ShopService extends BaseService {
     /**
      * 竞技场商店
      * @return
-     * @throws Throwable
+     * @throws Exception
      */
-    public Object arenaShop() throws Throwable {
+    public Object arenaShop() throws Exception {
 
     	int roleId = this.roleId();
 
@@ -64,7 +61,7 @@ public class ShopService extends BaseService {
         Result result = new Result();
         result.setValue("items", itemShopModel.getItemList());
         result.setValue("refresh_times", itemShopModel.getRefreshNum());
-        result.setValue("refresh_money", this.getRefreshGold(itemShopModel.getRefreshNum()));
+        result.setValue("refresh_money", this.gold(itemShopModel.getRefreshNum()));
         result.setValue("discount", itemShopModel.getDiscount());
         result.setValue("money3", role.getMoney3());
         return this.success(result.toMap());
@@ -73,9 +70,9 @@ public class ShopService extends BaseService {
     /**
      * 讨伐商店
      * @return
-     * @throws Throwable
+     * @throws Exception
      */
-    public Object tftxShop() throws Throwable {
+    public Object tftxShop() throws Exception {
 
     	int roleId = this.roleId();
 
@@ -89,7 +86,7 @@ public class ShopService extends BaseService {
         Result result = new Result();
         result.setValue("items", itemShopModel.getItemList());
         result.setValue("refresh_times", itemShopModel.getRefreshNum());
-        result.setValue("refresh_money", this.getRefreshGold(itemShopModel.getRefreshNum()));
+        result.setValue("refresh_money", this.gold(itemShopModel.getRefreshNum()));
         result.setValue("discount", itemShopModel.getDiscount());
         result.setValue("money4", role.getMoney4());
         return this.success(result.toMap());
@@ -97,31 +94,30 @@ public class ShopService extends BaseService {
 
     /**
      * 刷新普通商店
-     * @param tokenS
      * @return
-     * @throws Throwable
+     * @throws Exception
      */
-	public Object refreshShop() throws Throwable {
+	public Object refreshShop() throws Exception {
 
          ItemShopModel itemShopModel = itemShopDao.getShopByType(this.roleId(), BaseItemShop.SHOP_TYPE_1);
 
          Role role = this.roleDao.findOne(this.roleId());
 
-         int gold = this.getRefreshGold(itemShopModel.getRefreshNum());
+         int gold = this.gold(itemShopModel.getRefreshNum());
          if (role.getGold() < gold) {
         	 return this.returnError(2, ErrorResult.NotEnoughGold);
          }
 
          Result result = new Result();
-         this.roleDao.subGold(role, gold, "第<" + (itemShopModel.getRefreshNum() + 1) + ">次刷新普通商城", FinanceLog.STATUS_SHOP_REFRESH);
-         this.roleDao.update(role, result);
+         this.roleDao.subGold(role, gold, "第<" + (itemShopModel.getRefreshNum() + 1) + ">次刷新普通商城", FinanceLog.STATUS_SHOP_REFRESH, result);
+        // this.roleDao.update(role, result);
   
          this.itemShopDao.refresh(this.roleId(), BaseItemShop.SHOP_TYPE_1);
          itemShopModel = itemShopDao.getShopByType(this.roleId(), BaseItemShop.SHOP_TYPE_1);
 
          result.setValue("items", itemShopModel.getItemList());
          result.setValue("refresh_times", itemShopModel.getRefreshNum());
-         result.setValue("refresh_money", this.getRefreshGold(itemShopModel.getRefreshNum()));
+         result.setValue("refresh_money", this.gold(itemShopModel.getRefreshNum()));
          result.setValue("discount", itemShopModel.getDiscount());
          return this.success(result.toMap());
      }
@@ -129,9 +125,9 @@ public class ShopService extends BaseService {
     /**
      * 刷新竞技场商店
      * @return
-     * @throws Throwable
+     * @throws Exception
      */
-    public Object refreshArenaShop() throws Throwable {
+    public Object refreshArenaShop() throws Exception {
 
     	int roleId = this.roleId();
 
@@ -139,21 +135,21 @@ public class ShopService extends BaseService {
 
         Role role = this.roleDao.findOne(roleId);
 
-        int gold = this.getRefreshGold(itemShopModel.getRefreshNum());
+        int gold = this.gold(itemShopModel.getRefreshNum());
         if (role.getGold() < gold) {
         	return this.returnError(2, ErrorResult.NotEnoughGold);
         }
 
         Result result = new Result();
-        this.roleDao.subGold(role, gold, "第<" + (itemShopModel.getRefreshNum() + 1) + ">次刷新竞技场商城", FinanceLog.STATUS_SHOP_REFRESH);
-        this.roleDao.update(role, result);
+        this.roleDao.subGold(role, gold, "第<" + (itemShopModel.getRefreshNum() + 1) + ">次刷新竞技场商城", FinanceLog.STATUS_SHOP_REFRESH, result);
+       // this.roleDao.update(role, result);
  
         this.itemShopDao.refresh(roleId, BaseItemShop.SHOP_TYPE_3);
         itemShopModel = this.itemShopDao.getShopByType(roleId, BaseItemShop.SHOP_TYPE_3);
 
         result.setValue("items", itemShopModel.getItemList());
         result.setValue("refresh_times", itemShopModel.getRefreshNum());
-        result.setValue("refresh_money", this.getRefreshGold(itemShopModel.getRefreshNum()));
+        result.setValue("refresh_money", this.gold(itemShopModel.getRefreshNum()));
         result.setValue("discount", itemShopModel.getDiscount());
         result.setValue("money3", role.getMoney3());
         return this.success(result.toMap());
@@ -163,9 +159,9 @@ public class ShopService extends BaseService {
     /**
      * 
      * @return
-     * @throws Throwable
+     * @throws Exception
      */
-    public Object refreshTftxShop() throws Throwable {
+    public Object refreshTftxShop() throws Exception {
 
     	int roleId = this.roleId();
 
@@ -173,21 +169,21 @@ public class ShopService extends BaseService {
 
         Role role = this.roleDao.findOne(roleId);
 
-        int gold = this.getRefreshGold(itemShopModel.getRefreshNum());
+        int gold = this.gold(itemShopModel.getRefreshNum());
         if (role.getGold() < gold) {
         	return this.returnError(2, ErrorResult.NotEnoughGold);
         }
 
         Result result = new Result();
-        this.roleDao.subGold(role, gold, "第<" + (itemShopModel.getRefreshNum() + 1) + ">次刷新讨伐商城", FinanceLog.STATUS_SHOP_REFRESH);
-        this.roleDao.update(role, result);
+        this.roleDao.subGold(role, gold, "第<" + (itemShopModel.getRefreshNum() + 1) + ">次刷新讨伐商城", FinanceLog.STATUS_SHOP_REFRESH, result);
+        // this.roleDao.update(role, result);
  
         this.itemShopDao.refresh(roleId, BaseItemShop.SHOP_TYPE_4);
         itemShopModel = this.itemShopDao.getShopByType(roleId, BaseItemShop.SHOP_TYPE_4);
 
         result.setValue("items", itemShopModel.getItemList());
         result.setValue("refresh_times", itemShopModel.getRefreshNum());
-        result.setValue("refresh_money", this.getRefreshGold(itemShopModel.getRefreshNum()));
+        result.setValue("refresh_money", this.gold(itemShopModel.getRefreshNum()));
         result.setValue("discount", itemShopModel.getDiscount());
         result.setValue("money4", role.getMoney4());
         return this.success(result.toMap());
@@ -198,9 +194,9 @@ public class ShopService extends BaseService {
      * 竞技场商城购买道具
      * @param index
      * @return
-     * @throws Throwable
+     * @throws Exception
      */
-    public Object buyDefaultShopItem(int index) throws Throwable {
+    public Object buyDefaultShopItem(int index) throws Exception {
 
     	int roleId = this.roleId();
 
@@ -228,8 +224,8 @@ public class ShopService extends BaseService {
             if(role.getCoin() < shopItem.getPrice()) {
             	return this.returnError(this.lineNum(), "金币不足");
             } else {
-            	this.roleDao.subCoin(role, shopItem.getPrice(), "普通商店购买道具<" + this.baseItemDao.findOne(shopItem.getItemId()).getName() + ">", FinanceLog.STATUS_SHOP_BUY_COIN);
-            	this.roleDao.update(role, result);
+            	this.roleDao.subCoin(role, shopItem.getPrice(), "普通商店购买道具<" + this.baseItemDao.findOne(shopItem.getItemId()).getName() + ">", FinanceLog.STATUS_SHOP_BUY_COIN, result);
+            //	this.roleDao.update(role, result);
             }
 
         } else if (unit == BaseItemShop.MONEY_TYPE_GOLD) {
@@ -237,8 +233,8 @@ public class ShopService extends BaseService {
             	return this.returnError(2, ErrorResult.NotEnoughGold);
             } else {
 
-            	this.roleDao.subGold(role, shopItem.getPrice(), "普通商店购买道具<" + this.baseItemDao.findOne(shopItem.getItemId()).getName() + ">", FinanceLog.STATUS_SHOP_BUY_GOLD);
-            	this.roleDao.update(role, result);
+            	this.roleDao.subGold(role, shopItem.getPrice(), "普通商店购买道具<" + this.baseItemDao.findOne(shopItem.getItemId()).getName() + ">", FinanceLog.STATUS_SHOP_BUY_GOLD, result);
+            //	this.roleDao.update(role, result);
             }
         } else {
         	return this.returnError(this.lineNum(), "配置出错");
@@ -261,9 +257,9 @@ public class ShopService extends BaseService {
      * 普通商城购买道具
      * @param index
      * @return
-     * @throws Throwable
+     * @throws Exception
      */
-    public Object buyArenaShopItem(int index) throws Throwable {
+    public Object buyArenaShopItem(int index) throws Exception {
 
     	int roleId = this.roleId();
 
@@ -310,9 +306,9 @@ public class ShopService extends BaseService {
      * 
      * @param index
      * @return
-     * @throws Throwable
+     * @throws Exception
      */
-    public Object buyTftxShop(int index) throws Throwable {
+    public Object buyTftxShop(int index) throws Exception {
 
     	int roleId = this.roleId();
 
@@ -355,8 +351,12 @@ public class ShopService extends BaseService {
         return this.success(result.toMap());
     }
 
-    private int getRefreshGold(int times) {
-    	int n = times / 2;
-    	return (int)(50 * Math.pow(2, n));
+    private int gold(int num) {
+    	int n = num / 2;
+    	int gold = (int)(50 * Math.pow(2, n));
+    	if (gold > 800) {
+    		gold = 800;
+    	}
+    	return gold;
     }
 }

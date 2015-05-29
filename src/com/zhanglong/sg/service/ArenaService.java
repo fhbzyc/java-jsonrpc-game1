@@ -7,13 +7,13 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 
 import javax.annotation.Resource;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.googlecode.jsonrpc4j.JsonRpcService;
 
 import org.hibernate.Criteria;
 import org.hibernate.SQLQuery;
@@ -21,27 +21,32 @@ import org.hibernate.Session;
 import org.hibernate.criterion.Order;
 import org.hibernate.criterion.Restrictions;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
+
+import websocket.handler.EchoHandler;
 
 import com.zhanglong.sg.dao.ArenaDao;
 import com.zhanglong.sg.dao.ArenaLogDao;
+import com.zhanglong.sg.dao.BaseActivityDao;
+import com.zhanglong.sg.dao.MailDao;
 import com.zhanglong.sg.dao.PowerDao;
 import com.zhanglong.sg.dao.ServerDao;
 import com.zhanglong.sg.entity.ArenaLog;
+import com.zhanglong.sg.entity.BaseActivity;
 import com.zhanglong.sg.entity.BattleLog;
 import com.zhanglong.sg.entity.FinanceLog;
 import com.zhanglong.sg.entity.Hero;
+import com.zhanglong.sg.entity.Mail;
 import com.zhanglong.sg.entity.RankLog;
 import com.zhanglong.sg.entity.Role;
 import com.zhanglong.sg.entity.Server;
 import com.zhanglong.sg.model.ArenaPlayerModel;
 import com.zhanglong.sg.model.DateNumModel;
 import com.zhanglong.sg.model.Reward;
+import com.zhanglong.sg.protocol.Response;
 import com.zhanglong.sg.result.Result;
 import com.zhanglong.sg.utils.Utils;
 
 @Service
-@JsonRpcService("/arena")
 public class ArenaService extends BaseService {
 
     private static int MAXCHALLENGER_NUM = 5;
@@ -58,6 +63,12 @@ public class ArenaService extends BaseService {
 
     @Resource
     private ServerDao serverDao;
+
+    @Resource
+    private BaseActivityDao baseActivityDao;
+
+    @Resource
+    private MailDao mailDao;
 
     /**
      * 
@@ -255,10 +266,10 @@ public class ArenaService extends BaseService {
 
         if (dateNumModel.arenaBattleNum >= MAXCHALLENGER_NUM) {
 
-            if (role.getVip() < 3) {
-            	return this.returnError(2, "需要VIP等级为3时才可购买【竞技场】挑战次数，现在就成为VIP3？");
+            if (role.vip < 2) {
+            	return this.returnError(2, "需要VIP等级为2时才可购买【竞技场】挑战次数，现在就成为VIP2？");
 
-            } else if (dateNumModel.buyArenaNum >= role.getVip() - 2) {
+            } else if (dateNumModel.buyArenaNum >= role.getVip() - 1) {
             	return this.returnError(2, "升级VIP等级可提升【竞技场】购买次数，前去充值？");
 
             } else {
@@ -275,7 +286,7 @@ public class ArenaService extends BaseService {
 
         } else {
 
-            if (role.getVip() < 3) {
+            if (role.vip < 1) {
                 return this.returnError(this.lineNum(), "VIP才可清除冷却时间，现在就成为VIP？");
             }
 
@@ -290,8 +301,8 @@ public class ArenaService extends BaseService {
 
         Result result = new Result();
 
-        this.roleDao.subGold(role, gold, "购买竞技场挑战次数", FinanceLog.STATUS_ARENA_BUY);
-        this.roleDao.update(role, result);
+        this.roleDao.subGold(role, gold, "购买竞技场挑战次数", FinanceLog.STATUS_ARENA_BUY, result);
+    //    this.roleDao.update(role, result);
 
         HashMap<String, Object> playinfo = new HashMap<String,Object>();
         playinfo.put("challenge", this.dateNumDao.findOne(roleId).arenaBattleNum);
@@ -382,7 +393,27 @@ public class ArenaService extends BaseService {
         ArenaPlayerModel arenaPlayerModel = new ArenaPlayerModel();
         arenaPlayerModel.roleId = heRoleId;
         arenaPlayerModel.rank = rank;
-        this.arenaDao.toPlayer(arenaPlayerModel, serverId);
+        
+        if (!this.roleDao.isPlayer(heRoleId)) {
+        	this.arenaDao.toPlayer(arenaPlayerModel, serverId);
+        } else {
+    		ArrayList<Object> heHeros = new ArrayList<Object>();
+    		heHeros.add(null);
+    		heHeros.add(null);
+    		heHeros.add(null);
+    		heHeros.add(null);
+    		
+    		List<Hero> heroList = this.heroDao.findAll(heRoleId);
+
+    		for (Hero hero : heroList) {
+    			if (hero.getIsBattle()) {
+    				if (hero.getPosition() > 0) {
+    					heHeros.set(hero.getPosition() - 1, hero.toArray());
+    				}
+    			}
+    		}
+    		arenaPlayerModel.generalList = heHeros;
+        }
 
         arenaLogTable.setAvatar2(arenaPlayerModel.avatar);
         arenaLogTable.setName2(arenaPlayerModel.name);
@@ -403,7 +434,6 @@ public class ArenaService extends BaseService {
      * @return
      * @throws Exception
      */
-    @Transactional(rollbackFor = Throwable.class)
     public Object battleEnd(int battleId, boolean win, String battleData) throws Exception {
 
         int roleId = this.roleId();
@@ -453,45 +483,21 @@ public class ArenaService extends BaseService {
         int serverId = this.serverId();
         this.arenaDao.changeIndex(roleId, log.getRoleId2(), serverId);
 
-//        // 滚动消息
-//        String sql = "SELECT * FROM `role_arena_log` WHERE `role_id1` = ? AND `arena_log_result` = ? ORDER BY `arena_log_id` LIMIT 1";
-//
-//        EntityManager em = this.context.getEntityManager();
-//        Query query = em.createNativeQuery(sql, ArenaLog.class);
-//
-//        query.setParameter(1, roleId);
-//        query.setParameter(2, BattleLog.BATTLE_LOG_LOST);
-//
-//        @SuppressWarnings("unchecked")
-//		List<ArenaLog> lostLog = query.getResultList();
-//
-//        int lostId = 0;
-//        if (lostLog.size() > 0) {
-//            lostId = lostLog.get(0).getId();
-//        }
-//
-//        sql = "SELECT * FROM `role_arena_log` WHERE `role_id1` = ? AND `arena_log_result` = ? AND `arena_log_id` > ?";
-//
-//        query = em.createNativeQuery(sql, ArenaLog.class);
-//        query.setParameter(1, roleId);
-//        query.setParameter(2, BattleLog.BATTLE_LOG_WIN);
-//        query.setParameter(3, lostId);
-//
-//        lostLog = query.getResultList();
-//
-//        if (lostLog.size() == 3) {
-//
-//            SgpPlayerServiceImpl sgpPlayerServiceImpl = this.context.getSgpService(SgpPlayerServiceImpl.class);
-//            SgpPlayer player = sgpPlayerServiceImpl.getSgpPlayerById(roleId);
-//
-//            message.saveMessage(player.getName() + "在竞技场获得3连胜,上升势头强劲 ", Integer.valueOf(player.getCustomId()));
-//        } else if (lostLog.size() == 10) {
-//
-//            SgpPlayerServiceImpl sgpPlayerServiceImpl = this.context.getSgpService(SgpPlayerServiceImpl.class);
-//            SgpPlayer player = sgpPlayerServiceImpl.getSgpPlayerById(roleId);
-//
-//            message.saveMessage(player.getName() + "在竞技场大杀四方,快来人终结他吧 ", Integer.valueOf(player.getCustomId()));
-//        }
+        int wins = this.arenaLogDao.wins(roleId);
+
+        if (wins == 10) {
+    		String msgs = role.name + "在竞技场大杀四方,快来人终结他吧";
+    		Result r = new Result();
+    		r.setValue("msgs", msgs);
+    		String msg = Response.marshalSuccess(0, r.toMap());
+    		EchoHandler.broadcast(serverId, msg);
+        } else if (wins == 3) {
+    		String msgs = role.name + "在竞技场获得3连胜,上升势头强劲";
+    		Result r = new Result();
+    		r.setValue("msgs", msgs);
+    		String msg = Response.marshalSuccess(0, r.toMap());
+    		EchoHandler.broadcast(serverId, msg);
+        }
 
         result.setValue("win", true);
         result.setValue("newrank", log.getRank2());
@@ -754,11 +760,10 @@ public class ArenaService extends BaseService {
     	DateNumModel dateNumModel = this.dateNumDao.findOne(roleId);
     	dateNumModel.buyArenaNum += 1;
     	dateNumModel.arenaBattleNum = 0;
+    	dateNumModel.arenaTime = System.currentTimeMillis();
 
     	this.dateNumDao.save(roleId, dateNumModel);
     }
-    
-    
 
 	public void sendMail() {
 
@@ -786,6 +791,35 @@ public class ArenaService extends BaseService {
 				this.arenaDao.setLastRank(serverId);
 
 				this.sendMail(server.getId());
+
+				List<BaseActivity> activities = this.baseActivityDao.findAll(serverId);
+				for (BaseActivity baseAct : activities) {
+					if (baseAct.getType().equals("pk_rank")) {
+
+						HashMap<Integer, Reward> rewards = objectMapper.readValue(baseAct.getReward(), new TypeReference<Map<Integer, Reward>>(){});
+
+						for (int i = 0 ; i < intList.size() ; i++) {
+							
+							int r = i + 1;
+
+							Reward reward = rewards.get(r);
+							if (reward != null) {
+
+								Mail mail = new Mail();
+								mail.setAttachment(objectMapper.writeValueAsString(reward));
+								mail.setFromName("GM");
+								mail.setRoleId(intList.get(i));
+								mail.setTitle("【冲榜活动】奖励!");
+								mail.setContent("恭喜主公在竞技场大展神威，获得了令人侧目的成绩，你在竞技场的排名为：" + r + "名：\n"+
+"竞技场管理处将授予你以下奖励。\n\n"+
+"竞技场教官：吕小布");
+					            this.mailDao.create(mail);
+					        }
+						}
+						break;
+					}
+				}
+				
 			} catch (Exception e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();

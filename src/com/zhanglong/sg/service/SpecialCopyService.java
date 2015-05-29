@@ -13,7 +13,6 @@ import org.springframework.stereotype.Service;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.googlecode.jsonrpc4j.JsonRpcService;
 import com.zhanglong.sg.dao.BaseSpecialCopyDao;
 import com.zhanglong.sg.dao.BaseStoryDao;
 import com.zhanglong.sg.dao.BattleLogDao;
@@ -28,7 +27,6 @@ import com.zhanglong.sg.model.SpecialCopyModel;
 import com.zhanglong.sg.result.Result;
 
 @Service
-@JsonRpcService("/specialCopy")
 public class SpecialCopyService extends BaseService {
 
     public static int MAX_NUM = 3;
@@ -45,7 +43,7 @@ public class SpecialCopyService extends BaseService {
 	@Resource
 	private BaseSpecialCopyDao baseSpecialCopyDao;
 
-    public Object list() throws Throwable {
+    public Object list() throws Exception {
 
     	int roleId = this.roleId();
 
@@ -273,9 +271,9 @@ public class SpecialCopyService extends BaseService {
      * @param heroId4
      * @param power
      * @return
-     * @throws Throwable
+     * @throws Exception
      */
-    public Object battleBegin(int copyId, int heroId1, int heroId2, int heroId3, int heroId4, int power) throws Throwable {
+    public Object battleBegin(int copyId, int heroId1, int heroId2, int heroId3, int heroId4, int power) throws Exception {
 
         int roleId = this.roleId();
 
@@ -321,7 +319,7 @@ public class SpecialCopyService extends BaseService {
             return this.returnError(this.lineNum(), "未拥有的武将 ");
         }
 
-        this.powerDao.save(role, power, heros);
+        this.powerDao.save(role, power, hero2);
 
         int num = 0;
         
@@ -357,11 +355,21 @@ public class SpecialCopyService extends BaseService {
 
         result.setValue("num", num);
 
-        int[][] items = this.baseStoryDao.itemIds(baseStory);
+        int[][] oldItems = this.baseStoryDao.itemIds(baseStory);
+
+        ArrayList<int[]> items = new ArrayList<int[]>();
+        for (int[] is : oldItems) {
+        	items.add(is);
+		}
+
+        int rank = 0;
+        for (int[] is : items) {
+            is[2] += rank;
+            rank = is[2];
+        }
 
         // 先加起来总数 
         num = 0;
-
         for (int[] is : items) {
             num += is[1];
         }
@@ -376,21 +384,11 @@ public class SpecialCopyService extends BaseService {
         HashMap<Integer, Integer> map = new HashMap<Integer, Integer>();
         for (int i = 0 ; i < num ; i++) {
 
-            int rank = 0;
-            for (int[] is : items) {
-                is[2] += rank;
-                rank = is[2];
-            }
+            int r = random.nextInt(items.get(items.size() - 1)[2]);
 
-            if (rank <= 0) {
-            	break;
-            }
+            for (int j = 0 ; j < items.size() ; j++) {
 
-            int r = random.nextInt(rank);
-
-            for (int j = 0 ; j < items.length ; j++) {
-
-                int[] ite = items[j];
+                int[] ite = items.get(j);
 
                 int itemRate = ite[2];
                 int itemId = ite[0];
@@ -403,25 +401,40 @@ public class SpecialCopyService extends BaseService {
                     }
                     ite[1]--;
 
-                    if (ite[1] == 0) {
-
-                        int sub = ite[2];
-                        for (int k = j ; k < items.length ; k++) {
-                            items[k][2] -= sub;
-                        }
-                    }
                     break;
                 }
             }
+
+            int max = items.size();
+            int sub = 0;
+
+            // 再转一圈  数量为0的  从队列里踢掉
+            for (int j = 0 ; j < items.size() ; j++) {
+            	if (items.get(j)[1] == 0) {
+
+            		max = j;
+
+                    sub = items.get(j)[2];
+                    if (j > 0) {
+                    	sub -= items.get(j - 1)[2];
+                    }
+                    items.remove(j);
+                    break;
+            	}
+            }
+
+            for (int j = max ; j < items.size() ; j++) {
+            	items.get(j)[2] -= sub;
+            }
         }
 
-        ArrayList<int[]> itemss = new ArrayList<int[]>();
+        items = new ArrayList<int[]>();
         for (Iterator<Map.Entry<Integer, Integer>> iter = map.entrySet().iterator(); iter.hasNext();) {
             Map.Entry<Integer, Integer> entry = iter.next();
-            itemss.add(new int[]{entry.getKey(), entry.getValue()});
+            items.add(new int[]{entry.getKey(), entry.getValue()});
         }
 
-        result.setValue("items", itemss);
+        result.setValue("items", items);
 
         BattleLog battleLog = new BattleLog();
         battleLog.setRoleId(roleId);
@@ -433,7 +446,7 @@ public class SpecialCopyService extends BaseService {
         battleLog.setStoryId(copyId);
 
         ObjectMapper objectMapper = new ObjectMapper();
-        battleLog.setData(objectMapper.writeValueAsString(itemss));
+        battleLog.setData(objectMapper.writeValueAsString(items));
 
         this.battleLogDao.create(battleLog);
 
@@ -446,9 +459,9 @@ public class SpecialCopyService extends BaseService {
      * @param battleId
      * @param win
      * @return
-     * @throws Throwable
+     * @throws Exception
      */
-    public Object battleEnd(int battleId, Boolean win) throws Throwable {
+    public Object battleEnd(int battleId, Boolean win) throws Exception {
 
         int roleId = this.roleId();
 
@@ -629,6 +642,8 @@ public class SpecialCopyService extends BaseService {
 
         this.battleLogDao.create(battleLog);
 
+        this.dailyTaskDao.addLdt(role, result);
+        
         result.setValue("battle_id", battleLog.getId());
         return this.success(result.toMap());
     }

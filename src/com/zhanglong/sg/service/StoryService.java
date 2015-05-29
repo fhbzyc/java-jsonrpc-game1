@@ -14,6 +14,7 @@ import com.zhanglong.sg.result.*;
 import com.zhanglong.sg.dao.BaseStoryDao;
 import com.zhanglong.sg.dao.BattleLogDao;
 import com.zhanglong.sg.dao.CopyStarDao;
+import com.zhanglong.sg.dao.PowerDao;
 import com.zhanglong.sg.dao.StoryDao;
 import com.zhanglong.sg.entity.BattleLog;
 import com.zhanglong.sg.entity.CopyStar;
@@ -28,10 +29,8 @@ import com.zhanglong.sg.model.DateNumModel;
 import com.zhanglong.sg.utils.Utils;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.googlecode.jsonrpc4j.JsonRpcService;
 
 @Service
-@JsonRpcService("/story")
 public class StoryService extends BaseService {
 
 	@Resource
@@ -46,7 +45,15 @@ public class StoryService extends BaseService {
 	@Resource
 	private CopyStarDao copyStarDao;
 
-	public Object list() throws Throwable {
+    @Resource
+    private PowerDao powerDao;
+
+	/**
+	 * 
+	 * @return
+	 * @throws Exception
+	 */
+	public Object list() throws Exception {
 
         int roleId = this.roleId();
 
@@ -64,9 +71,9 @@ public class StoryService extends BaseService {
 	/**
 	 * 
 	 * @return
-	 * @throws Throwable
+	 * @throws Exception
 	 */
-    public Object items() throws Throwable {
+    public Object items() throws Exception {
 
     	int roleId = this.roleId();
 
@@ -206,9 +213,9 @@ public class StoryService extends BaseService {
      * @param heroId4
      * @param power
      * @return
-     * @throws Throwable
+     * @throws Exception
      */
-    public Object beginBattle(int storyId, int storyType, int heroId1, int heroId2, int heroId3, int heroId4, int power) throws Throwable  {
+    public Object beginBattle(int storyId, int storyType, int heroId1, int heroId2, int heroId3, int heroId4, int power) throws Exception {
 
     	int roleId = this.roleId();
 
@@ -231,7 +238,39 @@ public class StoryService extends BaseService {
             return this.returnError(this.lineNum(), "参数出错,关卡ID超过最大值");
         }
 
+        List<Hero> heros = this.heroDao.findAll(roleId);
+        List<Hero> hero2 = new ArrayList<Hero>();
+
+        boolean find1 = false;
+        boolean find2 = false;
+        boolean find3 = false;
+        boolean find4 = false;
+        for (Hero hero : heros) {
+            if (heroId1 != 0 && (int)hero.getHeroId() == heroId1) {
+                find1 = true;
+                hero2.add(hero);
+            }
+            if (heroId2 != 0 && (int)hero.getHeroId() == heroId2) {
+                find2 = true;
+                hero2.add(hero);
+            }
+            if (heroId3 != 0 && (int)hero.getHeroId() == heroId3) {
+                find3 = true;
+                hero2.add(hero);
+            }
+            if (heroId4 != 0 && (int)hero.getHeroId() == heroId4) {
+                find4 = true;
+                hero2.add(hero);
+            }
+        }
+
+        if (heroId1 != 0 && !find1 || heroId2 != 0 && !find2 || heroId3 != 0 && !find3 || heroId4 != 0 && !find4) {
+            return this.returnError(this.lineNum(), "未拥有的武将 ");
+        }
+
         Role role = roleDao.findOne(roleId);
+
+        this.powerDao.save(role, power, hero2);
 
         if (storyId == 1 && storyType == BaseStory.COPY_TYPE) {
             // 无条件攻打
@@ -312,9 +351,9 @@ public class StoryService extends BaseService {
      * @param itemNum
      * @param star
      * @return
-     * @throws Throwable
+     * @throws Exception
      */
-    public Object endBattle(int battleId, boolean win, int coin, int[] itemIds, int[] itemNum, int star) throws Throwable {
+    public Object endBattle(int battleId, boolean win, int coin, int[] itemIds, int[] itemNum, int star) throws Exception {
 
         int roleId = this.roleId();
 
@@ -328,13 +367,11 @@ public class StoryService extends BaseService {
         }
 
         if (battleLog.getBattleResult() != 0) {
-            if (battleLog.getData().equals("")) {
-            	return this.returnError(this.lineNum(), "战斗已提交");
-            } else {
+
             	ObjectMapper objectMapper = new ObjectMapper();
             	HashMap<String, Object> object = objectMapper.readValue(battleLog.getData(), new TypeReference<Map<String, Object>>(){});
             	return this.success(object);
-			}
+			
         }
 
         int battleResult = BattleLog.BATTLE_LOG_LOST;
@@ -469,9 +506,9 @@ public class StoryService extends BaseService {
      * @param type
      * @param times
      * @return
-     * @throws Throwable
+     * @throws Exception
      */
-    public Object wipeOut(int storyId, int type, int times) throws Throwable {
+    public Object wipeOut(int storyId, int type, int times) throws Exception {
 
         if (times != 1 && times != 10 && times != 3 && times != 2) {
             return this.returnError(this.lineNum(), "Illegal operation !");
@@ -542,7 +579,7 @@ public class StoryService extends BaseService {
             if (role.getGold() < times) {
             	return this.returnError(2, ErrorResult.NotEnoughGold);
             } else {
-            	this.roleDao.subGold(role, times, "扫荡<" + baseStory.getName() + "><" + times + ">次", FinanceLog.STATUS_GOLD_WIPE_OUT);
+            	this.roleDao.subGold(role, times, "扫荡<" + baseStory.getName() + "><" + times + ">次", FinanceLog.STATUS_GOLD_WIPE_OUT, result);
             }
         }
 
@@ -583,7 +620,7 @@ public class StoryService extends BaseService {
         this.roleDao.addExp(role, exp, result);
 
         this.roleDao.addCoin(role, baseStory.getCoin() * times, desc, FinanceLog.STATUS_WIPE_OUT_GET, result);
-        this.roleDao.update(role, result);
+        // this.roleDao.update(role, result);
 
         for (Iterator<Map.Entry<Integer, Integer>> iter = map.entrySet().iterator(); iter.hasNext();) {
             Map.Entry<Integer, Integer> entry = iter.next();
@@ -636,8 +673,8 @@ public class StoryService extends BaseService {
 
         	dateNumModel.setBuyApNum(dateNumModel.getBuyApNum() + 1);
         	
-        	this.roleDao.subGold(role, gold, "购买体力第<" + dateNumModel.getBuyApNum()  + ">次", FinanceLog.STATUS_BUY_PHYSICAL_STRENGTHP);
-        	this.roleDao.update(role, result);
+        	this.roleDao.subGold(role, gold, "购买体力第<" + dateNumModel.getBuyApNum()  + ">次", FinanceLog.STATUS_BUY_PHYSICAL_STRENGTHP, result);
+        	// this.roleDao.update(role, result);
         }
 
         this.dateNumDao.save(roleId, dateNumModel);
@@ -651,9 +688,9 @@ public class StoryService extends BaseService {
      * @param tokenS
      * @param storyId
      * @return
-     * @throws Throwable
+     * @throws Exception
      */
-    public Object buyHeroCopyTimes(int storyId) throws Throwable {
+    public Object buyHeroCopyTimes(int storyId) throws Exception {
 
         int roleId = this.roleId();
 
@@ -677,8 +714,8 @@ public class StoryService extends BaseService {
         if (role.getGold() < gold) {
         	return this.returnError(2, ErrorResult.NotEnoughGold);
         } else {
-        	this.roleDao.subGold(role, gold, "购买扫荡次数,第<" + storyId + ">关," + this.baseStoryDao.findOne(storyId, BaseStory.HERO_COPY_TYPE).getName(), FinanceLog.STATUS_BUY_WIPE_OUT);
-        	this.roleDao.update(role, result);
+        	this.roleDao.subGold(role, gold, "购买扫荡次数,第<" + storyId + ">关," + this.baseStoryDao.findOne(storyId, BaseStory.HERO_COPY_TYPE).getName(), FinanceLog.STATUS_BUY_WIPE_OUT, result);
+        	// this.roleDao.update(role, result);
         }
 
         story.setNum(0);
@@ -695,9 +732,9 @@ public class StoryService extends BaseService {
      * @param chapter
      * @param star
      * @return
-     * @throws Throwable
+     * @throws Exception
      */
-    public Object starReward(int type, int chapter, int star) throws Throwable {
+    public Object starReward(int type, int chapter, int star) throws Exception {
 
     	if (chapter < 0) {
     		return this.returnError(this.lineNum(), "参数错误");

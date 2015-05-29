@@ -165,7 +165,19 @@ public class DailyTaskDao extends BaseDao {
 	 * @param result
 	 */
 	public void addCrusade(Role role, Result result) {
-		BaseDailyTask dailyTask = this.addNum(role, "crusade", 1);
+		BaseDailyTask dailyTask = this.addNum(role, "fight_copy", 1);
+		if (dailyTask != null) {
+			result.addDailyTask(dailyTask);
+		}
+	}
+
+	/**
+	 * 乱斗堂
+	 * @param role
+	 * @param result
+	 */
+	public void addLdt(Role role, Result result) {
+		BaseDailyTask dailyTask = this.addNum(role, "fight", 1);
 		if (dailyTask != null) {
 			result.addDailyTask(dailyTask);
 		}

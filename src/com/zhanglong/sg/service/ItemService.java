@@ -7,7 +7,6 @@ import javax.annotation.Resource;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.googlecode.jsonrpc4j.JsonRpcService;
 import com.zhanglong.sg.dao.BaseMakeItemDao;
 import com.zhanglong.sg.entity.FinanceLog;
 import com.zhanglong.sg.entity.Hero;
@@ -18,7 +17,6 @@ import com.zhanglong.sg.entity2.BaseMakeItem;
 import com.zhanglong.sg.result.Result;
 
 @Service
-@JsonRpcService("/item")
 public class ItemService extends BaseService {
 
 	@Resource
@@ -27,34 +25,33 @@ public class ItemService extends BaseService {
     /**
      * 合成装备
      * @param itemBaseId
-     * @return HashMap<String, Object>
-     * @throws Throwable
+     * @return Object
+     * @throws Exception
      */
-    @Transactional(rollbackFor = Throwable.class)
-    public Object makeItem(int itemBaseId) throws Throwable {
+    public Object makeItem(int itemId) throws Exception {
 
     	int roleId = this.roleId();
 
-        BaseItem baseItem = this.baseItemDao.findOne(itemBaseId);
+        BaseItem baseItem = this.baseItemDao.findOne(itemId);
         if (baseItem == null) {
             return this.returnError(this.lineNum(), "出错,不存在此道具");
         }
 
         Result result = new Result();
 
-        Role role = roleDao.findOne(roleId);
+        Role role = this.roleDao.findOne(roleId);
         if (role.getCoin() < baseItem.getMakeCoin()) {
         	return returnError(lineNum(), "铜钱不足");
         } else {
-        	roleDao.subCoin(role, baseItem.getMakeCoin(), "合成装备<" + baseItem.getName() + ">", FinanceLog.STATUS_EQUIP_MAKE);
-        	roleDao.update(role, result);
+        	this.roleDao.subCoin(role, baseItem.getMakeCoin(), "合成装备<" + baseItem.getName() + ">", FinanceLog.STATUS_EQUIP_MAKE, result);
+        	// roleDao.update(role, result);
         }
 
-        List<BaseMakeItem> items = this.baseMakeItemDao.findByItemId(itemBaseId);
+        List<BaseMakeItem> items = this.baseMakeItemDao.findByItemId(itemId);
 
         boolean find = false;
         for (BaseMakeItem baseMakeItem : items) {
-			if (baseMakeItem.getPk().getBaseItem().getBaseId() == itemBaseId) {
+			if (baseMakeItem.getPk().getBaseItem().getBaseId() == itemId) {
 
 				find = true;
 
@@ -75,7 +72,7 @@ public class ItemService extends BaseService {
         	return this.returnError(this.lineNum(), "这个道具没有合成配方");
         }
 
-        this.itemDao.addItem(roleId, itemBaseId, 1, result);
+        this.itemDao.addItem(roleId, itemId, 1, result);
 
         return this.success(result.toMap());
     }

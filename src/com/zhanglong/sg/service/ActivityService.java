@@ -16,13 +16,18 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.zhanglong.sg.dao.ActivityDao;
 import com.zhanglong.sg.dao.BaseActivityDao;
+import com.zhanglong.sg.dao.MailDao;
 import com.zhanglong.sg.dao.OrderDao;
+import com.zhanglong.sg.dao.ServerDao;
 import com.zhanglong.sg.entity.Activity;
 import com.zhanglong.sg.entity.BaseActivity;
 import com.zhanglong.sg.entity.FinanceLog;
+import com.zhanglong.sg.entity.Mail;
 import com.zhanglong.sg.entity.Role;
+import com.zhanglong.sg.entity.Server;
 import com.zhanglong.sg.model.Reward;
 import com.zhanglong.sg.result.Result;
+import com.zhanglong.sg.utils.Utils;
 
 @Service
 public class ActivityService extends BaseService {
@@ -35,6 +40,12 @@ public class ActivityService extends BaseService {
 
 	@Resource
 	private OrderDao orderDao;
+
+	@Resource
+	private ServerDao serverDao;
+
+    @Resource
+    private MailDao mailDao;
 
 	public Object list() throws Exception {
 
@@ -52,14 +63,14 @@ public class ActivityService extends BaseService {
 
 		for (BaseActivity baseAct : list) {
 
-			if (baseAct.getType().equals("first")) {
-				// 首冲
-	            for (Activity activity : myActs) {
-					if (activity.getActId() == (int)baseAct.getId()) {
-						continue;
-					}
-				}
-			}
+//			if (baseAct.getType().equals("first")) {
+//				// 首冲
+//	            for (Activity activity : myActs) {
+//					if (activity.getActId() == (int)baseAct.getId()) {
+//						continue;
+//					}
+//				}
+//			}
 
 			if (baseAct.getType().equals("7days")) {
 				// 新服七天
@@ -70,8 +81,8 @@ public class ActivityService extends BaseService {
 				Date date = simpleDateFormat.parse(dateString);  
 				createTime = date.getTime();
 
-				int days = (int)((System.currentTimeMillis() - createTime) / (86400l * 1000l));
-		        if (days >= 7) {
+				int days = (int)(Math.ceil((double)(System.currentTimeMillis() - createTime) / (double)(86400l * 1000l)));
+		        if (days > 7) {
 		        	continue;
 		        }
 			}
@@ -84,8 +95,13 @@ public class ActivityService extends BaseService {
 
 	            if (baseAct.getType().equals("7days")) {
 					long createTime = role.createTime.getTime();
-					int days = (int)((System.currentTimeMillis() - createTime) / (86400l * 1000l));
-			        if (days >= entry.getKey() - 1) {
+					SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd");
+					String dateString = simpleDateFormat.format(new Date(createTime));
+					Date date = simpleDateFormat.parse(dateString);  
+					createTime = date.getTime();
+
+					int days = (int)(Math.ceil((double)(System.currentTimeMillis() - createTime) / (double)(86400l * 1000l)));
+			        if (days >= entry.getKey()) {
 			        	reward.setHas(true);
 			        }
 	            } else if (baseAct.getType().equals("levelup")) {
@@ -97,6 +113,11 @@ public class ActivityService extends BaseService {
 	            	if (c > 0) {
 	            		reward.setHas(true);
 	            	}
+	            } else if (baseAct.getType().equals("money")) {
+	            	int s = this.orderDao.sum(roleId);
+	            	if (s >= entry.getKey()) {
+	            		reward.setHas(true);
+	            	}
 	            }
 
 	            for (Activity activity : myActs) {
@@ -106,6 +127,16 @@ public class ActivityService extends BaseService {
 					}
 				}
 	        }
+
+	        if (rewards.size() == 0 && !baseAct.getType().equals("notice") && !baseAct.getType().equals("pk_rank") && !baseAct.getType().equals("lv_rank")) {
+	        	continue;
+	        }
+
+	        if (baseAct.getType().equals("pk_rank") || baseAct.getType().equals("lv_rank")) {
+	        	baseAct.setType("notice");
+	        	rewards.clear();
+	        }
+
 	        baseAct.setReward(mapper.writeValueAsString(rewards));
 	        rep.add(baseAct);
 		}
@@ -163,5 +194,42 @@ public class ActivityService extends BaseService {
 		}
 
 		return this.success(result.toMap());
+	}
+
+	public void task() throws Exception {
+
+		List<Server> list = this.serverDao.findAll();
+		for (Server server : list) {
+			int serverId = server.getId();
+
+			List<BaseActivity> activities = this.baseActivityDao.findAll(serverId);
+			for (BaseActivity baseAct : activities) {
+				if (baseAct.getType().equals("lv_rank")) {
+					String endTime = new SimpleDateFormat("yyyyMMdd").format(new Date(baseAct.getEndTime().getTime()));
+					if (Utils.date().equals(endTime)) {
+						ObjectMapper objectMapper = new ObjectMapper();
+						HashMap<Integer, Reward> rewards = objectMapper.readValue(baseAct.getReward(), new TypeReference<Map<Integer, Reward>>(){});
+
+						List<Role> levelList = this.roleDao.expTop20(serverId);
+						for (int i = 0 ; i < levelList.size() ; i++) {
+							int r = i + 1;
+							Reward reward = rewards.get(r);
+							if (reward != null) {
+
+								Mail mail = new Mail();
+								mail.setAttachment(objectMapper.writeValueAsString(reward));
+								mail.setFromName("GM");
+								mail.setRoleId(levelList.get(i).getRoleId());
+								mail.setTitle("【冲级活动】奖励!");
+								mail.setContent("恭喜主公战队等级急速前进，并且在【冲级活动】中获得好的名次：" + r + "名：\n"+
+"特地授予你以下奖励。\n\n"+
+"客服：萌小乔");
+					            this.mailDao.create(mail);
+							}
+						}
+					}
+				}
+			}
+		}
 	}
 }

@@ -28,7 +28,9 @@ public class HeroDao extends BaseDao {
 
 		Session session = this.getSessionFactory().getCurrentSession();
 		Criteria criteria = session.createCriteria(Hero.class);
-		return criteria.add(Restrictions.eq("aRoleId", roleId)).list();
+		@SuppressWarnings("unchecked")
+		List<Hero> list = criteria.add(Restrictions.eq("aRoleId", roleId)).list();
+		return list;
 	}
 
     public Hero findOne(int roleId, int heroId) {
@@ -36,6 +38,7 @@ public class HeroDao extends BaseDao {
 		Session session = this.getSessionFactory().getCurrentSession();
 		Criteria criteria = session.createCriteria(Hero.class);
 		
+		@SuppressWarnings("unchecked")
 		List<Hero> list = criteria.add(Restrictions.eq("aRoleId", roleId)).add(Restrictions.eq("heroId", heroId)).setMaxResults(1).list();
 		if (list.size() == 0) {
 			return null;
@@ -116,7 +119,7 @@ public class HeroDao extends BaseDao {
 		}
     }
 
-    public void addExp(Hero hero, int rolelevel, int exp, Result result) throws Throwable {
+    public void addExp(Hero hero, int rolelevel, int exp, Result result) throws Exception {
 
     	int maxExp = this.maxExp(rolelevel);
 

@@ -104,9 +104,9 @@ public class BaseStoryDao extends BaseDao2 {
      * @param baseStory
      * @param times
      * @return
-     * @throws Throwable
+     * @throws Exception
      */
-    public ArrayList<ArrayList<int[]>> randomItems(int roleId, BaseStory baseStory, int times) throws Throwable {
+    public ArrayList<ArrayList<int[]>> randomItems(int roleId, BaseStory baseStory, int times) throws Exception {
 
         int[][] ite = itemIds(baseStory);
         int[] must = ite[0];

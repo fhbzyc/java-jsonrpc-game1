@@ -49,7 +49,7 @@ public class BasePayShop implements Serializable {
 	@Column(name = "pay_desc" , nullable = false , columnDefinition = "text")
     private String desc;
 
-	@Column(name = "pay_recommends" , nullable = false , columnDefinition = "boolean default false")
+	@Column(name = "pay_recommend" , nullable = false , columnDefinition = "boolean default false")
     private Boolean recommend;
 
 	public BasePayShop() {

@@ -9,7 +9,6 @@ import org.springframework.stereotype.Repository;
 
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.JsonMappingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.zhanglong.sg.model.CrusadeModel;
 import com.zhanglong.sg.utils.Utils;
 

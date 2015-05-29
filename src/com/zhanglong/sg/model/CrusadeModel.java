@@ -112,8 +112,12 @@ public class CrusadeModel implements Serializable {
 				player.setName(p.getName());
 
 				Hero[] heros = objectMapper.readValue(p.getData(), Hero[].class);
-		    	for (Hero hero : heros) {
-		    		player.addAHero(hero);
+				
+		    	for (int j = 0 ; j < heros.length ; j++) {
+		    		if (j >= 4) {
+		    			break;
+		    		}
+		    		player.addAHero(heros[j]);
 				}
 			} else {
 				player.setRoleId(i + 1);

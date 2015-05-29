@@ -17,8 +17,11 @@ public class Order implements Serializable {
 
     private static final long serialVersionUID = -3091972353824838296L;
 
-    public static int STATUS_CREATE = 0;
+    public static int STATUS_CREATE  = 0;
+    public static int STATUS_PAY     = 1;
     public static int STATUS_SUCCESS = 2;
+
+    public static int MOON_CARD = 1;
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

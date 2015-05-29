@@ -8,10 +8,12 @@ import java.util.Map;
 
 import javax.annotation.Resource;
 
+import org.hibernate.criterion.Restrictions;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Repository;
 
 import com.zhanglong.sg.entity.Hero;
+import com.zhanglong.sg.entity.Mission;
 import com.zhanglong.sg.entity.Role;
 import com.zhanglong.sg.entity.Story;
 import com.zhanglong.sg.entity2.BaseMission;
@@ -46,6 +48,12 @@ public class MissionDao extends BaseDao {
 	public static String TYPE_CALL_HERO = "call_hero";
 
     private static String RedisKey = "MISSION_MAP1_";
+
+    public List<Mission> findAll(int roleId) throws Exception {
+    	@SuppressWarnings("unchecked")
+		List<Mission> list = this.getSessionFactory().getCurrentSession().createCriteria(Mission.class).add(Restrictions.eq("roleId", roleId)).list();
+    	return list;
+    }
 
     public List<BaseMission> findAll(Role role) throws Exception {
 
@@ -200,7 +208,7 @@ public class MissionDao extends BaseDao {
     	this.save(role.getRoleId(), list);
     }
 
-    public void newMission(Role role, Result result) throws Throwable {
+    public void newMission(Role role, Result result) throws Exception {
 
     	this.checkNew(role, this.findAll(role), result);
     }

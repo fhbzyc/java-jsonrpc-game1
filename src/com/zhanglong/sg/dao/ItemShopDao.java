@@ -39,7 +39,7 @@ public class ItemShopDao extends BaseDao {
 //		return itemShopDao;
 //	}
 
-	public ItemShopModel getShopByType(int roleId, int type) throws Throwable {
+	public ItemShopModel getShopByType(int roleId, int type) throws Exception {
 
 		ItemShopModel itemShopModel = (ItemShopModel) this.redisTemplate.opsForHash().get(RedisKey + type, roleId);
 
@@ -66,7 +66,7 @@ public class ItemShopDao extends BaseDao {
 		return itemShopModel;
 	}
 
-    public void buyItem(int roleId, int type, int index) throws Throwable {
+    public void buyItem(int roleId, int type, int index) throws Exception {
 
     	ItemShopModel itemShopModel = this.getShopByType(roleId, type);
     	BaseItemShop baseItemShop = itemShopModel.getItemList().get(index - 1);
@@ -75,7 +75,7 @@ public class ItemShopDao extends BaseDao {
     	this.save(roleId, type, itemShopModel);
     }
 
-    public void refresh(int roleId, int type) throws Throwable {
+    public void refresh(int roleId, int type) throws Exception {
 
 		int num = 8;
 
@@ -97,12 +97,12 @@ public class ItemShopDao extends BaseDao {
     	this.save(roleId, type, itemShopModel);
     }
 
-    private BaseItemShop[] ref(int type, int num, int discount) throws Throwable {
+    private BaseItemShop[] ref(int type, int num, int discount) throws Exception {
 
     	List<BaseItemShop> shopItemList = this.baseItemShopDao.findByType(type);
 
         if (shopItemList.size() <= num) {
-        	throw new Throwable("商店配置出错,无法刷新");
+        	throw new Exception("商店配置出错,无法刷新");
         }
 
         int[] tempList = new int[num];

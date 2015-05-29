@@ -2,6 +2,7 @@ package com.zhanglong.sg.service;
 
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
@@ -70,12 +71,10 @@ public class CheckinService extends BaseService {
         result.setValue("status", num);
 
 		// 累计签到
-		HashMap<Integer, Reward> obj = mapper.readValue(baseCheckin.getLj(), new TypeReference<Map<Integer, Reward>>(){});
+		int lj_num = this.ljNum(roleId);
 
-		int needLj = this.ljNum(roleId);
-
-        result.setValue("lj", obj.get(needLj));
-        result.setValue("lj_num", new int[]{list.size() , needLj});
+        result.setValue("lj", this.ljReward(lj_num));
+        result.setValue("lj_num", new int[]{list.size() , this.nextLj(lj_num)});
 
         return this.success(result.toMap());
 	}
@@ -139,7 +138,7 @@ public class CheckinService extends BaseService {
         boolean isDouble = false;
         Integer vipLv = map.get("vip_lv");
 
-        if (vipLv == null) {
+        if (vipLv == null || vipLv == 0) {
         	status = 2;
         } else {
 
@@ -205,7 +204,12 @@ public class CheckinService extends BaseService {
 
     	result.setValue("sign_times", days);
     	result.setValue("status", status);
-    	result.setValue("lj_num", new int[]{ljNum , this.ljNum(roleId)});
+
+		int lj_num = this.ljNum(roleId);
+
+        result.setValue("lj", this.ljReward(lj_num));
+        result.setValue("lj_num", new int[]{ljNum , this.nextLj(lj_num)});
+
 		return this.success(result.toMap());
 	}
 
@@ -214,60 +218,78 @@ public class CheckinService extends BaseService {
 		int roleId = this.roleId();
 
 		LjCheckin ljCheckin = this.checkinDao.findLj(roleId);
-		int lj_num = ljCheckin.getNum();
-		if (lj_num == 0) {
-			lj_num = 3;
-		}
+		int lj_num = this.ljNum(roleId);
 
 		List<Checkin> list = this.checkinDao.findAll(roleId);
 		int days = list.size();
 
-		ObjectMapper mapper = new ObjectMapper();
+		int next = this.nextLj(lj_num);
+
 		Result result = new Result();
-		
-		int month = this.checkinDao.month();
-		BaseCheckin baseCheckin = this.baseCheckinDao.findOne(month);
 
-		HashMap<Integer, Reward> obj = mapper.readValue(baseCheckin.getLj(), new TypeReference<Map<Integer, Reward>>(){});
+		if (days >= next) {
 
-		if (days >= lj_num) {
+        	Reward reward = this.ljReward(lj_num);
 
-			Reward reward = obj.get(lj_num);
-	        if (reward != null) {
+        	String desc = "累计签到<" + next + ">天,";
 
-	        	int oldNum = lj_num;
-	        	if (lj_num % 7 == 0) {
-	        		lj_num += 3;
-	        	} else {
-	        		lj_num += 2;
-	        	}
+        	Role role = this.roleDao.findOne(roleId);
+        	this.rewardDao.get(role, reward, desc, 0, result);
 
-	        	ljCheckin.setNum(lj_num);
-
-	        	this.checkinDao.updateLj(ljCheckin);
-
-	        	Role role = this.roleDao.findOne(roleId);
-	        	this.rewardDao.get(role, reward, "累计签到<" + oldNum + ">", 0, result);
-	        }
-
-		} else {
-			this.returnError(this.lineNum(), "天数不够不能领奖");
+        	lj_num = next;
+        	ljCheckin.setNum(next);
+        	this.checkinDao.updateLj(ljCheckin);
 		}
 
-        result.setValue("lj", obj.get(lj_num));
-        result.setValue("lj_num", new int[]{days , lj_num});
+        result.setValue("lj", this.ljReward(lj_num));
+        result.setValue("lj_num", new int[]{list.size() , this.nextLj(lj_num)});
 
-		
 		return this.success(result.toMap());
 	}
 
-	private int ljNum(int roleId) throws JsonParseException, JsonMappingException, IOException {
+	private int ljNum(int roleId) {
 
 		int num = this.checkinDao.findLj(roleId).getNum();
-		if (num == 0) {
-			num = 3;
-		}
-
 		return num;
+	}
+
+	private int nextLj(int lj_num) throws JsonParseException, JsonMappingException, IOException {
+
+		int month = this.checkinDao.month();
+		BaseCheckin baseCheckin = this.baseCheckinDao.findOne(month);
+
+		int next = 0;
+        ObjectMapper mapper = new ObjectMapper();
+        HashMap<Integer, Reward> rewards = mapper.readValue(baseCheckin.getLj(), new TypeReference<Map<Integer, Reward>>(){});
+
+        for (Iterator<Map.Entry<Integer, Reward>> iter = rewards.entrySet().iterator(); iter.hasNext();) {
+            Map.Entry<Integer, Reward> entry = iter.next();
+            if (entry.getKey() > lj_num) {
+            	next = entry.getKey();
+            	break;
+            }
+        }
+        return next;
+	}
+
+	private Reward ljReward(int lj_num) throws JsonParseException, JsonMappingException, IOException {
+
+		int month = this.checkinDao.month();
+		BaseCheckin baseCheckin = this.baseCheckinDao.findOne(month);
+
+        ObjectMapper mapper = new ObjectMapper();
+        HashMap<Integer, Reward> rewards = mapper.readValue(baseCheckin.getLj(), new TypeReference<Map<Integer, Reward>>(){});
+
+        for (Iterator<Map.Entry<Integer, Reward>> iter = rewards.entrySet().iterator(); iter.hasNext();) {
+            Map.Entry<Integer, Reward> entry = iter.next();
+            if (entry.getKey() > lj_num) {
+            	return entry.getValue();
+            }
+        }
+
+        Reward reward = new Reward();
+        reward.setItem_id(new int[]{});
+        reward.setItem_num(new int[]{});
+        return reward;
 	}
 }

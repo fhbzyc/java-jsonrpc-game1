@@ -9,7 +9,7 @@ import java.util.Random;
 import org.springframework.stereotype.Service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.googlecode.jsonrpc4j.JsonRpcService;
+
 import com.zhanglong.sg.entity.FinanceLog;
 import com.zhanglong.sg.entity.Role;
 import com.zhanglong.sg.entity2.BaseDailyTask;
@@ -20,7 +20,6 @@ import com.zhanglong.sg.result.Result;
 import com.zhanglong.sg.utils.Utils;
 
 @Service
-@JsonRpcService("/mission")
 public class MissionService extends BaseService {
 
     /**
@@ -276,8 +275,8 @@ public class MissionService extends BaseService {
         } else {
 
         	this.roleDao.addCoin(role, coin, "点金手", FinanceLog.STATUS_GOLD_BUY_COIN, result);
-        	this.roleDao.subGold(role, gold, "使用点金手花费<" + gold + ">元宝", FinanceLog.STATUS_GOLD_BUY_COIN);
-        	this.roleDao.update(role, result);
+        	this.roleDao.subGold(role, gold, "使用点金手花费<" + gold + ">元宝", FinanceLog.STATUS_GOLD_BUY_COIN, result);
+        	// this.roleDao.update(role, result);
         	
         	dateNumModel.setBuyCoinNum(dateNumModel.getBuyCoinNum() + times);
         	this.dateNumDao.save(roleId, dateNumModel);

@@ -63,7 +63,7 @@ public class ArenaDao extends BaseDao {
 
 		int oldRank = role.getRank();
 		int newRank = newIndex + 1;
-        if (newIndex < myIndex) {
+        if (newRank < oldRank) {
         	role.rank = newRank;
 
     	    // 历史排名上升发奖励
@@ -110,7 +110,7 @@ public class ArenaDao extends BaseDao {
 
 		if (list.size() == 0) {
 
-			for ( int i = 1 ; i <= 10000 ; i++) {
+			for ( int i = 1 ; i <= 12000 ; i++) {
 				this.redisTemplate.opsForList().rightPush(redisKey(serverId), i);
 			}
 			list = this.redisTemplate.opsForList().range(redisKey(serverId), 0, -1);
@@ -266,7 +266,7 @@ public class ArenaDao extends BaseDao {
 			
 			player.roleId = roleId;
 
-            if (roleId <= 20000) {
+            if (!this.roleDao.isPlayer(roleId)) {
             	this.toPlayer(player, serverId);
 
             } else {
@@ -280,9 +280,16 @@ public class ArenaDao extends BaseDao {
             		}
 				}
 
+    			player.generalList = new ArrayList<Object>();
+    			player.generalList.add(null);
+    			player.generalList.add(null);
+    			player.generalList.add(null);
+    			player.generalList.add(null);
+
             	for (Hero hero : heros) {
             		if (hero.getARoleId() == roleId) {
-            			player.generalList.add(hero.toArray());
+
+            			player.generalList.set(hero.getPosition() - 1, hero.toArray());
             		}
 				}
             }
@@ -400,36 +407,78 @@ public class ArenaDao extends BaseDao {
 
 		ArrayList<Object[]> configs = new ArrayList<Object[]>();
 
-		configs.add(new Object[]{1 , 1 , new int[]{10004,25,3,3} ,new int[]{10016,25,3,3} ,new int[]{10012,25,3,3} ,new int[]{10014,25,3,3}});
-		configs.add(new Object[]{2 , 2 , new int[]{10002,24,3,3} ,new int[]{10005,24,3,3} ,new int[]{10012,24,3,3} ,new int[]{10014,24,3,3}});
-		configs.add(new Object[]{3 , 3 , new int[]{10010,23,3,3} ,new int[]{10016,23,3,3} ,new int[]{10012,23,3,3} ,new int[]{10014,23,3,3}});
-		configs.add(new Object[]{4 , 4 , new int[]{10002,22,3,3} ,new int[]{10005,22,3,3} ,new int[]{10012,22,3,3} ,new int[]{10009,22,3,3}});
-		configs.add(new Object[]{5 , 5 , new int[]{10010,21,3,3} ,new int[]{10016,21,3,3} ,new int[]{10012,21,3,3} ,new int[]{10014,21,3,3}});
-		configs.add(new Object[]{6 , 6 , new int[]{10002,20,3,2} ,new int[]{10011,20,3,2} ,new int[]{10012,20,3,2} ,new int[]{10009,20,3,2}});
-		configs.add(new Object[]{7 , 7 , new int[]{10004,19,3,2} ,new int[]{10016,19,2,2} ,new int[]{10012,19,3,2} ,new int[]{10014,19,3,2}});
-		configs.add(new Object[]{8 , 8 , new int[]{10002,18,3,2} ,new int[]{10005,18,3,2} ,new int[]{10012,18,3,2} ,new int[]{10014,18,3,2}});
-		configs.add(new Object[]{9 , 9 , new int[]{10002,17,3,2} ,new int[]{10011,17,3,2} ,new int[]{10012,17,3,2} ,new int[]{10009,17,3,2}});
-		configs.add(new Object[]{10 , 10 , new int[]{10010,17,3,2} ,new int[]{10016,17,3,2} ,new int[]{10012,17,3,2} ,new int[]{10014,17,3,2}});
-		configs.add(new Object[]{11 , 20 , new int[]{10002,17,3,2} ,new int[]{10011,16,3,2} ,new int[]{10012,16,3,2} ,new int[]{10009,17,3,2}});
-		configs.add(new Object[]{21 , 30 , new int[]{10004,16,3,2} ,new int[]{10016,16,2,2} ,new int[]{10012,16,3,2} ,new int[]{10014,16,3,2}});
-		configs.add(new Object[]{31 , 40 , new int[]{10010,16,3,2} ,new int[]{10016,16,2,2} ,new int[]{10012,16,3,2} ,new int[]{10014,16,3,2}});
-		configs.add(new Object[]{41 , 50 , new int[]{10004,15,3,2} ,new int[]{10016,15,2,2} ,new int[]{10012,15,3,2} ,new int[]{10014,15,3,2}});
-		configs.add(new Object[]{51 , 70 , new int[]{10002,15,3,2} ,new int[]{10011,15,3,2} ,new int[]{10012,15,3,2} ,new int[]{10009,15,3,2}});
-		configs.add(new Object[]{71 , 100 , new int[]{10010,14,3,2} ,new int[]{10016,14,2,2} ,new int[]{10012,14,3,2} ,new int[]{10014,14,3,2}});
-		configs.add(new Object[]{101 , 200 , new int[]{10002,14,2,2} ,new int[]{10011,14,3,2} ,new int[]{10012,14,3,2} ,new int[]{10009,14,3,2}});
-		configs.add(new Object[]{201 , 300 , new int[]{10004,14,3,2} ,new int[]{10016,14,2,2} ,new int[]{10012,14,3,2} ,new int[]{10014,14,2,2}});
-		configs.add(new Object[]{301 , 400 , new int[]{10010,13,3,1} ,new int[]{10016,13,2,1} ,new int[]{10012,13,3,1} ,new int[]{10014,13,3,1}});
-		configs.add(new Object[]{401 , 500 , new int[]{10002,13,2,1} ,new int[]{10011,13,3,1} ,new int[]{10004,13,3,1} ,new int[]{10009,13,3,1}});
-		configs.add(new Object[]{501 , 700 , new int[]{10004,13,3,1} ,new int[]{10016,13,2,1} ,new int[]{10012,13,3,1} ,new int[]{10014,13,2,1}});
-		configs.add(new Object[]{701 , 1000 , new int[]{10002,13,2,1} ,new int[]{10011,13,3,1} ,new int[]{10004,13,3,1} ,new int[]{10009,13,3,1}});
-		configs.add(new Object[]{1001 , 2000 , new int[]{10010,12,2,1} ,new int[]{10016,12,3,1} ,new int[]{10012,12,3,1} ,new int[]{10014,12,2,1}});
-		configs.add(new Object[]{2001 , 3000 , new int[]{10004,12,2,1} ,new int[]{10016,12,2,1} ,new int[]{10012,12,2,1} ,new int[]{10014,12,2,1}});
-		configs.add(new Object[]{3001 , 4000 , new int[]{10004,12,2,1} ,new int[]{10016,12,2,1} ,new int[]{10012,12,2,1} ,new int[]{10014,12,2,1}});
-		configs.add(new Object[]{4001 , 5000 , new int[]{10010,13,2,1} ,new int[]{10011,13,2,0} ,new int[]{10004,10,2,1} ,new int[]{10014,11,3,0}});
-		configs.add(new Object[]{5001 , 7000 , new int[]{10002,8,1,0} ,new int[]{10011,10,1,0} ,new int[]{10012,9,1,1} ,new int[]{10009,8,1,0}});
-		configs.add(new Object[]{7001 , 10000 , new int[]{10002,8,1,0} ,new int[]{10011,6,1,0} ,new int[]{10012,8,1,0} ,new int[]{10009,6,1,0}});   
-		configs.add(new Object[]{10001 , 15000 , new int[]{10010,7,1,0} ,new int[]{10011,8,1,0} ,new int[]{10012,6,1,0} ,new int[]{10014,8,1,0}});
-		configs.add(new Object[]{15001 , 20000 , new int[]{10002,6,1,0} ,new int[]{10011,8,1,0} ,new int[]{10012,8,1,0} ,new int[]{10009,8,1,0}});
+		configs.add(new Object[]{1,1, new int[]{10005,24,3,3,24,14,9,0} ,new int[]{10020,24,2,3,24,14,9,0} ,new int[]{10018,24,3,3,24,14,9,0} ,new int[]{10014,25,3,3,25,15,10,0}});
+		configs.add(new Object[]{2,2, new int[]{10011,23,1,3,23,13,8,0} ,new int[]{10014,23,3,3,23,13,8,0} ,new int[]{10002,23,1,3,23,13,8,0} ,new int[]{10012,24,1,3,24,14,9,0}});
+		configs.add(new Object[]{3,3, new int[]{10012,24,2,3,24,14,9,0} ,new int[]{10009,24,1,3,24,14,9,0} ,new int[]{10010,24,3,3,24,14,9,0} ,new int[]{10013,24,3,3,24,14,9,0}});
+		configs.add(new Object[]{4,4, new int[]{10000,23,3,3,23,13,8,0} ,new int[]{10002,23,1,3,23,13,8,0} ,new int[]{10014,23,3,3,23,13,8,0} ,new int[]{10011,24,1,3,24,14,9,0}});
+		configs.add(new Object[]{5,5, new int[]{10011,24,1,3,24,14,9,0} ,new int[]{10017,24,2,3,24,14,9,0} ,new int[]{10014,24,3,3,24,14,9,0} ,new int[]{10000,23,2,3,23,13,8,0}});
+		configs.add(new Object[]{6,6, new int[]{10009,23,1,3,23,13,8,0} ,new int[]{10002,23,1,3,23,13,8,0} ,new int[]{10011,23,1,3,23,13,8,0} ,new int[]{10012,23,1,3,23,13,8,0}});
+		configs.add(new Object[]{7,7, new int[]{10013,24,2,3,24,14,9,0} ,new int[]{10014,24,3,3,24,14,9,0} ,new int[]{10012,23,1,3,23,13,8,0} ,new int[]{10016,23,2,3,23,13,8,0}});
+		configs.add(new Object[]{8,8, new int[]{10012,23,1,3,23,13,8,0} ,new int[]{10014,23,3,3,23,13,8,0} ,new int[]{10004,23,2,3,23,13,8,0} ,new int[]{10020,23,2,3,23,13,8,0}});
+		configs.add(new Object[]{9,9, new int[]{10000,23,3,3,23,13,8,0} ,new int[]{10002,23,1,3,23,13,8,0} ,new int[]{10004,23,2,3,23,13,8,0} ,new int[]{10003,23,3,3,23,13,8,0}});
+		configs.add(new Object[]{10,10, new int[]{10001,23,3,3,23,13,8,0} ,new int[]{10004,22,2,3,22,12,7,0} ,new int[]{10014,23,3,3,23,13,8,0} ,new int[]{10000,22,3,3,22,12,7,0}});
+		configs.add(new Object[]{11,15, new int[]{10016,22,2,3,22,12,7,0} ,new int[]{10017,22,2,3,22,12,7,0} ,new int[]{10004,22,2,3,22,12,7,0} ,new int[]{10012,22,1,3,22,12,7,0}});
+		configs.add(new Object[]{16,20, new int[]{10012,22,2,3,22,12,0,0} ,new int[]{10017,22,1,3,22,0,7,0} ,new int[]{10003,22,3,3,22,0,7,0} ,new int[]{10014,22,3,3,22,12,0,0}});
+		configs.add(new Object[]{21,25, new int[]{10011,22,1,3,22,12,0,0} ,new int[]{10004,22,2,3,22,12,0,0} ,new int[]{10012,22,1,3,22,12,0,0} ,new int[]{10020,22,2,3,22,12,0,0}});
+		configs.add(new Object[]{26,30, new int[]{10005,21,3,3,21,11,0,0} ,new int[]{10017,22,1,3,22,12,0,0} ,new int[]{10014,21,3,3,21,11,0,0} ,new int[]{10003,22,3,3,22,12,0,0}});
+		configs.add(new Object[]{31,35, new int[]{10011,21,1,3,21,11,0,0} ,new int[]{10004,21,2,3,21,11,0,0} ,new int[]{10014,21,3,3,21,11,0,0} ,new int[]{10012,21,1,3,21,11,0,0}});
+		configs.add(new Object[]{36,40, new int[]{10012,21,1,3,21,11,0,0} ,new int[]{10004,21,2,3,21,11,0,0} ,new int[]{10013,21,2,3,21,11,0,0} ,new int[]{10014,21,3,3,21,11,0,0}});
+		configs.add(new Object[]{41,45, new int[]{10005,21,3,3,21,11,0,0} ,new int[]{10010,20,3,3,20,10,0,0} ,new int[]{10001,21,3,3,21,11,0,0} ,new int[]{10000,21,2,3,21,11,0,0}});
+		configs.add(new Object[]{46,50, new int[]{10012,20,1,3,20,10,0,0} ,new int[]{10010,19,3,3,19,9,0,0} ,new int[]{10016,21,2,3,21,11,0,0} ,new int[]{10014,20,3,2,20,10,0,0}});
+		configs.add(new Object[]{51,55, new int[]{10016,20,2,3,20,10,0,0} ,new int[]{10013,20,2,3,20,10,0,0} ,new int[]{10009,20,1,2,20,10,0,0} ,new int[]{10001,20,3,2,20,10,0,0}});
+		configs.add(new Object[]{56,60, new int[]{10005,20,3,3,20,10,0,0} ,new int[]{10010,20,3,3,20,10,0,0} ,new int[]{10009,20,1,2,20,10,0,0} ,new int[]{10020,20,2,2,20,10,0,0}});
+		configs.add(new Object[]{61,65, new int[]{10001,20,3,3,20,10,0,0} ,new int[]{10014,20,3,3,20,10,0,0} ,new int[]{10002,20,1,2,20,10,0,0} ,new int[]{10005,19,3,2,19,9,0,0}});
+		configs.add(new Object[]{66,70, new int[]{10015,19,3,3,19,9,0,0} ,new int[]{10014,20,3,3,20,10,0,0} ,new int[]{10017,19,1,2,19,9,0,0} ,new int[]{10013,18,2,2,18,8,0,0}});
+		configs.add(new Object[]{71,80, new int[]{10003,19,3,3,19,9,0,0} ,new int[]{10002,19,1,3,19,9,0,0} ,new int[]{10009,19,1,2,19,9,0,0} ,new int[]{10016,19,3,2,19,9,0,0}});
+		configs.add(new Object[]{81,90, new int[]{10003,19,3,3,19,9,0,0} ,new int[]{10010,19,3,3,19,9,0,0} ,new int[]{10004,19,2,2,19,9,0,0} ,new int[]{10005,19,3,2,19,9,0,0}});
+		configs.add(new Object[]{91,100, new int[]{10016,19,2,3,19,9,0,0} ,new int[]{10004,19,2,3,19,9,0,0} ,new int[]{10002,19,1,2,19,9,0,0} ,new int[]{10011,19,1,2,19,9,0,0}});
+		configs.add(new Object[]{101,110, new int[]{10005,19,3,3,19,0,0,0} ,new int[]{10010,19,3,3,19,0,0,0} ,new int[]{10004,19,2,2,19,0,0,0} ,new int[]{10016,19,2,2,19,0,0,0}});
+		configs.add(new Object[]{111,120, new int[]{10001,18,3,3,18,0,0,0} ,new int[]{10002,18,1,3,18,0,0,0} ,new int[]{10017,18,2,2,18,0,0,0} ,new int[]{10005,18,3,2,18,0,0,0}});
+		configs.add(new Object[]{121,130, new int[]{10013,18,2,3,18,0,0,0} ,new int[]{10009,18,1,3,18,0,0,0} ,new int[]{10004,18,2,2,18,0,0,0} ,new int[]{10016,18,2,2,18,0,0,0}});
+		configs.add(new Object[]{131,140, new int[]{10013,18,2,3,18,0,0,0} ,new int[]{10014,18,3,3,18,0,0,0} ,new int[]{10002,18,1,2,18,0,0,0} ,new int[]{10001,18,3,2,18,0,0,0}});
+		configs.add(new Object[]{141,150, new int[]{10001,17,3,3,17,0,0,0} ,new int[]{10009,17,1,3,17,0,0,0} ,new int[]{10004,17,2,2,17,0,0,0} ,new int[]{10015,17,2,2,17,0,0,0}});
+		configs.add(new Object[]{151,160, new int[]{10012,17,1,3,17,0,0,0} ,new int[]{10017,17,2,3,17,0,0,0} ,new int[]{10014,17,3,2,17,0,0,0} ,new int[]{10003,17,3,2,17,0,0,0}});
+		configs.add(new Object[]{161,170, new int[]{10000,17,2,3,17,0,0,0} ,new int[]{10010,17,3,3,17,0,0,0} ,new int[]{10009,17,1,2,17,0,0,0} ,new int[]{10015,17,2,2,17,0,0,0}});
+		configs.add(new Object[]{171,180, new int[]{10011,17,1,3,17,0,0,0} ,new int[]{10009,17,1,3,17,0,0,0} ,new int[]{10010,17,2,2,17,0,0,0} ,new int[]{10003,17,3,2,17,0,0,0}});
+		configs.add(new Object[]{181,190, new int[]{10012,16,2,3,16,0,0,0} ,new int[]{10014,16,3,3,16,0,0,0} ,new int[]{10010,16,2,2,16,0,0,0} ,new int[]{10005,16,3,2,16,0,0,0}});
+		configs.add(new Object[]{191,200, new int[]{10011,16,1,3,16,0,0,0} ,new int[]{10015,16,2,3,16,0,0,0} ,new int[]{10002,16,1,2,16,0,0,0} ,new int[]{10013,16,2,2,16,0,0,0}});
+		configs.add(new Object[]{201,250, new int[]{10015,16,2,3,16,0,0,0} ,new int[]{10014,16,3,3,16,0,0,0} ,new int[]{10009,16,1,2,16,0,0,0} ,new int[]{10001,16,3,2,16,0,0,0}});
+		configs.add(new Object[]{251,300, new int[]{10001,15,3,3,15,0,0,0} ,new int[]{10004,15,2,3,15,0,0,0} ,new int[]{10014,15,3,2,15,0,0,0} ,new int[]{10003,15,3,2,15,0,0,0}});
+		configs.add(new Object[]{301,350, new int[]{10005,15,3,3,15,0,0,0} ,new int[]{10010,15,3,3,15,0,0,0} ,new int[]{10014,15,3,2,15,0,0,0} ,new int[]{10011,15,1,2,15,0,0,0}});
+		configs.add(new Object[]{351,400, new int[]{10015,15,2,3,15,0,0,0} ,new int[]{10004,15,2,3,15,0,0,0} ,new int[]{10011,15,1,2,15,0,0,0} ,new int[]{10000,15,2,2,15,0,0,0}});
+		configs.add(new Object[]{401,450, new int[]{10001,14,3,1,14,0,0,0} ,new int[]{10010,14,3,1,14,0,0,0} ,new int[]{10014,14,3,1,14,0,0,0} ,new int[]{10003,14,3,1,14,0,0,0}});
+		configs.add(new Object[]{451,500, new int[]{10003,14,3,1,14,0,0,0} ,new int[]{10017,14,2,1,14,0,0,0} ,new int[]{10013,14,2,1,14,0,0,0} ,new int[]{10009,14,2,1,14,0,0,0}});
+		configs.add(new Object[]{501,550, new int[]{10014,14,3,1,14,0,0,0} ,new int[]{10001,14,3,1,14,0,0,0} ,new int[]{10002,14,1,1,14,0,0,0} ,new int[]{10011,14,1,1,14,0,0,0}});
+		configs.add(new Object[]{551,600, new int[]{10015,14,2,1,14,0,0,0} ,new int[]{10002,14,1,1,14,0,0,0} ,new int[]{10014,14,3,1,14,0,0,0} ,new int[]{10000,14,2,1,14,0,0,0}});
+		configs.add(new Object[]{601,650, new int[]{10011,13,1,1,13,0,0,0} ,new int[]{10004,13,2,1,13,0,0,0} ,new int[]{10014,13,3,1,13,0,0,0} ,new int[]{10013,13,2,1,13,0,0,0}});
+		configs.add(new Object[]{651,700, new int[]{10005,13,3,1,13,0,0,0} ,new int[]{10010,13,3,1,13,0,0,0} ,new int[]{10001,13,3,1,13,0,0,0} ,new int[]{10009,13,2,1,13,0,0,0}});
+		configs.add(new Object[]{701,750, new int[]{10015,13,2,1,13,0,0,0} ,new int[]{10010,13,3,1,13,0,0,0} ,new int[]{10011,13,1,1,13,0,0,0} ,new int[]{10014,13,3,1,13,0,0,0}});
+		configs.add(new Object[]{751,800, new int[]{10013,13,2,1,13,0,0,0} ,new int[]{10002,13,1,1,13,0,0,0} ,new int[]{10001,13,3,1,13,0,0,0} ,new int[]{10009,13,1,1,13,0,0,0}});
+		configs.add(new Object[]{801,850, new int[]{10014,12,3,1,12,0,0,0} ,new int[]{10011,12,1,1,12,0,0,0} ,new int[]{10002,12,1,1,12,0,0,0} ,new int[]{10005,12,3,1,12,0,0,0}});
+		configs.add(new Object[]{851,900, new int[]{10009,12,1,1,12,0,0,0} ,new int[]{10001,12,3,1,12,0,0,0} ,new int[]{10017,12,2,1,12,0,0,0} ,new int[]{10016,12,3,1,12,0,0,0}});
+		configs.add(new Object[]{901,950, new int[]{10016,12,2,1,12,0,0,0} ,new int[]{10010,12,1,1,12,0,0,0} ,new int[]{10002,12,1,1,12,0,0,0} ,new int[]{10012,12,1,1,12,0,0,0}});
+		configs.add(new Object[]{951,1000, new int[]{10013,11,2,1,11,0,0,0} ,new int[]{10010,11,2,1,11,0,0,0} ,new int[]{10004,11,2,1,11,0,0,0} ,new int[]{10005,11,3,1,11,0,0,0}});
+		configs.add(new Object[]{1001,1500, new int[]{10016,11,2,1,11,0,0,0} ,new int[]{10002,11,1,1,11,0,0,0} ,new int[]{10004,11,2,1,11,0,0,0} ,new int[]{10012,11,1,1,11,0,0,0}});
+		configs.add(new Object[]{1501,2000, new int[]{10001,11,3,1,11,0,0,0} ,new int[]{10010,11,2,1,11,0,0,0} ,new int[]{10017,11,2,1,11,0,0,0} ,new int[]{10003,11,3,1,11,0,0,0}});
+		configs.add(new Object[]{2001,2500, new int[]{10013,10,2,1,10,0,0,0} ,new int[]{10009,10,1,1,10,0,0,0} ,new int[]{10004,10,2,1,10,0,0,0} ,new int[]{10005,10,3,1,10,0,0,0}});
+		configs.add(new Object[]{2501,3000, new int[]{10011,10,1,1,10,0,0,0} ,new int[]{10014,10,3,1,10,0,0,0} ,new int[]{10002,10,1,1,10,0,0,0} ,new int[]{10016,10,2,1,10,0,0,0}});
+		configs.add(new Object[]{3001,3500, new int[]{10003,10,3,1,10,0,0,0} ,new int[]{10009,10,1,1,10,0,0,0} ,new int[]{10004,10,2,1,10,0,0,0} ,new int[]{10005,10,3,1,10,0,0,0}});
+		configs.add(new Object[]{3501,4000, new int[]{10009,9,1,1,9,0,0,0} ,new int[]{10015,9,2,1,9,0,0,0} ,new int[]{10002,9,1,1,9,0,0,0} ,new int[]{10012,9,1,1,9,0,0,0}});
+		configs.add(new Object[]{4001,4500, new int[]{10005,9,3,1,9,0,0,0} ,new int[]{10010,9,2,1,9,0,0,0} ,new int[]{10017,9,1,1,9,0,0,0} ,new int[]{10016,9,2,1,9,0,0,0}});
+		configs.add(new Object[]{4501,5000, new int[]{10000,9,2,1,9,0,0,0} ,new int[]{10012,9,1,0,9,0,0,0} ,new int[]{10004,9,2,1,9,0,0,0} ,new int[]{10009,9,1,1,9,0,0,0}});
+		configs.add(new Object[]{5001,5500, new int[]{10015,9,2,0,9,0,0,0} ,new int[]{10009,9,1,0,9,0,0,0} ,new int[]{10017,9,1,0,9,0,0,0} ,new int[]{10003,9,3,1,9,0,0,0}});
+		configs.add(new Object[]{5501,6000, new int[]{10001,8,3,0,8,0,0,0} ,new int[]{10014,8,3,0,8,0,0,0} ,new int[]{10002,8,1,0,8,0,0,0} ,new int[]{10016,8,2,0,8,0,0,0}});
+		configs.add(new Object[]{6001,6500, new int[]{10000,8,2,0,8,0,0,0} ,new int[]{10002,8,1,0,8,0,0,0} ,new int[]{10009,8,1,0,8,0,0,0} ,new int[]{10001,8,3,0,8,0,0,0}});
+		configs.add(new Object[]{6501,7000, new int[]{10016,8,2,0,8,0,0,0} ,new int[]{10010,8,3,0,8,0,0,0} ,new int[]{10015,8,2,0,8,0,0,0} ,new int[]{10011,8,1,0,8,0,0,0}});
+		configs.add(new Object[]{7001,7500, new int[]{10000,8,2,0,8,0,0,0} ,new int[]{10002,8,1,0,8,0,0,0} ,new int[]{10009,8,1,0,8,0,0,0} ,new int[]{10016,8,2,0,8,0,0,0}});
+		configs.add(new Object[]{7501,8000, new int[]{10012,7,1,0,7,0,0,0} ,new int[]{10009,7,1,0,7,0,0,0} ,new int[]{10002,7,1,0,7,0,0,0} ,new int[]{10000,7,2,0,7,0,0,0}});
+		configs.add(new Object[]{8001,8500, new int[]{10011,7,1,0,7,0,0,0} ,new int[]{10016,7,2,0,7,0,0,0} ,new int[]{10010,7,3,0,7,0,0,0} ,new int[]{10009,7,1,0,7,0,0,0}});
+		configs.add(new Object[]{8501,9000, new int[]{10009,7,1,0,7,0,0,0} ,new int[]{10002,7,1,0,7,0,0,0} ,new int[]{10010,7,1,0,7,0,0,0} ,new int[]{10003,7,3,0,7,0,0,0}});
+		configs.add(new Object[]{9001,9500, new int[]{10014,6,3,0,6,0,0,0} ,new int[]{10011,6,2,0,6,0,0,0} ,new int[]{10002,6,1,0,6,0,0,0} ,new int[]{10001,6,3,0,6,0,0,0}});
+		configs.add(new Object[]{9501,10000, new int[]{10012,6,1,0,6,0,0,0} ,new int[]{10002,6,1,0,6,0,0,0} ,new int[]{10003,6,3,0,6,0,0,0} ,new int[]{10009,6,1,0,6,0,0,0}});
+		configs.add(new Object[]{10001,12000, new int[]{10009,6,2,0,6,0,0,0} ,new int[]{10011,6,2,0,6,0,0,0} ,new int[]{10002,6,1,0,6,0,0,0} ,new int[]{10012,6,1,0,6,0,0,0}});
+		configs.add(new Object[]{12001,15000, new int[]{10012,6,1,0,6,0,0,0} ,new int[]{10004,6,2,0,6,0,0,0} ,new int[]{10003,6,3,0,6,0,0,0} ,new int[]{10009,6,1,0,6,0,0,0}});
+		configs.add(new Object[]{15001,20000, new int[]{10009,6,2,0,6,0,0,0} ,new int[]{10004,6,2,0,6,0,0,0} ,new int[]{10015,6,2,0,6,0,0,0} ,new int[]{10011,6,1,0,6,0,0,0}});
 
 		int maxLevel = 0;
 		
@@ -461,6 +510,9 @@ public class ArenaDao extends BaseDao {
 				player.generalList.add(this.toHero(rank, g3));
 				player.generalList.add(this.toHero(rank, g4));
 				player.level = maxLevel;
+				if (player.level < 10) {
+					player.level = 10;
+				}
 				return ;
 			}
 		}
@@ -482,10 +534,10 @@ public class ArenaDao extends BaseDao {
 		hero.setLevel(level);
 		hero.setCLASS(CLASS);
 		hero.setStar(star);
-		hero.setSkill1Level(1);
-		hero.setSkill2Level(1);
-		hero.setSkill3Level(1);
-		hero.setSkill4Level(1);
+		hero.setSkill1Level(config[4]);
+		hero.setSkill2Level(config[5]);
+		hero.setSkill3Level(config[6]);
+		hero.setSkill4Level(config[7]);
 		if (rank < 7000) {
 			hero.setEquip1(true);
 			hero.setEquip2(true);

@@ -7,8 +7,8 @@ import javax.annotation.Resource;
 import org.springframework.stereotype.Service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.googlecode.jsonrpc4j.JsonRpcService;
 import com.zhanglong.sg.dao.MailDao;
+import com.zhanglong.sg.dao.MissionDao;
 import com.zhanglong.sg.entity.FinanceLog;
 import com.zhanglong.sg.entity.Mail;
 import com.zhanglong.sg.entity.Role;
@@ -16,19 +16,21 @@ import com.zhanglong.sg.model.Reward;
 import com.zhanglong.sg.result.Result;
 
 @Service
-@JsonRpcService("/mail")
 public class MailService extends BaseService {
 
 	@Resource
 	private MailDao mailDao;
 
+	@Resource
+	private MissionDao missionDao;
+
 	/**
 	 * 未读邮件
 	 * @param page
 	 * @return
-	 * @throws Throwable
+	 * @throws Exception
 	 */
-	public Object receive(int page) throws Throwable {
+	public Object receive(int page) throws Exception {
 
 		int roleId = this.roleId();
 
@@ -70,24 +72,26 @@ public class MailService extends BaseService {
 	/**
 	 * 读邮件
 	 * @param mailId
-	 * @throws Throwable
+	 * @throws Exception
 	 */
-	public void readMail(int mailId) throws Throwable {
+	public Object readMail(int mailId) throws Exception {
 
 		Mail mail = this.mailDao.findOne(mailId);
 		if (mail != null) {
 			mail.setStatus(Mail.READ);
 			this.mailDao.update(mail);
 		}
+		Result result = new Result();
+        return this.success(result.toMap());
 	}
 
 	/**
 	 * 邮件标为已读
 	 * @param mailId
 	 * @return
-	 * @throws Throwable
+	 * @throws Exception
 	 */
-	public Object read(int mailId) throws Throwable {
+	public Object read(int mailId) throws Exception {
 
 		int roleId = this.roleId();
 
@@ -121,5 +125,9 @@ public class MailService extends BaseService {
         }
 
 		return this.success(result.toMap());
+	}
+
+	public void del() {
+		this.mailDao.del(7);
 	}
 }

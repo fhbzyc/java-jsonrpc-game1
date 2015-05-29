@@ -89,6 +89,7 @@ public class BattlePlayerModel implements Serializable {
 	}
 
 	public void addAHero(Hero hero) {
+		hero.setLevel(hero.level());
 		this.heros.add(hero);
 	}
 

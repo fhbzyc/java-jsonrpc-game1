@@ -60,12 +60,16 @@ public class CrusadeService extends BaseService {
         List<BattlePlayerModel> players = battleInWorldModel.getList();
 
         for (BattlePlayerModel battlePlayerModel : players) {
-            
-            //Object[] objectList = new Object[battlePlayerModel.getHeros().size()];
-            ArrayList<Hero> heros = battlePlayerModel.getHeros();
+
+            List<Hero> heros = battlePlayerModel.getHeros();
             Object[] objectList = new Object[heros.size()];
             for (int i = 0 ; i < heros.size() ; i++) {
-                objectList[i] = heros.get(i).toArray();
+            	if (i >= 4) {
+            		break;
+            	}
+            	Hero hero = heros.get(i);
+            	hero.setLevel(hero.level());
+                objectList[i] = hero.toArray();
             }
 
             List<Reward> rewards = battlePlayerModel.getRewards();
@@ -183,8 +187,8 @@ public class CrusadeService extends BaseService {
         ArrayList<Hero> heros2 = battleInWorldModel.getList().get(index - 1).getHeros();
 
         List<Object> list = new ArrayList<Object>();
-        for (Hero hero : heros2) {
-			list.add(hero.toArray());
+        for (int i = 0 ; i < heros2.size() ; i++) {
+			list.add(heros2.get(i).toArray());
 		}
 
         Result result = new Result();
@@ -457,8 +461,8 @@ public class CrusadeService extends BaseService {
             if (role.getGold() < gold) {
                 return this.returnError(2, ErrorResult.NotEnoughGold);
             } else {
-                this.roleDao.subGold(role, gold, "讨伐天下第<" + (index + 1) + ">关,第<" + (n + 1) + ">次抽奖", FinanceLog.STATUS_BATTLE_IN_WORLD);
-                this.roleDao.update(role, result);
+                this.roleDao.subGold(role, gold, "讨伐天下第<" + (index + 1) + ">关,第<" + (n + 1) + ">次抽奖", FinanceLog.STATUS_BATTLE_IN_WORLD, result);
+               // this.roleDao.update(role, result);
             }
         }
 

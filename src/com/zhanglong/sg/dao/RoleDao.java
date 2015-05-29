@@ -50,11 +50,15 @@ public class RoleDao extends BaseDao {
 		return ((BigInteger) query.list().iterator().next()).intValue();
 	}
 
-	@SuppressWarnings("unchecked")
 	public List<Role> expTop20(int serverId) {
 
 		Session session = this.getSessionFactory().getCurrentSession();
-		return session.createCriteria(Role.class).addOrder(Order.desc("exp")).setMaxResults(20).list();
+		@SuppressWarnings("unchecked")
+		List<Role> list = session.createCriteria(Role.class)
+				.add(Restrictions.eq("serverId", serverId))
+				.addOrder(Order.desc("exp"))
+				.setMaxResults(20).list();
+		return list;
 	}
 
 	public int countExpAfter(int exp, int serverId) {
@@ -96,6 +100,7 @@ public class RoleDao extends BaseDao {
 		role.setCreateTime(new Timestamp(System.currentTimeMillis()));
 		role.setEnable(true);
 		role.setLevel(1);
+		role.setPillageNum(10);
 		role.setStr("");
 
 		Session session = this.getSessionFactory().getCurrentSession();
@@ -105,9 +110,9 @@ public class RoleDao extends BaseDao {
 
 	public void update(Role role, Result result) {
 		role.level = role.level();
-		// role.vip = this.vip(role.countGold)[0];
-		Session session = this.getSessionFactory().getCurrentSession();
-		session.update(role);
+//		role.vip = role.vip()[0];
+//		Session session = this.getSessionFactory().getCurrentSession();
+//		session.update(role);
 		result.setMoney(role.getCoin(), role.getGold());
 	}
 
@@ -132,7 +137,7 @@ public class RoleDao extends BaseDao {
     	financeLogDao.create(finance);
     }
 
-    public void subCoin(Role role, int coin, String desc, int status) {
+    public void subCoin(Role role, int coin, String desc, int status, Result result) {
 
     	FinanceLog finance = new FinanceLog();
     	finance.setRoleId(role.getRoleId());
@@ -149,6 +154,8 @@ public class RoleDao extends BaseDao {
     	financeLogDao.setSessionFactory(this.getSessionFactory());
 
     	financeLogDao.create(finance);
+
+    	result.setMoney(role.coin, role.gold);
     }
 
     public void addGold(Role role, int gold, String desc, int status, Result result) {
@@ -172,7 +179,7 @@ public class RoleDao extends BaseDao {
     	financeLogDao.create(finance);
     }
 
-    public void subGold(Role role, int gold, String desc, int status) {
+    public void subGold(Role role, int gold, String desc, int status, Result result) {
 
     	FinanceLog finance = new FinanceLog();
     	finance.setRoleId(role.getRoleId());
@@ -189,6 +196,8 @@ public class RoleDao extends BaseDao {
     	financeLogDao.setSessionFactory(this.getSessionFactory());
 
     	financeLogDao.create(finance);
+
+    	result.setMoney(role.coin, role.gold);
     }
 
 	public void addMoney3(Role role, int money3, String desc, int status, Result result) {
@@ -311,8 +320,8 @@ public class RoleDao extends BaseDao {
 
 			}
         }
-        
 
+        role.level = newLevel;
 
 //        if (oldExp != this.exp) {
 //        	this.changeExp = true;
@@ -354,19 +363,19 @@ public class RoleDao extends BaseDao {
 
 		int num = 10;
 
-		String sql = "SELECT * FROM role WHERE server_id = ? AND role_pillage_time < ? AND role_level BETWEEN ? AND ? ORDER BY role_level limit 100";
+		//String sql = "SELECT * FROM role WHERE server_id = ? AND role_pillage_time < ? AND role_level BETWEEN ? AND ? ORDER BY role_level limit 100";
 		Session session = this.getSessionFactory().getCurrentSession();
-		SQLQuery query = session.createSQLQuery(sql);
-		query.setParameter(1 - 1, serverId);
-		query.setParameter(2 - 1, System.currentTimeMillis() / 1000);
-		query.setParameter(3 - 1, mylevel - num);
-		query.setParameter(4 - 1, mylevel + num);
-
-		query.addEntity(Role.class);
+		Criteria criteria = session.createCriteria(Role.class);
 		@SuppressWarnings("unchecked")
-		List<Role> list = query.list();
+		List<Role> list = criteria.add(Restrictions.eq("serverId", serverId))
+		.add(Restrictions.lt("pillageTime", (int)(System.currentTimeMillis() / 1000)))
+		.add(Restrictions.gt("level", mylevel - num))	
+		.add(Restrictions.lt("level", mylevel + num))
+		.addOrder(Order.asc("level"))
+		.setMaxResults(100).list();
+
 		int index = -1;
-		for (int i = 0 ; i < index ; i++) {
+		for (int i = 0 ; i < list.size() ; i++) {
 			if (list.get(i).getRoleId().equals(roleId)) {
 				index = i;
 			}
@@ -410,7 +419,7 @@ public class RoleDao extends BaseDao {
 		@SuppressWarnings("unchecked")
 		List<Role> list = query.list();
 		int index = -1;
-		for (int i = 0 ; i < index ; i++) {
+		for (int i = 0 ; i < list.size() ; i++) {
 			if (list.get(i).getRoleId().equals(roleId)) {
 				index = i;
 			}
@@ -432,7 +441,7 @@ public class RoleDao extends BaseDao {
 		return list;
 	}
 
-	public List<PlayerModel> getPlayers(List<Role> roles) throws Throwable {
+	public List<PlayerModel> getPlayers(List<Role> roles) throws Exception {
 
 		List<PlayerModel> result = new ArrayList<PlayerModel>();
 

@@ -1,6 +1,7 @@
 package com.zhanglong.sg.model;
 
 import java.util.ArrayList;
+import java.util.List;
 
 public class PlayerModel implements Cloneable {
 
@@ -12,7 +13,7 @@ public class PlayerModel implements Cloneable {
 	
 	public int level;
 
-	public ArrayList<Object> generalList = new ArrayList<Object>();
+	public List<Object> generalList = new ArrayList<Object>();
 
 //	public void toPlayer() throws Throwable {
 //

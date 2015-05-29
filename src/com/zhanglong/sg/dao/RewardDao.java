@@ -20,6 +20,9 @@ public class RewardDao extends BaseDao {
 	@Resource
 	private DailyTaskDao dailyTaskDao;
 
+	@Resource
+	private BaseItemDao baseItemDao;
+
     public RewardDao() {
     }
 
@@ -33,6 +36,11 @@ public class RewardDao extends BaseDao {
                 int itemId = items[i];
                 int num = itemNums[i];
                 this.itemDao.addItem(role.getRoleId(), itemId, num, result);
+
+                desc += ",";
+        		desc += this.baseItemDao.findOne(itemId).getName();
+        		desc += "x";
+        		desc += num;
             }
         }
 

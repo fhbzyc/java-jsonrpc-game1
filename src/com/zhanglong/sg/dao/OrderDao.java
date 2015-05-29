@@ -35,16 +35,12 @@ public class OrderDao extends BaseDao {
 
 	public int sum(int roleId) {
 
-		String sql = "SELECT SUM(order_money) FROM role_orders WHERE role_id = ? AND order_status = ?";
-		
-		Session session = this.getSessionFactory().getCurrentSession();
-		
-		SQLQuery query = session.createSQLQuery(sql);
-
-		query.setParameter(0, roleId);
-		query.setParameter(1, Order.STATUS_SUCCESS);
-
-		return ((BigInteger) query.list().iterator().next()).intValue();
+		int s = 0;
+		List<Order> list = this.findComplateList(roleId);
+		for (Order order : list) {
+			s += order.getMoney();
+		}
+		return s;
 	}
 
 	public int after6(int roleId) {

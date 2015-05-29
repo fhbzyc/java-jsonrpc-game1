@@ -25,6 +25,18 @@ public class LoginService extends BaseService {
 	@Transactional(rollbackFor = Throwable.class)
 	public Object register(String username, String password, String imei) throws Exception {
 
+        username.replace(" ", "");
+        username.replace("	", "");
+        username.replace("\n", "");
+
+		if (username.length() < 6 || username.length() > 10) {
+			return this.returnError(this.lineNum(), "用户名必须6~10位");
+		}
+
+		if (password.length() < 6 || password.length() > 20) {
+			return this.returnError(this.lineNum(), "密码必须6~20位");
+		}
+
 		User user = this.userDao.getByUsername(username);
 		if (user != null) {
 

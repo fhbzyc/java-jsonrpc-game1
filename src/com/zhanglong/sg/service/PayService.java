@@ -57,7 +57,7 @@ public class PayService extends BaseService {
     	order.setType(basePayShop.getType());
     	order.setMoney(basePayShop.getMoney());
     	order.setGold(basePayShop.getGold());
-    	order.setAddGold(basePayShop.getOrder());
+    	order.setAddGold(basePayShop.getAddGold());
 
     	this.orderDao.create(order);
 

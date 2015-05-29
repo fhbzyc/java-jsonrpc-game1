@@ -94,19 +94,13 @@
       <property name="initialSize" value="10"/>
     </bean>
 
-       <bean id="hibernateTemplate" class="org.springframework.orm.hibernate4.HibernateTemplate">
+    <bean id="transactionManager" class="org.springframework.orm.hibernate4.HibernateTransactionManager">
         <property name="sessionFactory" ref="sessionFactory" />
     </bean>  
 
-    <!-- 配置Hibernate事务管理器 -->
-      <bean id="transactionManager" class="org.springframework.orm.hibernate4.HibernateTransactionManager">
-        <property name="sessionFactory" ref="sessionFactory" />
-    </bean>  
+   <!-- 配置事务异常封装 
+   <bean id="persistenceExceptionTranslationPostProcessor" class="org.springframework.dao.annotation.PersistenceExceptionTranslationPostProcessor" /> -->
 
-   <!-- 配置事务异常封装 -->
-<!--     <bean id="persistenceExceptionTranslationPostProcessor" 
-       class="org.springframework.dao.annotation.PersistenceExceptionTranslationPostProcessor" /> -->
-    
     <tx:advice id="txAdvice" transaction-manager="transactionManager">
         <tx:attributes>
             <tx:method name="*" propagation="REQUIRED" />
@@ -114,7 +108,7 @@
     </tx:advice> 
 
     <aop:config expose-proxy="true">
-        <aop:pointcut id="txPointcut" expression="execution(* com.zhanglong.sg.service..*.*(..)) or execution(* com.zhanglong.sg.controller..*.*(..))" />
+        <aop:pointcut id="txPointcut" expression="execution(* com.zhanglong.sg.service..*.*(..)) || execution(* com.zhanglong.sg.controller..*.*(..))" />
         <aop:advisor pointcut-ref="txPointcut" advice-ref="txAdvice"/>
     </aop:config>
 
@@ -145,7 +139,7 @@
 
     <bean id="cronTrigger2" class="org.springframework.scheduling.quartz.CronTriggerFactoryBean">
        <property name="jobDetail" ref="job2" />
-       <property name="cronExpression" value="0 0 21 * * ?" />
+       <property name="cronExpression" value="1 0 21 * * ?" />
     </bean>
 
     <bean id="job3" class="org.springframework.scheduling.quartz.JobDetailFactoryBean">
@@ -171,9 +165,10 @@
     <bean class="org.springframework.scheduling.quartz.SchedulerFactoryBean">
         <property name="triggers">
             <list>
-                 <ref bean="cronTrigger2" />
-                 <ref bean="cronTrigger3" />
-                 <ref bean="cronTrigger4" />
+                <ref bean="cronTrigger1" />
+                <ref bean="cronTrigger2" />
+                <ref bean="cronTrigger3" />
+                <ref bean="cronTrigger4" />
             </list>
         </property>
     </bean>
