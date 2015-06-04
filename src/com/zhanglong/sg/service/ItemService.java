@@ -212,4 +212,30 @@ public class ItemService extends BaseService {
 
         return this.success(result.toMap());
     }
+
+    public Object addAp(int pkId, int num) throws Exception {
+
+    	int roleId = this.roleId();
+
+        Item item = this.itemDao.findOne(pkId);
+        if (item == null) {
+        	return this.returnError(this.lineNum(), "参数出错");
+        }
+
+        if (item.getItemId() != 4230) {
+        	return this.returnError(this.lineNum(), "参数出错");
+        }
+
+        if (item.getNum() < num) {
+        	return this.returnError(this.lineNum(), "数量不足");
+        }
+
+        Result result = new Result();
+        this.itemDao.subItem(item, num, result);
+
+        Role role = this.roleDao.findOne(roleId);
+        this.roleDao.addAp(role, 6 * num, result);
+
+        return this.success(result.toMap());
+     }
 }

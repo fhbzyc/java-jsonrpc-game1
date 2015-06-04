@@ -4,14 +4,13 @@ import java.io.Serializable;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
 import javax.persistence.Id;
-import javax.persistence.Index;
+import javax.persistence.IdClass;
 import javax.persistence.Table;
 
 @Entity
-@Table(name = "role_missions" , indexes = {@Index(columnList="role_id" , unique = false)})
+@IdClass(MissionPK.class)
+@Table(name = "role_missions")
 public class Mission implements Serializable {
 
 	/**
@@ -20,35 +19,28 @@ public class Mission implements Serializable {
 	private static final long serialVersionUID = 1L;
 
 	@Id
-	@GeneratedValue(strategy = GenerationType.IDENTITY)
-	private Integer id;
-
 	@Column(name = "role_id")
-    public int roleId;
+    public int aRoleId;
 
+	@Id
 	@Column(name = "mission_id")
     public int missionId;
+
+	@Column(name = "mission_type")
+    public String type;
 
 	@Column(name = "mission_num")
     public int num;
 
-	@Column(name = "mission_complate")
-    public boolean complate;
+	@Column(name = "mission_complete")
+    public boolean complete;
 
-	public Integer getId() {
-		return id;
+	public int getARoleId() {
+		return aRoleId;
 	}
 
-	public void setId(Integer id) {
-		this.id = id;
-	}
-
-	public int getRoleId() {
-		return roleId;
-	}
-
-	public void setRoleId(int roleId) {
-		this.roleId = roleId;
+	public void setARoleId(int aRoleId) {
+		this.aRoleId = aRoleId;
 	}
 
 	public int getMissionId() {
@@ -67,11 +59,19 @@ public class Mission implements Serializable {
 		this.num = num;
 	}
 
-	public boolean getComplate() {
-		return complate;
+	public String getType() {
+		return type;
 	}
 
-	public void setComplate(boolean complate) {
-		this.complate = complate;
+	public void setType(String type) {
+		this.type = type;
+	}
+
+	public boolean getComplete() {
+		return complete;
+	}
+
+	public void setComplete(boolean complete) {
+		this.complete = complete;
 	}
 }

@@ -208,6 +208,9 @@ public class PillageService extends BaseService {
         	this.itemDao.addItem(role.getRoleId(), itemId, 1, result);
     	}
 
+        // 掠夺日常任务
+        this.dailyTaskDao.addPillage(role, result);
+
     	return this.success(result.toMap());
 	}
 
@@ -333,7 +336,7 @@ public class PillageService extends BaseService {
 			player.roleId = rId;
 			player.avatar = rId % 9;
 			player.level = (Integer)objects[1];
-	    	player.name = firstName[rId % firstName.length] + lastName[rId % lastName.length];
+	    	player.name = firstName[(rId * 2) % firstName.length] + lastName[(rId * 3) % lastName.length];
 
 	    	int[] h1 = (int[])objects[2];
 	    	int[] h2 = (int[])objects[3];

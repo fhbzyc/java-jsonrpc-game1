@@ -7,8 +7,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Random;
 
-import org.springframework.web.context.ContextLoader;
-
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -17,6 +15,7 @@ import com.zhanglong.sg.dao.RoleDao;
 import com.zhanglong.sg.entity.Hero;
 import com.zhanglong.sg.entity.Power;
 import com.zhanglong.sg.service.RoleService;
+import com.zhanglong.sg.utils.SpringContextUtils;
 
 public class CrusadeModel implements Serializable {
 
@@ -64,12 +63,12 @@ public class CrusadeModel implements Serializable {
 		this.list = list;
 	}
 
-	public int getNum() {
-		return num;
-	}
-
 	public void setNum(int num) {
 		this.num = num;
+	}
+
+	public int getNum() {
+		return num;
 	}
 
 	public HashMap<Integer, Integer> getHpMap() {
@@ -94,7 +93,7 @@ public class CrusadeModel implements Serializable {
 
 		int serverId = 0;
 
-		RoleDao roleDao = ContextLoader.getCurrentWebApplicationContext().getBean(RoleDao.class);
+		RoleDao roleDao = (RoleDao) SpringContextUtils.getBean(RoleDao.class);
 		serverId = roleDao.findOne(this.roleId).getServerId();
 
 		this.list = new ArrayList<BattlePlayerModel>();
@@ -348,7 +347,7 @@ public class CrusadeModel implements Serializable {
 
 	private Power getRolePower(int roleId, int serverId, int myPower, int index) {
 
-		PowerDao powerDao = ContextLoader.getCurrentWebApplicationContext().getBean(PowerDao.class);
+		PowerDao powerDao = (PowerDao) SpringContextUtils.getBean(PowerDao.class);
 
 		int min = 0;
 		int max = 0;

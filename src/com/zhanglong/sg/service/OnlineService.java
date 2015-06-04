@@ -1,22 +1,24 @@
 package com.zhanglong.sg.service;
 
+import java.io.IOException;
+
 import org.springframework.stereotype.Service;
 
-import com.googlecode.jsonrpc4j.JsonRpcService;
+import com.fasterxml.jackson.core.JsonParseException;
+import com.fasterxml.jackson.databind.JsonMappingException;
 import com.zhanglong.sg.entity.Role;
 import com.zhanglong.sg.model.DateNumModel;
 import com.zhanglong.sg.result.Result;
 
 @Service
-@JsonRpcService("/online")
 public class OnlineService extends BaseService {
 
 	/**
 	 * 
 	 * @return
-	 * @throws Throwable
+	 * @throws Exception
 	 */
-	public Object num() throws Throwable {
+	public Object num() throws Exception {
 
 		int roleId = this.roleId();
 
@@ -36,9 +38,9 @@ public class OnlineService extends BaseService {
 	/**
 	 * 
 	 * @return
-	 * @throws Throwable
+	 * @throws Exception
 	 */
-	public Object reward() throws Throwable {
+	public Object reward() throws Exception {
 
 		int roleId = this.roleId();
 
@@ -99,7 +101,7 @@ public class OnlineService extends BaseService {
 		return gold;
 	}
 	
-	public int getNum(Role role) {
+	public int getNum(Role role) throws JsonParseException, JsonMappingException, IOException {
 
 		long createTime = role.getCreateTime().getTime();
 
@@ -115,7 +117,7 @@ public class OnlineService extends BaseService {
 		return num;
 	}
 
-	private void setNum(int roleId, int num) {
+	private void setNum(int roleId, int num) throws JsonParseException, JsonMappingException, IOException {
 		DateNumModel dateNumModel = this.dateNumDao.findOne(roleId);
 		dateNumModel.setOnline(num);
 		this.dateNumDao.save(roleId, dateNumModel);

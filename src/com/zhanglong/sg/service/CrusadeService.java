@@ -9,7 +9,6 @@ import javax.annotation.Resource;
 
 import org.springframework.stereotype.Service;
 
-import com.googlecode.jsonrpc4j.JsonRpcService;
 import com.zhanglong.sg.dao.BattleLogDao;
 import com.zhanglong.sg.dao.CrusadeDao;
 import com.zhanglong.sg.dao.PowerDao;
@@ -25,7 +24,6 @@ import com.zhanglong.sg.result.ErrorResult;
 import com.zhanglong.sg.result.Result;
 
 @Service
-@JsonRpcService("/crusade")
 public class CrusadeService extends BaseService {
 
 	@Resource
@@ -188,6 +186,9 @@ public class CrusadeService extends BaseService {
 
         List<Object> list = new ArrayList<Object>();
         for (int i = 0 ; i < heros2.size() ; i++) {
+        	if (i >= 4) {
+        		break;
+        	}
 			list.add(heros2.get(i).toArray());
 		}
 

@@ -7,7 +7,7 @@ import javax.annotation.Resource;
 
 import org.springframework.stereotype.Service;
 
-import com.zhanglong.sg.controller.VersionController;
+import com.zhanglong.sg.controller.VController;
 import com.zhanglong.sg.dao.ServerDao;
 import com.zhanglong.sg.entity.Server;
 import com.zhanglong.sg.model.Token;
@@ -20,7 +20,7 @@ public class ServerService extends BaseService {
 
 	public Object list(String imei) throws Throwable {
 
-		boolean find = VersionController.inWriteList(imei);
+		boolean find = VController.inWriteList(imei);
 
 		List<Server> list = this.serverDao.findAll();
 		List<Server> servers = new ArrayList<Server>();

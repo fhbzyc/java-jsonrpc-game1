@@ -9,7 +9,6 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.springframework.beans.BeansException;
 import org.springframework.util.ReflectionUtils;
-import org.springframework.web.context.ContextLoader;
 import org.springframework.web.socket.CloseStatus;
 import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
@@ -18,8 +17,10 @@ import org.springframework.web.socket.handler.TextWebSocketHandler;
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.zhanglong.sg.dao.MissionDao;
 import com.zhanglong.sg.protocol.Request;
 import com.zhanglong.sg.protocol.Response;
+import com.zhanglong.sg.utils.SpringContextUtils;
 
 public class EchoHandler extends TextWebSocketHandler {
 
@@ -68,10 +69,12 @@ public class EchoHandler extends TextWebSocketHandler {
     }
 
     @Override
-    public void handleTextMessage(WebSocketSession session, TextMessage message) {
+    public void handleTextMessage(WebSocketSession session, TextMessage message) throws BeansException, InstantiationException, IllegalAccessException, ClassNotFoundException {
 
     	Handler handler = EchoHandler.sessionMap.get(session.getId());
     	EchoHandler.connections.set(handler);
+
+    	MissionDao.cache.set(null);
 
 		String content = message.getPayload();
 
@@ -89,14 +92,15 @@ public class EchoHandler extends TextWebSocketHandler {
 
 	   	if (request != null) {
 	   		handler.requestId = request.getId();
+
 	   		this.run(session, request);
 	   	}
     }
 
-    private void run(WebSocketSession session, Request request) {
+    private void run(WebSocketSession session, Request request) throws BeansException, InstantiationException, IllegalAccessException, ClassNotFoundException {
 		// 首字母大写
 		String name = request.getService();
-		
+
 		if (!name.equals("login") && !name.equals("server") && !name.equals("notice") && !(name.equals("role") && request.getMethod().equals("getPlayer"))) {
 			if (EchoHandler.connections.get().roleId == 0) {
 				try {
@@ -114,17 +118,7 @@ public class EchoHandler extends TextWebSocketHandler {
 
 		String javaName = "com.zhanglong.sg.service." + name + "Service";
 
-		Object service;
-		try {
-			service = ContextLoader.getCurrentWebApplicationContext().getBean(Class.forName(javaName).newInstance().getClass());
-		} catch (BeansException | InstantiationException | IllegalAccessException | ClassNotFoundException e) {
-			// TODO Auto-generated catch block
-			try {
-				session.sendMessage(new TextMessage(Response.marshalError(request.getId(), -32601, e.getMessage())));
-			} catch (IOException e1) {
-			}
-			return ;
-		}
+   		Object service = SpringContextUtils.getBean(Class.forName(javaName).newInstance().getClass());
 
 		Method[] methods = ReflectionUtils.getUniqueDeclaredMethods(service.getClass());
 
@@ -166,6 +160,7 @@ public class EchoHandler extends TextWebSocketHandler {
 			}
 		}
 
+		
 //		try {
 			ReflectionUtils.invokeMethod(method, service, params);
 //		} catch (Throwable e) {

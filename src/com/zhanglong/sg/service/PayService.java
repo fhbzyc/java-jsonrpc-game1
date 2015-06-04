@@ -1,5 +1,6 @@
 package com.zhanglong.sg.service;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import javax.annotation.Resource;
@@ -10,6 +11,7 @@ import com.zhanglong.sg.dao.BasePayShopDao;
 import com.zhanglong.sg.dao.OrderDao;
 import com.zhanglong.sg.entity.BasePayShop;
 import com.zhanglong.sg.entity.Order;
+import com.zhanglong.sg.entity.Role;
 import com.zhanglong.sg.result.Result;
 
 @Service
@@ -23,8 +25,60 @@ public class PayService extends BaseService {
     
 	public Object list() throws Exception {
 
+		int roleId = this.roleId();
+
 		List<BasePayShop> list = this.basePayShopDao.findAll();
-		return this.success(list);
+
+		List<BasePayShop> list2 = new ArrayList<BasePayShop>();
+
+		List<Integer> orders = this.orderDao.group(roleId);
+
+		Role role = this.roleDao.findOne(roleId);
+
+        boolean find1RMB = false;
+        for (int money : orders) {
+			if (money == 10) {
+				find1RMB = true;
+			}
+		}
+
+    	for (BasePayShop basePayShop : list) {
+
+    		BasePayShop item = basePayShop.clone();
+
+    		if (find1RMB) {
+				if (item.getMoney() == 10) {
+					continue;
+				}
+    		}
+
+			if (item.getType() == BasePayShop.M_CARD) {
+
+		        int vipTime = role.cardTime;
+		        int time = vipTime - (int)(System.currentTimeMillis() / 1000l);
+
+		        if (time > 0) {
+					item.setDesc("月卡生效中，剩余 " + (int)Math.ceil(time / (86400d)) + " 天");
+		        }
+			} else {
+
+				boolean find = false;
+				for (Integer money : orders) {
+
+					if (money == (int)item.getMoney()) {
+						find = true;
+						break;
+					}
+				}
+				if (!find) {
+					item.setDesc("另赠" + (int)item.getGold() + "元宝(限赠1次)");
+				}
+			}
+			
+			list2.add(item);
+		}
+
+		return this.success(list2);
 	}
 
 	public Object firstIcon() throws Exception {

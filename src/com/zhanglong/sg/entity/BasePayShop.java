@@ -13,7 +13,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 
 @Entity
 @Table(name = "pay_shop")
-public class BasePayShop implements Serializable {
+public class BasePayShop implements Serializable , Cloneable {
 
     /**
 	 * 
@@ -125,5 +125,11 @@ public class BasePayShop implements Serializable {
 
 	public void setRecommend(Boolean recommend) {
 		this.recommend = recommend;
+	}
+
+	@Override
+	public BasePayShop clone() throws CloneNotSupportedException {
+		// TODO Auto-generated method stub
+		return (BasePayShop) super.clone();
 	}
 }

@@ -29,7 +29,7 @@ public class User implements Serializable , Cloneable {
     @Column(name = "user_pwd" , nullable = false , columnDefinition = "varchar(32) default ''")
     private String password;
 
-    @Column(name = "user_imei" , nullable = false , columnDefinition = "varchar(32) default ''")
+    @Column(name = "user_imei" , nullable = false , columnDefinition = "varchar(64) default ''")
     private String imei;
 
     @Column(name = "user_mac" , nullable = false , columnDefinition = "varchar(32) default ''")

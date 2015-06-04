@@ -25,6 +25,7 @@ import com.zhanglong.sg.entity2.BaseStory;
 import com.zhanglong.sg.model.DateNumModel;
 import com.zhanglong.sg.model.SpecialCopyModel;
 import com.zhanglong.sg.result.Result;
+import com.zhanglong.sg.utils.MD5;
 
 @Service
 public class SpecialCopyService extends BaseService {
@@ -648,7 +649,7 @@ public class SpecialCopyService extends BaseService {
         return this.success(result.toMap());
     }
 
-    public Object battleEnd2(int battleId, int coin, int[] itemIds, int[] itemNums) throws Throwable {
+    public Object battleEnd2(int battleId, int coin, int[] itemIds, int[] itemNums) throws Exception {
 
         int roleId = this.roleId();
 
@@ -699,6 +700,98 @@ public class SpecialCopyService extends BaseService {
         }
 
         Role role = this.roleDao.findOne(roleId);
+        this.roleDao.addCoin(role, coin, "乱斗堂 type<" + type + ">", 0, result);
+        
+        this.roleDao.update(role, result);
+
+        if (itemIds != null) {
+            for (int i = 0 ; i < itemIds.length ; i++) {
+            	this.itemDao.addItem(roleId, itemIds[i], itemNums[i], result);
+    		}
+        }
+
+        result.setValue("num", todayNum);
+        result.setValue("type", type);
+        result.setValue("coolTime", coolTime);
+
+        return this.success(result.toMap());
+    }
+
+    public Object battleEnd2(int battleId, int coin, int[] itemIds, int[] itemNums, int n, String sign) throws Exception {
+
+    	if (itemIds == null) {
+    		itemIds = new int[]{};
+    		itemNums = new int[]{};
+    	}
+
+    	String str = "" + battleId + coin;
+
+    	for (int i : itemIds) {
+    		str += i;
+		}
+    	for (int i : itemNums) {
+    		str += i;
+		}
+
+    	str += n;
+    	str += "20150602";
+
+    	if (!MD5.digest(str).equals(sign)) {
+    		return this.returnError(this.lineNum(), "验证失败");
+    	}
+
+        int roleId = this.roleId();
+
+        BattleLog battleLog = this.battleLogDao.findOne(battleId);
+
+        if (battleLog == null) {
+            return this.returnError(this.lineNum(), "参数出错,没有此战斗");
+        }
+
+        Result result = new Result();
+
+        if (battleLog.getBattleResult() != 0) {
+        	return this.success(result.toMap());
+        }
+        
+        battleLog.setBattleResult(BattleLog.BATTLE_LOG_WIN);
+        battleLog.setEndTime((int)(System.currentTimeMillis() / 1000));
+        battleLogDao.update(battleLog);
+
+        int todayNum = 0;
+        
+        Role role = this.roleDao.findOne(roleId);
+
+        DateNumModel dateNum = this.dateNumDao.findOne(roleId);
+
+        int type = 5;
+        long coolTime = 5l * 60l * 1000l;
+        if (battleLog.getStoryId() < 600) {
+
+            dateNum.setSpecialCopy5(dateNum.getSpecialCopy5() + 1);
+            dateNum.setSpecialCopyCoolTime5(coolTime + System.currentTimeMillis());
+            this.dateNumDao.save(roleId, dateNum);
+            todayNum = dateNum.getSpecialCopy5();
+
+        } else if (battleLog.getStoryId() < 700) {
+
+        	role.killNum += n;
+
+        	type = 6;
+            dateNum.setSpecialCopy6(dateNum.getSpecialCopy6() + 1);
+            dateNum.setSpecialCopyCoolTime6(coolTime + System.currentTimeMillis());
+            this.dateNumDao.save(roleId, dateNum);
+            todayNum = dateNum.getSpecialCopy6();
+
+        } else if (battleLog.getStoryId() < 800) {
+
+        	type = 7;
+            dateNum.setSpecialCopy7(dateNum.getSpecialCopy7() + 1);
+            dateNum.setSpecialCopyCoolTime7(coolTime + System.currentTimeMillis());
+            this.dateNumDao.save(roleId, dateNum);
+            todayNum = dateNum.getSpecialCopy7();
+        }
+
         this.roleDao.addCoin(role, coin, "乱斗堂 type<" + type + ">", 0, result);
         
         this.roleDao.update(role, result);

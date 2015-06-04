@@ -9,13 +9,12 @@ import javax.persistence.IdClass;
 import javax.persistence.Table;
 import javax.persistence.Transient;
 
-import org.springframework.web.context.ContextLoader;
-
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.zhanglong.sg.dao.BaseHeroDao;
 import com.zhanglong.sg.dao.BaseHeroEquipDao;
 import com.zhanglong.sg.entity2.BaseHeroEquip;
 import com.zhanglong.sg.entity2.BaseSkill;
+import com.zhanglong.sg.utils.SpringContextUtils;
 
 @Entity
 @IdClass(HeroPK.class)
@@ -453,13 +452,13 @@ public class Hero implements Serializable {
         array[11] = this.getAvailablePoint(); // 可用的属性点
         array[12] = this.getAvailableSkillPoint(); // 可用的技能点
 
-        BaseHeroEquipDao baseHeroEquipDao = ContextLoader.getCurrentWebApplicationContext().getBean(BaseHeroEquipDao.class);
+        BaseHeroEquipDao baseHeroEquipDao = (BaseHeroEquipDao) SpringContextUtils.getBean(BaseHeroEquipDao.class);
 
         BaseHeroEquip equip = baseHeroEquipDao.findByHeroId(this.getHeroId()).get(this.getCLASS());
 
         array[13] = new int[]{equip.getEquip1().getBaseId() , equip.getEquip2().getBaseId() , equip.getEquip3().getBaseId() , equip.getEquip4().getBaseId() , equip.getEquip5().getBaseId() , equip.getEquip6().getBaseId()};
 
-        BaseHeroDao baseHeroDao = ContextLoader.getCurrentWebApplicationContext().getBean(BaseHeroDao.class);
+        BaseHeroDao baseHeroDao = (BaseHeroDao) SpringContextUtils.getBean(BaseHeroDao.class);
 
         BaseSkill baselSkill1 = baseHeroDao.findOne(this.getHeroId()).getSkill1();
         BaseSkill baselSkill2 = baseHeroDao.findOne(this.getHeroId()).getSkill2();

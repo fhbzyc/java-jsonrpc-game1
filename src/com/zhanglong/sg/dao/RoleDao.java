@@ -12,6 +12,7 @@ import org.hibernate.Criteria;
 import org.hibernate.SQLQuery;
 import org.hibernate.Session;
 import org.hibernate.criterion.Order;
+import org.hibernate.criterion.Projections;
 import org.hibernate.criterion.Restrictions;
 import org.springframework.stereotype.Repository;
 
@@ -61,6 +62,18 @@ public class RoleDao extends BaseDao {
 		return list;
 	}
 
+	public List<Role> killTop20(int serverId) {
+
+		Session session = this.getSessionFactory().getCurrentSession();
+		@SuppressWarnings("unchecked")
+		List<Role> list = session.createCriteria(Role.class)
+				.add(Restrictions.eq("serverId", serverId))
+				.add(Restrictions.gt("killNum", 0))
+				.addOrder(Order.desc("killNum"))
+				.setMaxResults(20).list();
+		return list;
+	}
+
 	public int countExpAfter(int exp, int serverId) {
 
 		String sql = "SELECT COUNT(*) AS n FROM role WHERE role_exp > ? AND server_id = ?";
@@ -71,6 +84,18 @@ public class RoleDao extends BaseDao {
 		query.setParameter(1, serverId);
 
 		return ((BigInteger) query.list().iterator().next()).intValue();
+	}
+
+	public long countKillAfter(int killNum, int serverId) {
+
+		Session session = this.getSessionFactory().getCurrentSession();
+		@SuppressWarnings("unchecked")
+		List<Long> list = session.createCriteria(Role.class)
+				.add(Restrictions.eq("serverId", serverId))
+				.add(Restrictions.gt("killNum", killNum))
+				.setProjection(Projections.projectionList().add(Projections.count("roleId")))
+				.list();
+		return list.get(0);
 	}
 
 	public int addPillage(int num) {
@@ -135,6 +160,8 @@ public class RoleDao extends BaseDao {
     	financeLogDao.setSessionFactory(this.getSessionFactory());
 
     	financeLogDao.create(finance);
+
+    	result.setMoney(role.coin, role.gold);
     }
 
     public void subCoin(Role role, int coin, String desc, int status, Result result) {

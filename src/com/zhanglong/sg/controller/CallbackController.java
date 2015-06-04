@@ -1,5 +1,7 @@
 package com.zhanglong.sg.controller;
 
+import java.util.List;
+
 import javax.annotation.Resource;
 
 import org.springframework.stereotype.Controller;
@@ -44,10 +46,25 @@ public class CallbackController {
 			return "fail";
 		}
 
+		int roleId = order.getRoleId();
+		
+		List<Integer> orders = this.orderDao.group(roleId);
+
+		Role role = this.roleDao.findOne(roleId);
+
+        boolean find = false;
+        for (int money : orders) {
+			if (money == order.getMoney()) {
+				find = true;
+			}
+		}
+
+        if (!find) {
+        	order.setAddGold(order.getGold());
+        }
+
 		order.setStatus(Order.STATUS_SUCCESS);
 
-		int roleId = order.getRoleId();
-		Role role = this.roleDao.findOne(roleId);
 		role.countGold += order.getGold() + order.getAddGold();
 
 		if (role.countGold >= Role.VIP_GOLD[Role.VIP_GOLD.length - 1]) {

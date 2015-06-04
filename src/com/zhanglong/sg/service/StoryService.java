@@ -220,22 +220,23 @@ public class StoryService extends BaseService {
     	int roleId = this.roleId();
 
         if (storyId <= 0) {
-            return this.returnError(this.lineNum(), "参数出错,关卡ID无效");
+            return this.returnError(this.lineNum(), "参数出错");
         }
 
         if (storyType != Story.COPY_TYPE && storyType != Story.HERO_COPY_TYPE) {
-            return this.returnError(this.lineNum(), "参数出错,关卡类型无效");
+            return this.returnError(this.lineNum(), "参数出错");
         }
 
-        List<BaseStory> baseStoryList;
-        if (storyType == Story.COPY_TYPE) {
-            baseStoryList = this.baseStoryDao.copys();
-        } else {
-            baseStoryList = this.baseStoryDao.heroCopys();
-        }
+//        List<BaseStory> baseStoryList;
+//        if (storyType == Story.COPY_TYPE) {
+//            baseStoryList = this.baseStoryDao.copys();
+//        } else {
+//            baseStoryList = this.baseStoryDao.heroCopys();
+//        }
 
-        if (storyId >= baseStoryList.size() + 1) {
-            return this.returnError(this.lineNum(), "参数出错,关卡ID超过最大值");
+        BaseStory baseStory = this.baseStoryDao.findOne(storyId, storyType);
+        if (baseStory == null) {
+            return this.returnError(this.lineNum(), "没有这个关卡");
         }
 
         List<Hero> heros = this.heroDao.findAll(roleId);
@@ -283,7 +284,7 @@ public class StoryService extends BaseService {
                 return this.returnError(this.lineNum(), "出错,你还不能攻打精英关卡");
             }
         } else {
-            Story story = this.storyDao.findOne(roleId, storyId - 1, storyType);
+            Story story = this.storyDao.findOne(roleId, storyId, storyType);
             if(story == null) {
                 return this.returnError(this.lineNum(), "出错,你还不能攻打这个关卡");
             }
@@ -296,8 +297,6 @@ public class StoryService extends BaseService {
             }
         }
 
-        BaseStory baseStory = baseStoryList.get(storyId - 1);
-        
         int physicalStrength = role.ap();
         if (physicalStrength < baseStory.getTeamExp()) {
             return this.returnError(this.lineNum(), "体力不足,不能攻打");
@@ -385,16 +384,7 @@ public class StoryService extends BaseService {
         int storyId = battleLog.getStoryId();
         int storyType = battleLog.getStoryType();
 
-        List<BaseStory> baseStoryList;
-        if (storyType == Story.COPY_TYPE) {
-            baseStoryList = baseStoryDao.copys();
-        } else if (storyType == Story.HERO_COPY_TYPE) {
-            baseStoryList = baseStoryDao.heroCopys();
-        } else {
-            return this.returnError(this.lineNum(), "出错,战斗记录异常");
-        }
-
-        BaseStory baseStory = baseStoryList.get(storyId - 1);
+        BaseStory baseStory = this.baseStoryDao.findOne(storyId, storyType);
 
         Role role = this.roleDao.findOne(roleId);
 

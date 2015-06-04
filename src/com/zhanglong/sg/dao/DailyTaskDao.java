@@ -1,12 +1,18 @@
 package com.zhanglong.sg.dao;
 
+import java.io.IOException;
 import java.util.List;
 
 import javax.annotation.Resource;
 
-import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.connection.jedis.JedisConnection;
+import org.springframework.data.redis.connection.jedis.JedisConnectionFactory;
 import org.springframework.stereotype.Repository;
 
+import com.fasterxml.jackson.core.JsonParseException;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.zhanglong.sg.entity.Role;
 import com.zhanglong.sg.entity2.BaseDailyTask;
 import com.zhanglong.sg.model.DailyTaskModel;
@@ -16,19 +22,32 @@ import com.zhanglong.sg.utils.Utils;
 @Repository
 public class DailyTaskDao extends BaseDao {
 
-	private static String RedisKey = "DAILY_TASK2_";
+	private static String RedisKey = "DAILY_TASK_";
 
 	@Resource
 	private BaseDailyTaskDao baseDailyTaskDao;
 	
+//	@Resource
+//	private RedisTemplate<String, DailyTaskModel> redisTemplate;
+	
 	@Resource
-	private RedisTemplate<String, DailyTaskModel> redisTemplate;
+    private JedisConnectionFactory jedisConnectionFactory;
 
-	public DailyTaskModel getDailyTaskModel(Role role) {
+	public DailyTaskModel getDailyTaskModel(Role role) throws JsonParseException, JsonMappingException, IOException {
 
     	int todayDate = Integer.valueOf(Utils.date());
 
-    	DailyTaskModel dailyTaskModel = (DailyTaskModel) this.redisTemplate.opsForHash().get(RedisKey, role.getRoleId());
+    	JedisConnection jedisConnection = this.jedisConnectionFactory.getConnection();
+    	String json = jedisConnection.getNativeConnection().get(RedisKey + role.getRoleId());
+    	jedisConnection.close();
+
+    	DailyTaskModel dailyTaskModel = null;
+
+    	if (json != null) {
+    		ObjectMapper objectMapper = new ObjectMapper();
+    		dailyTaskModel = objectMapper.readValue(json, DailyTaskModel.class);
+    	}
+    	
     	if (dailyTaskModel == null || todayDate != dailyTaskModel.getDate()) {
 
     		List<BaseDailyTask> dailyTasks = this.baseDailyTaskDao.findAll();
@@ -52,7 +71,7 @@ public class DailyTaskDao extends BaseDao {
     	return dailyTaskModel;
 	}
 
-	public List<BaseDailyTask> taskList(Role role) {
+	public List<BaseDailyTask> taskList(Role role) throws JsonParseException, JsonMappingException, IOException {
 
     	DailyTaskModel dailyTaskModel = this.getDailyTaskModel(role);
 
@@ -63,8 +82,11 @@ public class DailyTaskDao extends BaseDao {
 	 * 副本
 	 * @param num
 	 * @return
+	 * @throws IOException 
+	 * @throws JsonMappingException 
+	 * @throws JsonParseException 
 	 */
-	public void addCopy(Role role, int num, Result result) {
+	public void addCopy(Role role, int num, Result result) throws JsonParseException, JsonMappingException, IOException {
 		BaseDailyTask dailyTask = this.addNum(role, "copy", num);
 		if (dailyTask != null) {
 			result.addDailyTask(dailyTask);
@@ -75,8 +97,11 @@ public class DailyTaskDao extends BaseDao {
 	 * 精英副本
 	 * @param num
 	 * @return
+	 * @throws IOException 
+	 * @throws JsonMappingException 
+	 * @throws JsonParseException 
 	 */
-	public void addHeroCopy(Role role, int num, Result result) {
+	public void addHeroCopy(Role role, int num, Result result) throws JsonParseException, JsonMappingException, IOException {
 		BaseDailyTask dailyTask = addNum(role, "hero_copy", num);
 		if (dailyTask != null) {
 			result.addDailyTask(dailyTask);
@@ -87,8 +112,11 @@ public class DailyTaskDao extends BaseDao {
 	 * 升级技能
 	 * @param num
 	 * @return
+	 * @throws IOException 
+	 * @throws JsonMappingException 
+	 * @throws JsonParseException 
 	 */
-	public void addSkill(Role role, Result result) {
+	public void addSkill(Role role, Result result) throws JsonParseException, JsonMappingException, IOException {
 		BaseDailyTask dailyTask = this.addNum(role, "skill", 1);
 		if (dailyTask != null) {
 			result.addDailyTask(dailyTask);
@@ -99,8 +127,11 @@ public class DailyTaskDao extends BaseDao {
 	 * 抽奖次数
 	 * @param num
 	 * @return
+	 * @throws IOException 
+	 * @throws JsonMappingException 
+	 * @throws JsonParseException 
 	 */
-	public void addBar(Role role, int num, Result result) {
+	public void addBar(Role role, int num, Result result) throws JsonParseException, JsonMappingException, IOException {
 		BaseDailyTask dailyTask = this.addNum(role, "bar", num);
 		if (dailyTask != null) {
 			result.addDailyTask(dailyTask);
@@ -111,15 +142,18 @@ public class DailyTaskDao extends BaseDao {
 	 * 点金手
 	 * @param num
 	 * @return
+	 * @throws IOException 
+	 * @throws JsonMappingException 
+	 * @throws JsonParseException 
 	 */
-	public void addCoin(Role role, int num, Result result) {
+	public void addCoin(Role role, int num, Result result) throws JsonParseException, JsonMappingException, IOException {
 		BaseDailyTask dailyTask = this.addNum(role, "coin", num);
 		if (dailyTask != null) {
 			result.addDailyTask(dailyTask);
 		}
 	}
 
-	public void pk(Role role, Result result) {
+	public void pk(Role role, Result result) throws JsonParseException, JsonMappingException, IOException {
 		BaseDailyTask dailyTask = this.addNum(role, "pk", 1);
 		if (dailyTask != null) {
 			result.addDailyTask(dailyTask);
@@ -129,8 +163,11 @@ public class DailyTaskDao extends BaseDao {
 	/**
 	 * VIP月卡
 	 * @return
+	 * @throws IOException 
+	 * @throws JsonMappingException 
+	 * @throws JsonParseException 
 	 */
-	public void addMoonCard(Role role, Result result) {
+	public void addMoonCard(Role role, Result result) throws JsonParseException, JsonMappingException, IOException {
 		BaseDailyTask dailyTask = this.addNum(role, "gold", 1);
 		if (dailyTask != null) {
 			result.addDailyTask(dailyTask);
@@ -140,8 +177,11 @@ public class DailyTaskDao extends BaseDao {
 	/**
 	 * 剿匪令
 	 * @return
+	 * @throws IOException 
+	 * @throws JsonMappingException 
+	 * @throws JsonParseException 
 	 */
-	public void addVip(Role role, Result result) {
+	public void addVip(Role role, Result result) throws JsonParseException, JsonMappingException, IOException {
 		BaseDailyTask dailyTask = this.addNum(role, "card", 1);
 		if (dailyTask != null) {
 			result.addDailyTask(dailyTask);
@@ -151,8 +191,11 @@ public class DailyTaskDao extends BaseDao {
 	/**
 	 * 三国学院
 	 * @return
+	 * @throws IOException 
+	 * @throws JsonMappingException 
+	 * @throws JsonParseException 
 	 */
-	public void addSpecialCopy(Role role, Result result) {
+	public void addSpecialCopy(Role role, Result result) throws JsonParseException, JsonMappingException, IOException {
 		BaseDailyTask dailyTask = this.addNum(role, "special_copy", 1);
 		if (dailyTask != null) {
 			result.addDailyTask(dailyTask);
@@ -163,8 +206,11 @@ public class DailyTaskDao extends BaseDao {
 	 * 讨伐天下
 	 * @param role
 	 * @param result
+	 * @throws IOException 
+	 * @throws JsonMappingException 
+	 * @throws JsonParseException 
 	 */
-	public void addCrusade(Role role, Result result) {
+	public void addCrusade(Role role, Result result) throws JsonParseException, JsonMappingException, IOException {
 		BaseDailyTask dailyTask = this.addNum(role, "fight_copy", 1);
 		if (dailyTask != null) {
 			result.addDailyTask(dailyTask);
@@ -175,9 +221,42 @@ public class DailyTaskDao extends BaseDao {
 	 * 乱斗堂
 	 * @param role
 	 * @param result
+	 * @throws IOException 
+	 * @throws JsonMappingException 
+	 * @throws JsonParseException 
 	 */
-	public void addLdt(Role role, Result result) {
+	public void addLdt(Role role, Result result) throws JsonParseException, JsonMappingException, IOException {
 		BaseDailyTask dailyTask = this.addNum(role, "fight", 1);
+		if (dailyTask != null) {
+			result.addDailyTask(dailyTask);
+		}
+	}
+
+	/**
+	 * 锻造
+	 * @param role
+	 * @param result
+	 * @throws JsonParseException
+	 * @throws JsonMappingException
+	 * @throws IOException
+	 */
+	public void addEquipExp(Role role, Result result) throws JsonParseException, JsonMappingException, IOException {
+		BaseDailyTask dailyTask = this.addNum(role, "equip_up", 1);
+		if (dailyTask != null) {
+			result.addDailyTask(dailyTask);
+		}
+	}
+
+	/**
+	 * 掠夺
+	 * @param role
+	 * @param result
+	 * @throws JsonParseException
+	 * @throws JsonMappingException
+	 * @throws IOException
+	 */
+	public void addPillage(Role role, Result result) throws JsonParseException, JsonMappingException, IOException {
+		BaseDailyTask dailyTask = this.addNum(role, "pillage", 1);
 		if (dailyTask != null) {
 			result.addDailyTask(dailyTask);
 		}
@@ -187,11 +266,14 @@ public class DailyTaskDao extends BaseDao {
 	 * 完成任务
 	 * @param taskId
 	 * @return
+	 * @throws IOException 
+	 * @throws JsonMappingException 
+	 * @throws JsonParseException 
 	 */
-	public void complete(Role role, int taskId) {
+	public void complete(Role role, int taskId) throws JsonParseException, JsonMappingException, IOException {
 
 		DailyTaskModel dailyTaskModel = this.getDailyTaskModel(role);
-		
+
 		List<BaseDailyTask> list = dailyTaskModel.taskList(role.level());
 
 		for (BaseDailyTask dailyTask : list) {
@@ -218,7 +300,7 @@ public class DailyTaskDao extends BaseDao {
 //		this.save();
 //	}
 //
-	private BaseDailyTask addNum(Role role, String type, int num) {
+	private BaseDailyTask addNum(Role role, String type, int num) throws JsonParseException, JsonMappingException, IOException {
 
 		DailyTaskModel dailyTaskModel = this.getDailyTaskModel(role);
 		List<BaseDailyTask> list = dailyTaskModel.taskList(role.level());
@@ -245,7 +327,13 @@ public class DailyTaskDao extends BaseDao {
 
 
 
-	private void save(int roleId, DailyTaskModel dailyTaskModel) {
-		this.redisTemplate.opsForHash().put(RedisKey, roleId, dailyTaskModel);
+	private void save(int roleId, DailyTaskModel dailyTaskModel) throws JsonProcessingException {
+		
+    	ObjectMapper objectMapper = new ObjectMapper();
+		String json = objectMapper.writeValueAsString(dailyTaskModel);
+
+    	JedisConnection jedisConnection = this.jedisConnectionFactory.getConnection();
+    	jedisConnection.getNativeConnection().set(RedisKey + roleId, json);
+    	jedisConnection.close();
 	}
 }

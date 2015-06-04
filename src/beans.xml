@@ -26,6 +26,8 @@
 
     <bean id="echoHandler" class="websocket.handler.EchoHandler"/>
 
+    <bean id="springContextUtils" class="com.zhanglong.sg.utils.SpringContextUtils" />
+
     <mvc:annotation-driven enable-matrix-variables="true"/>
 
     <bean class="com.googlecode.jsonrpc4j.spring.AutoJsonRpcServiceExporter"/>
@@ -34,6 +36,32 @@
 
     <context:component-scan base-package="com.zhanglong.sg.dao" />
     <context:component-scan base-package="com.zhanglong.sg.service" />
+
+    <bean id="propertyConfigurer" class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer">
+        <property name="systemPropertiesModeName" value="SYSTEM_PROPERTIES_MODE_OVERRIDE"/>
+        <property name="location" value="file:${APP_HOME}/jdbc.properties"/>
+    </bean>
+
+    <!-- 数据库映射 -->
+    <bean id="baseDataSource" class="org.apache.commons.dbcp2.BasicDataSource">
+      <property name="driverClassName" value="${jdbc.driver}" />
+      <property name="url" value="${jdbc.url2}" />
+      <property name="username" value="${jdbc.username}" />
+      <property name="password" value="${jdbc.password}" />
+      <property name="minIdle" value="${jdbc.minIdle}"/>
+      <property name="maxIdle" value="${jdbc.maxIdle}"/>
+      <property name="initialSize" value="${jdbc.initialSize}"/>
+    </bean>
+
+    <bean id="dataSource" class="org.apache.commons.dbcp2.BasicDataSource">
+      <property name="driverClassName" value="${jdbc.driver}" />
+      <property name="url" value="${jdbc.url}" />
+      <property name="username" value="${jdbc.username}" />
+      <property name="password" value="${jdbc.password}" />
+      <property name="minIdle" value="${jdbc.minIdle}"/>
+      <property name="maxIdle" value="${jdbc.maxIdle}"/>
+      <property name="initialSize" value="${jdbc.initialSize}"/>
+    </bean>
 
     <bean id="sessionFactory" class="org.springframework.orm.hibernate4.LocalSessionFactoryBean">
         <property name="dataSource" ref="dataSource" />
@@ -69,31 +97,6 @@
         </property>
     </bean>
 
-    <!-- 数据库映射 -->
-    <bean id="baseDataSource" class="org.apache.commons.dbcp2.BasicDataSource">
-      <!-- <property name="driverClassName" value="com.mysql.jdbc.Driver" /> -->
-      <property name="driverClassName" value="org.postgresql.Driver" />
-      <!-- <property name="url" value="jdbc:mysql://localhost:3306/sgdbz?useUnicode=true&amp;characterEncoding=UTF-8" /> -->
-      <property name="url" value="jdbc:postgresql://127.0.0.1:5432/base?useUnicode=true&amp;characterEncoding=UTF-8" />
-      <property name="username" value="postgres" />
-      <property name="password" value="postgres" />
-      <property name="maxIdle" value="80"/>
-      <property name="minIdle" value="10"/>
-      <property name="initialSize" value="10"/>
-    </bean>
-
-    <bean id="dataSource" class="org.apache.commons.dbcp2.BasicDataSource">
-      <!-- <property name="driverClassName" value="com.mysql.jdbc.Driver" /> -->
-      <property name="driverClassName" value="org.postgresql.Driver" />
-      <!-- <property name="url" value="jdbc:mysql://localhost:3306/sgdbz?useUnicode=true&amp;characterEncoding=UTF-8" /> -->
-      <property name="url" value="jdbc:postgresql://127.0.0.1:5432/sgdbz?useUnicode=true&amp;characterEncoding=UTF-8" />
-      <property name="username" value="postgres" />
-      <property name="password" value="postgres" />
-      <property name="maxIdle" value="80"/>
-      <property name="minIdle" value="10"/>
-      <property name="initialSize" value="10"/>
-    </bean>
-
     <bean id="transactionManager" class="org.springframework.orm.hibernate4.HibernateTransactionManager">
         <property name="sessionFactory" ref="sessionFactory" />
     </bean>  
@@ -113,8 +116,8 @@
     </aop:config>
 
     <bean id="jedisConnectionFactory" class="org.springframework.data.redis.connection.jedis.JedisConnectionFactory">
-        <property name="hostName" value="127.0.0.1"/>
-        <property name="port" value="6379"/>
+        <property name="hostName" value="${jedis.host}"/>
+        <property name="port" value="${jedis.port}"/>
     </bean>
 
     <bean id="redisTemplate" class="org.springframework.data.redis.core.RedisTemplate">

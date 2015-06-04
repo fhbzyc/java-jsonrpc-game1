@@ -1,15 +1,11 @@
 package com.zhanglong.sg.dao;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 
 import javax.annotation.Resource;
 
+import org.hibernate.Session;
 import org.hibernate.criterion.Restrictions;
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Repository;
 
 import com.zhanglong.sg.entity.Hero;
@@ -18,14 +14,12 @@ import com.zhanglong.sg.entity.Role;
 import com.zhanglong.sg.entity.Story;
 import com.zhanglong.sg.entity2.BaseMission;
 import com.zhanglong.sg.entity2.BaseStory;
-import com.zhanglong.sg.model.MissionModel;
 import com.zhanglong.sg.result.Result;
 
 @Repository
 public class MissionDao extends BaseDao {
 
-	@Resource
-	private RedisTemplate<String, MissionModel> redisTemplate;
+	public static ThreadLocal<List<Mission>> cache = new ThreadLocal<List<Mission>>(); 
 
 	@Resource
 	private HeroDao heroDao;
@@ -35,7 +29,7 @@ public class MissionDao extends BaseDao {
 
 	@Resource
 	private BaseMissionDao baseMissionDao;
-	
+
 	public MissionDao() {
 	}
 
@@ -47,107 +41,56 @@ public class MissionDao extends BaseDao {
 	public static String TYPE_HERO_CLASS = "general_class";
 	public static String TYPE_CALL_HERO = "call_hero";
 
-    private static String RedisKey = "MISSION_MAP1_";
+    public List<Mission> findAll(Role role) throws Exception {
 
-    public List<Mission> findAll(int roleId) throws Exception {
+    	List<Mission> missions2 = cache.get();
+    	if (missions2 != null) {
+    		return missions2;
+    	}
+
+    	Session session = this.getSessionFactory().getCurrentSession();
+
     	@SuppressWarnings("unchecked")
-		List<Mission> list = this.getSessionFactory().getCurrentSession().createCriteria(Mission.class).add(Restrictions.eq("roleId", roleId)).list();
-    	return list;
-    }
+    	List<Mission> missions = session.createCriteria(Mission.class).add(Restrictions.eq("aRoleId", role.getRoleId())).list();
 
-    public List<BaseMission> findAll(Role role) throws Exception {
-
-        MissionModel missionModel = (MissionModel) this.redisTemplate.opsForHash().get(RedisKey, role.getRoleId());
-
-        List<BaseMission> list = new ArrayList<BaseMission>();
-        
-        if (missionModel == null) {
-
-        	this.checkNew(role, list, new Result());
-
-        } else {
-
-            HashMap<Integer, Integer> map = missionModel.getMissionMap();
-
-            for (Iterator<Map.Entry<Integer, Integer>> iter = map.entrySet().iterator(); iter.hasNext();) {
-                Map.Entry<Integer, Integer> entry = iter.next();
-
-                Integer missionId = entry.getKey();
-                int num = entry.getValue();
-
-                BaseMission mission = this.baseMissionDao.findOne(missionId);
-                if (num < 0) {
-                	mission.setComplete(true);
-                	mission.setNum(mission.getGoal());
-                } else {
-                	mission.setNum(num);
-                }
-
-                list.add(mission);
-            }
+        if (missions.size() == 0) {
+        	this.checkNew(role, missions, new Result());
         }
 
-        return list;
-    }
-
-    public void save(int roleId, List<BaseMission> missions) {
-
-    	HashMap<Integer, Integer> missionMap = new HashMap<Integer, Integer>();
-
-    	for (BaseMission baseMission : missions) {
-    		
-    		int num = baseMission.getNum();
-    		if (baseMission.getComplete()) {
-    			num = -1;
-    		}
-
-    		missionMap.put(baseMission.getId(), num);
-		}
-
-    	MissionModel missionModel = new MissionModel();
-    	missionModel.setMissionMap(missionMap);
-
-    	this.redisTemplate.opsForHash().put(RedisKey, roleId, missionModel);
+        cache.set(missions);
+        return missions;
     }
 
     private void check(Role role, String type, int target, int num, Result result) throws Exception {
 
-    	List<BaseMission> list = this.findAll(role);
+    	List<Mission> list = this.findAll(role);
 
-    	boolean find = false;
-    	
-        for (BaseMission mission : list) {
+        for (Mission mission : list) {
         	if (!mission.getComplete() && mission.getType().equals(type)) {
-        		if (mission.getTarget() == target) {
+        		
+        		BaseMission baseMission = this.baseMissionDao.findOne(mission.getMissionId());
+        		
+        		if (baseMission.getTarget() == target) {
         			mission.setNum(mission.getNum() + num);
-        			result.addMission(mission);
-        			find = true;
+        			baseMission.setNum(mission.getNum());
+        			result.addMission(baseMission);
         		}
         	}
         }
-
-        if (find) {
-        	this.save(role.getRoleId(), list);
-        }
     }
-
 
     private void check(Role role, String type, int num, Result result) throws Exception {
 
-    	List<BaseMission> list = this.findAll(role);
+    	List<Mission> list = this.findAll(role);
 
-    	boolean find = false;
-
-        for (BaseMission mission : list) {
+        for (Mission mission : list) {
         	if (mission.getType().equals(type)) {
     			mission.setNum(mission.getNum() + num);
-    			result.addMission(mission);
-    			find = true;
+    			
+    			BaseMission baseMission = this.baseMissionDao.findOne(mission.getMissionId());
+    			baseMission.setNum(mission.getNum());
+    			result.addMission(baseMission);
         	}
-        }
-
-        if (find) {
-        	this.save(role.getRoleId(), list);
         }
     }
 
@@ -157,26 +100,21 @@ public class MissionDao extends BaseDao {
 
     public void checkLevel(Role role, Result result) throws Throwable {
 
-    	List<BaseMission> list = this.findAll(role);
+    	List<Mission> list = this.findAll(role);
 
-    	boolean find = false;
-
-        for (BaseMission mission : list) {
+        for (Mission mission : list) {
             if (!mission.getComplete() && mission.getType().equals(TYPE_LEVELUP)) {
 
-            	find = true;
-
             	mission.setNum(role.level());
-                result.addMission(mission);
+            	
+    			BaseMission baseMission = this.baseMissionDao.findOne(mission.getMissionId());
+    			baseMission.setNum(mission.getNum());
+                result.addMission(baseMission);
             }
-        }
-
-        if (find) {
-        	this.save(role.getRoleId(), list);
         }
     }
 
-    public void checkStory(Role role, int storyId, int num, Result result) throws Throwable {
+    public void checkStory(Role role, int storyId, int num, Result result) throws Exception {
         this.check(role, TYPE_COPY, storyId, num, result);
     }
 
@@ -196,16 +134,14 @@ public class MissionDao extends BaseDao {
 
     public void complete(Role role, int missionId, Result result) throws Exception {
 
-    	List<BaseMission> list = this.findAll(role);
+    	List<Mission> list = this.findAll(role);
 
-    	for (BaseMission mission : list) {
-            if (mission.getId() == missionId) {
-            // 完成的任务  status 设置为 -1
+    	for (Mission mission : list) {
+            if (mission.getMissionId() == missionId) {
             	mission.setComplete(true);
+            	this.getSessionFactory().getCurrentSession().update(mission);
             }
         }
-
-    	this.save(role.getRoleId(), list);
     }
 
     public void newMission(Role role, Result result) throws Exception {
@@ -213,7 +149,7 @@ public class MissionDao extends BaseDao {
     	this.checkNew(role, this.findAll(role), result);
     }
 
-    private void checkNew(Role role, List<BaseMission> missions, Result result) throws CloneNotSupportedException {
+    private void checkNew(Role role, List<Mission> missions, Result result) throws CloneNotSupportedException {
 
          for (BaseMission temp : this.baseMissionDao.findAll()) {
 
@@ -223,8 +159,8 @@ public class MissionDao extends BaseDao {
              if (role.level() >= baseMission.getLevel()) {
 
              	boolean allreadyHave = false;
-             	for (BaseMission mission : missions) {
- 					if ((int)mission.getId() == (int)baseMission.getId()) {
+             	for (Mission mission : missions) {
+ 					if ((int)mission.getMissionId() == (int)baseMission.getId()) {
  						allreadyHave = true;
  						break;
  					}
@@ -235,8 +171,8 @@ public class MissionDao extends BaseDao {
              		boolean find2 = false;
                  	if (baseMission.getParentId() != 0) {
 
-                     	for (BaseMission mission : missions) {
-         					if ((int)mission.getId() == (int)baseMission.getParentId() && mission.getComplete()) {
+                     	for (Mission mission : missions) {
+         					if ((int)mission.getMissionId() == (int)baseMission.getParentId() && mission.getComplete()) {
          						find2 = true;
          						break;
          					}
@@ -283,13 +219,20 @@ public class MissionDao extends BaseDao {
                          	}
                         }
 
-             			missions.add(baseMission);
+             			Mission mission = new Mission();
+             			mission.setMissionId(baseMission.getId());
+             			mission.setARoleId(role.getRoleId());
+             			mission.setNum(baseMission.getNum());
+             			mission.setType(baseMission.getType());
+             			Session session = this.getSessionFactory().getCurrentSession();
+             			session.save(mission);
+
+             			missions.add(mission);
+
              			result.addMission(baseMission);
                  	}
              	}
              }
          }
-
-         this.save(role.getRoleId(), missions);
     }
 }

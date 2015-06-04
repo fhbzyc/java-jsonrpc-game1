@@ -14,7 +14,6 @@ import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.googlecode.jsonrpc4j.JsonRpcService;
 import com.zhanglong.sg.dao.BaseCheckinDao;
 import com.zhanglong.sg.dao.CheckinDao;
 import com.zhanglong.sg.entity.BaseCheckin;
@@ -28,7 +27,6 @@ import com.zhanglong.sg.result.Result;
 import com.zhanglong.sg.utils.Utils;
 
 @Service
-@JsonRpcService("/checkin")
 public class CheckinService extends BaseService {
 
 	@Resource

@@ -47,19 +47,13 @@ public class HeroDao extends BaseDao {
 		return list.get(0);
     }
 
-	public void update(Hero hero) {
-
-		Session session = this.getSessionFactory().getCurrentSession();
-		session.update(hero);
-	}
-	
 	public void update(Hero hero, Result result) throws Exception {
 
 		Session session = this.getSessionFactory().getCurrentSession();
 		session.update(hero);
 		result.addHero(hero);
 	}
-	
+
 	public void delete(Hero hero) {
 
 		Session session = this.getSessionFactory().getCurrentSession();

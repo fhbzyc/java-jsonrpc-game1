@@ -6,8 +6,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
-import org.springframework.web.context.ContextLoader;
-
 import com.zhanglong.sg.dao.BaseItemDao;
 import com.zhanglong.sg.dao.BaseStoryDao;
 import com.zhanglong.sg.dao.HeroDao;
@@ -19,6 +17,7 @@ import com.zhanglong.sg.entity2.BaseDailyTask;
 import com.zhanglong.sg.entity2.BaseItem;
 import com.zhanglong.sg.entity2.BaseMission;
 import com.zhanglong.sg.entity2.BaseStory;
+import com.zhanglong.sg.utils.SpringContextUtils;
 
 public class Result {
 
@@ -120,7 +119,7 @@ public class Result {
             this.itemList = new ArrayList<Object>();
         }
 
-        BaseItemDao baseItemDao = ContextLoader.getCurrentWebApplicationContext().getBean(BaseItemDao.class);
+        BaseItemDao baseItemDao = (BaseItemDao) SpringContextUtils.getBean(BaseItemDao.class);
         BaseItem baseItem = baseItemDao.findOne(item.getItemId());
 
         int[] itemData = new int[5];
@@ -154,7 +153,7 @@ public class Result {
 
         if (story.getType() == BaseStory.COPY_TYPE) {
 
-        	BaseStoryDao baseStoryDao = ContextLoader.getCurrentWebApplicationContext().getBean(BaseStoryDao.class);
+        	BaseStoryDao baseStoryDao = (BaseStoryDao) SpringContextUtils.getBean(BaseStoryDao.class);
             BaseStory baseStory = baseStoryDao.findOne(story.getStoryId(), BaseStory.COPY_TYPE);
 
             if (baseStory == null) {
@@ -169,7 +168,7 @@ public class Result {
                 num = 0;
             }
 
-        	BaseStoryDao baseStoryDao = ContextLoader.getCurrentWebApplicationContext().getBean(BaseStoryDao.class);
+        	BaseStoryDao baseStoryDao = (BaseStoryDao) SpringContextUtils.getBean(BaseStoryDao.class);
             BaseStory baseStory = baseStoryDao.findOne(story.getStoryId(), BaseStory.HERO_COPY_TYPE);
 
             if (baseStory == null) {

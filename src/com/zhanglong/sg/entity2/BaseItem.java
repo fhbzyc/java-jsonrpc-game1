@@ -35,6 +35,9 @@ public class BaseItem implements Serializable , Cloneable {
 	@Column(name = "item_exp" , nullable = false , columnDefinition = "int default 0")
 	private Integer exp;
 
+	@Column(name = "item_level" , nullable = false , columnDefinition = "int default 0")
+	private Integer level;
+
 	public BaseItem() {
 	}
 	
@@ -92,6 +95,14 @@ public class BaseItem implements Serializable , Cloneable {
 
 	public void setExp(Integer exp) {
 		this.exp = exp;
+	}
+
+	public Integer getLevel() {
+		return level;
+	}
+
+	public void setLevel(Integer level) {
+		this.level = level;
 	}
 
 	public int maxExp() {

@@ -8,7 +8,6 @@ import javax.persistence.Id;
 import javax.persistence.Table;
 import javax.persistence.Transient;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize.Inclusion;
 
@@ -45,7 +44,6 @@ public class BaseDailyTask implements Serializable , Cloneable {
     private int num;
 
     @Transient
-    @JsonIgnore
     private boolean complete;
 
 	public Integer getId() {

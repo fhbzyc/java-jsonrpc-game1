@@ -6,11 +6,9 @@ import javax.annotation.Resource;
 
 import org.springframework.stereotype.Service;
 
-import com.googlecode.jsonrpc4j.JsonRpcService;
 import com.zhanglong.sg.dao.NoticeDao;
 
 @Service
-@JsonRpcService("/notice")
 public class NoticeService extends BaseService {
 
     @Resource

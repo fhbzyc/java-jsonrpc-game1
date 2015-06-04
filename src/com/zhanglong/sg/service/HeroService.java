@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
 
@@ -292,46 +293,219 @@ public class HeroService extends BaseService {
 
     	int roleId = this.roleId();
 
-        Hero general = this.heroDao.findOne(roleId, heroId);
-        if (general == null) {
+        Hero hero = this.heroDao.findOne(roleId, heroId);
+        if (hero == null) {
             return this.returnError(this.lineNum(), "未拥有这个英雄  generalId: " + heroId);
         }
 
-        if (general.getCLASS() >= baseHeroEquipDao.findByHeroId(heroId).size()) {
+        if (hero.getCLASS() >= baseHeroEquipDao.findByHeroId(heroId).size()) {
             return this.returnError(this.lineNum(), "已经是最高阶了");
         }
 
-        if (!general.getEquip1()) {
+        if (!hero.getEquip1()) {
             return this.returnError(this.lineNum(), "身上装备数量不够不能升阶");
-        } else if (!general.getEquip2()) {
+        } else if (!hero.getEquip2()) {
             return this.returnError(this.lineNum(), "身上装备数量不够不能升阶");
-        } else if (!general.getEquip3()) {
+        } else if (!hero.getEquip3()) {
             return this.returnError(this.lineNum(), "身上装备数量不够不能升阶");
-        } else if (!general.getEquip4()) {
+        } else if (!hero.getEquip4()) {
             return this.returnError(this.lineNum(), "身上装备数量不够不能升阶");
-        } else if (!general.getEquip5()) {
+        } else if (!hero.getEquip5()) {
             return this.returnError(this.lineNum(), "身上装备数量不够不能升阶");
-        } else if (!general.getEquip6()) {
+        } else if (!hero.getEquip6()) {
             return this.returnError(this.lineNum(), "身上装备数量不够不能升阶");
         }
 
-        int newClass = general.getCLASS() + 1;
+        // 返还锻造材料
+        int num = 0;
+    	if (hero.getEquip1Exp() > 10) {
+    		
+    		num += hero.getEquip1Exp() / 10;
+    	}
+    	if (hero.getEquip2Exp() > 10) {
+    		num += hero.getEquip2Exp() / 10;
+    	}
+    	if (hero.getEquip3Exp() > 10) {
+    		num += hero.getEquip3Exp() / 10;
+    	}
+    	if (hero.getEquip4Exp() > 10) {
+    		num += hero.getEquip4Exp() / 10;
+    	}
+    	if (hero.getEquip5Exp() > 10) {
+    		num += hero.getEquip5Exp() / 10;
+    	}
+    	if (hero.getEquip6Exp() > 10) {
+    		num += hero.getEquip6Exp() / 10;
+    	}
+        
+        int newClass = hero.getCLASS() + 1;
 
-        general.setEquip1(false);
-        general.setEquip2(false);
-        general.setEquip3(false);
-        general.setEquip4(false);
-        general.setEquip5(false);
-        general.setEquip6(false);
-        general.setCLASS(newClass);
+        hero.setEquip1(false);
+        hero.setEquip2(false);
+        hero.setEquip3(false);
+        hero.setEquip4(false);
+        hero.setEquip5(false);
+        hero.setEquip6(false);
+        hero.setCLASS(newClass);
 
+        hero.setEquip1Exp(0);
+        hero.setEquip2Exp(0);
+        hero.setEquip3Exp(0);
+        hero.setEquip4Exp(0);
+        hero.setEquip5Exp(0);
+        hero.setEquip6Exp(0);
+        
         Result result = new Result();
-        this.heroDao.update(general, result);
+        this.heroDao.update(hero, result);
 
         Role role = this.roleDao.findOne(roleId);
-        
+    	if (num > 0) {
+
+    		num /= 2;
+
+            int material = 4204;
+    		this.itemDao.addItem(roleId, material, num, result);
+    	}
+
         // 进阶主线任务
-        missionDao.checkHeroClass(role, newClass, 1, result);
+        this.missionDao.checkHeroClass(role, newClass, 1, result);
+
+        return this.success(result.toMap());
+    }
+
+    /**
+     * 一键装备
+     * @param heroId
+     * @return
+     * @throws Exception
+     */
+    public Object yjz(int heroId) throws Exception {
+
+    	int roleId = this.roleId();	
+
+        Hero hero = this.heroDao.findOne(roleId, heroId);
+
+        BaseHeroEquip equips = this.baseHeroEquipDao.findByHeroId(heroId).get(hero.getCLASS());
+
+        Result result = new Result();
+
+        boolean updateHero = false;
+
+        List<Item> items = this.itemDao.findAll(roleId);
+        
+        List<Item> newItems = new ArrayList<Item>();
+
+
+        if (!hero.getEquip1() && hero.level() >= equips.getEquip1().getLevel()) {
+
+        	for (Item item : items) {
+        		newItems.add(item.clone());
+    		}
+
+        	int itemId = equips.getEquip1().getBaseId();
+
+        	boolean find = this.allFind(newItems, itemId, 1);
+        	if (find) {
+        		hero.setEquip1(true);
+        		updateHero = true;
+        	}
+
+        	this.toSame(items, newItems, result);
+        }
+
+        if (!hero.getEquip2() && hero.level() >= equips.getEquip2().getLevel()) {
+
+        	newItems = new ArrayList<Item>();
+        	for (Item item : items) {
+        		newItems.add(item.clone());
+			}
+        	
+        	int itemId = equips.getEquip2().getBaseId();
+
+        	boolean find = this.allFind(newItems, itemId, 1);
+        	if (find) {
+        		hero.setEquip2(true);
+        		updateHero = true;
+        	}
+
+        	this.toSame(items, newItems, result);
+        }
+
+        if (!hero.getEquip3() && hero.level() >= equips.getEquip3().getLevel()) {
+
+        	newItems = new ArrayList<Item>();
+        	for (Item item : items) {
+        		newItems.add(item.clone());
+			}
+        	
+        	int itemId = equips.getEquip3().getBaseId();
+
+        	boolean find = this.allFind(newItems, itemId, 1);
+        	if (find) {
+        		hero.setEquip3(true);
+        		updateHero = true;
+        	}
+
+        	this.toSame(items, newItems, result);
+        }
+
+        if (!hero.getEquip4() && hero.level() >= equips.getEquip4().getLevel()) {
+
+        	newItems = new ArrayList<Item>();
+        	for (Item item : items) {
+        		newItems.add(item.clone());
+			}
+        	
+        	int itemId = equips.getEquip4().getBaseId();
+
+        	boolean find = this.allFind(newItems, itemId, 1);
+        	if (find) {
+        		hero.setEquip4(true);
+        		updateHero = true;
+        	}
+
+        	this.toSame(items, newItems, result);
+        }
+
+        if (!hero.getEquip5() && hero.level() >= equips.getEquip5().getLevel()) {
+
+        	newItems = new ArrayList<Item>();
+        	for (Item item : items) {
+        		newItems.add(item.clone());
+			}
+        	
+        	int itemId = equips.getEquip5().getBaseId();
+
+        	boolean find = this.allFind(newItems, itemId, 1);
+        	if (find) {
+        		hero.setEquip5(true);
+        		updateHero = true;
+        	}
+
+        	this.toSame(items, newItems, result);
+        }
+
+        if (!hero.getEquip6() && hero.level() >= equips.getEquip6().getLevel()) {
+
+        	newItems = new ArrayList<Item>();
+        	for (Item item : items) {
+        		newItems.add(item.clone());
+			}
+        	
+        	int itemId = equips.getEquip6().getBaseId();
+
+        	boolean find = this.allFind(newItems, itemId, 1);
+        	if (find) {
+        		hero.setEquip6(true);
+        		updateHero = true;
+        	}
+
+        	this.toSame(items, newItems, result);
+        }
+        
+        if (updateHero) {
+        	this.heroDao.update(hero, result);
+        }
 
         return this.success(result.toMap());
     }
@@ -541,7 +715,7 @@ public class HeroService extends BaseService {
             	
             } else {
 
-            	this.itemDao.addSoul(roleId, itemId - 6000, this.soulNumByStar(itemId), result);
+            	this.itemDao.addSoul(roleId, itemId - 6000, this.heroDao.soulNumByStar(itemId), result);
             }
         } else {
         	this.itemDao.addItem(roleId, itemId, num, result);
@@ -670,7 +844,7 @@ public class HeroService extends BaseService {
         		if (hero != null) {
 
         			int itemId = heroId - 6000;
-        			this.itemDao.addSoul(roleId, itemId, this.soulNumByStar(heroId), result);
+        			this.itemDao.addSoul(roleId, itemId, this.heroDao.soulNumByStar(heroId), result);
     				desc += "," + this.baseItemDao.findOne(itemId).getName() + "x" + is[1];
         			
         		} else {
@@ -928,7 +1102,7 @@ public class HeroService extends BaseService {
 					desc += "<"+this.baseHeroDao.findOne(heroId).getName() + "x1>,";
 				} else {
 					int itemId = heroId - 6000;
-					int itemNum = this.soulNumByStar(heroId);
+					int itemNum = this.heroDao.soulNumByStar(heroId);
 
 					desc += "<"+ this.baseItemDao.findOne(itemId).getName() + "x"+ itemNum + ">,";
 					this.itemDao.addItem(roleId, itemId, itemNum, result);
@@ -986,10 +1160,9 @@ public class HeroService extends BaseService {
      * @param ids
      * @param nums
      * @return
-     * @throws Throwable
+     * @throws Exception
      */
-    @Transactional(rollbackFor = Throwable.class)
-    public Object addEquipExp(int heroId, int index, int[] ids, int[] nums) throws Throwable {
+    public Object addEquipExp(int heroId, int index, int[] ids, int[] nums) throws Exception {
 
     	int roleId = this.roleId();
 
@@ -1085,6 +1258,9 @@ public class HeroService extends BaseService {
 
         this.heroDao.update(hero, result);
 
+        // 锻造日常任务
+        this.dailyTaskDao.addEquipExp(role, result);
+
     	return this.success(result.toMap());
     }
 
@@ -1093,10 +1269,9 @@ public class HeroService extends BaseService {
      * @param heroId
      * @param index
      * @return
-     * @throws Throwable
+     * @throws Exception
      */
-    @Transactional(rollbackFor = Throwable.class)
-    public Object addEquipExp2(int heroId, int index) throws Throwable {
+    public Object addEquipExp2(int heroId, int index) throws Exception {
 
     	int roleId = this.roleId();
 
@@ -1204,10 +1379,9 @@ public class HeroService extends BaseService {
      * @param heroId
      * @param weaponId
      * @return
-     * @throws Throwable
+     * @throws Exception
      */
-    @Transactional(rollbackFor = Throwable.class)
-    public Object exclusiveWeapon(int heroId, int weaponId) throws Throwable {
+    public Object exclusiveWeapon(int heroId, int weaponId) throws Exception {
 
     	int roleId = this.roleId();
 
@@ -1356,7 +1530,62 @@ public class HeroService extends BaseService {
 		}
     }
 
-	private int soulNumByStar(int heroId) {
-		return 18;
-	}
+    private boolean allFind(List<Item> items, int itemId, int num) {
+
+    	for (Item item : items) {
+
+			if (item.getItemId() == itemId) {
+				
+				if (item.getNum() == 0) {
+					break;
+				}
+
+				if (item.getNum() >= num) {
+
+					item.setNum(item.getNum() - num);
+
+					return true;
+				} else {
+					num -= item.getNum();
+					item.setNum(0);
+					return this.allFind(items, itemId, num);
+				}
+			}
+		}
+
+		List<BaseMakeItem> list = this.baseMakeItemDao.findByItemId(itemId);
+		if (list.size() == 0) {
+			return false;
+		}
+
+		for (BaseMakeItem baseMakeItem : list) {
+			boolean find2 = this.allFind(items, baseMakeItem.getPk().getMaterial().getBaseId(), baseMakeItem.getNum());
+			if (!find2) {
+				return false;
+			}
+		}
+
+		return true;
+    }
+
+    private void toSame(List<Item> items, List<Item> newItems, Result result) throws Exception {
+
+    	for (int i = 0 ; i < newItems.size() ; i++) {
+    		
+    		Item ite = items.get(i);
+
+			int d = ite.getNum() - newItems.get(i).getNum();
+			if (d > 0) {
+				this.itemDao.subItem(ite, d, result);
+			}
+    	}
+    	
+    	Iterator<Item> iter = items.iterator();  
+    	while(iter.hasNext()) {  
+    		Item ite = iter.next();  
+    	    if(ite.getNum() <= 0) {  
+    	        iter.remove();  
+    	    }  
+    	}
+    }
 }

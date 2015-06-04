@@ -7,11 +7,9 @@ import java.util.Random;
 import javax.annotation.Resource;
 
 import org.springframework.stereotype.Service;
-import org.springframework.web.context.ContextLoader;
 
 import websocket.handler.EchoHandler;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.zhanglong.sg.dao.ArenaDao;
 import com.zhanglong.sg.dao.BaseHeroShopDao;
 import com.zhanglong.sg.dao.BaseStoryDao;
@@ -22,18 +20,18 @@ import com.zhanglong.sg.dao.TokenDao;
 import com.zhanglong.sg.entity.FinanceLog;
 import com.zhanglong.sg.entity.Hero;
 import com.zhanglong.sg.entity.Item;
+import com.zhanglong.sg.entity.Mission;
 import com.zhanglong.sg.entity.Role;
 import com.zhanglong.sg.entity.Server;
 import com.zhanglong.sg.entity.Story;
 import com.zhanglong.sg.entity2.BaseHeroShop;
-import com.zhanglong.sg.entity2.BaseMission;
 import com.zhanglong.sg.entity2.BaseStory;
 import com.zhanglong.sg.model.ArenaPlayerModel;
 import com.zhanglong.sg.model.DateNumModel;
-import com.zhanglong.sg.model.Reward;
 import com.zhanglong.sg.model.Token;
 import com.zhanglong.sg.result.ErrorResult;
 import com.zhanglong.sg.result.Result;
+import com.zhanglong.sg.utils.SpringContextUtils;
 
 @Service
 public class RoleService extends BaseService {
@@ -5776,34 +5774,37 @@ public class RoleService extends BaseService {
             }
         }
 
-        List<Story> storyTableList = this.storyDao.findAll(roleId);
+        List<Story> storyList = this.storyDao.findAll(roleId);
 
-//        Story lastCopy = null;
-//        Story lastHeroCopy = null;
-        for (Story story : storyTableList) {
+        Story lastCopy = null;
+        Story lastHeroCopy = null;
+        
+        int storyNum = 0;
+
+        for (Story story : storyList) {
 
             if (story.getType() == BaseStory.COPY_TYPE) {
-//            	lastCopy = story;
+            	storyNum++;
+            	lastCopy = story;
             } else if (story.getType() == BaseStory.HERO_COPY_TYPE) {
-//            	lastHeroCopy = story;
+            	lastHeroCopy = story;
             }
             result.addCopy(story);
         }
 
-        // 查看是否有新关卡可以开启
-//        if (lastCopy.getStar() > 0) {
-//        	List<BaseStory> baseStoryList = this.baseStoryDao.copys();
-//        	if (baseStoryList.size() > lastCopy.getStoryId() && role.level() >= baseStoryList.get(lastCopy.getStoryId()).getUnlockLevel()) {
-//        		lastCopy = this.storyDao.create(roleId, lastCopy.getStoryId(), BaseStory.COPY_TYPE);
-//        		this.storyDao.save(lastCopy, result);
-//        	}
-//        } else if (lastHeroCopy.getStar() > 0) {
-//        	List<BaseStory> baseStoryList = this.baseStoryDao.heroCopys();
-//        	if (baseStoryList.size() > lastHeroCopy.getStoryId() && role.level() >= baseStoryList.get(lastHeroCopy.getStoryId()).getUnlockLevel()) {
-//        		lastHeroCopy = this.storyDao.create(roleId, lastHeroCopy.getStoryId(), BaseStory.HERO_COPY_TYPE);
-//        		this.storyDao.save(lastHeroCopy, result);
-//        	}
-//        }
+        if (lastCopy.getStar() > 0) {
+            BaseStory baseStory = this.baseStoryDao.findOne(lastCopy.getStoryId() + 1, lastCopy.getType());
+            if (baseStory != null) {
+            	result.addCopy(this.storyDao.create(roleId, baseStory.getId(), baseStory.getType()));
+            }
+        }
+
+        if (lastHeroCopy.getStar() > 0) {
+            BaseStory baseStory = this.baseStoryDao.findOne(lastHeroCopy.getStoryId() + 1, lastHeroCopy.getType());
+            if (baseStory != null) {
+            	result.addCopy(this.storyDao.create(roleId, baseStory.getId(), baseStory.getType()));
+            }
+        }
 
         DateNumModel dateNumModel = this.dateNumDao.findOne(roleId);
         
@@ -5836,6 +5837,14 @@ public class RoleService extends BaseService {
         result.setValue("bar_coin_time", dateNumModel.barTime > time ? dateNumModel.barTime - time : 0);
 
         result.setValue("vip", role.vip());
+
+        // 重置关卡进度
+        if (role.progress >= 1008) {
+        	if (storyNum < 3) {
+        		role.progress = 1002;
+        	}
+        }
+
         result.setValue("progress", role.getProgress());
 
         result.setValue("setstring", role.getStr());
@@ -5843,7 +5852,7 @@ public class RoleService extends BaseService {
         result.setValue("name", role.getName());
         result.setValue("role_id", role.getRoleId());
 
-        OnlineService onlineService = ContextLoader.getCurrentWebApplicationContext().getBean(OnlineService.class);
+        OnlineService onlineService = (OnlineService) SpringContextUtils.getBean(OnlineService.class);
         int online_num = onlineService.getNum(role);
 
         result.setValue("online_num", online_num);
@@ -5970,31 +5979,25 @@ public class RoleService extends BaseService {
         // 为了后面能招孙尚香 , 如果没有领 第一个任务  给他补领
         if (progress == 1022) {
 
-            List<BaseMission> list = this.missionDao.findAll(role);
+            List<Mission> list = this.missionDao.findAll(role);
 
             boolean find = false;
-            BaseMission task = new BaseMission();
-            for (BaseMission mission : list) {
-                if (mission.getId() == 7000) {
+            // BaseMission task = new BaseMission();
+            for (Mission mission : list) {
+                if (mission.getMissionId() == 7000) {
                     if (!mission.getComplete()) {
-                    	task = mission;
+
                     	find = true;
                     }
                     break;
                 }
             }
 
+            
             if (find) {
-                Result result = new Result();
+            	MissionService missionService = (MissionService) SpringContextUtils.getBean(MissionService.class);
+            	missionService.completeTask(7000);
 
-                this.missionDao.complete(role, 7000, result);
-                this.missionDao.newMission(role, result);
-
-                ObjectMapper mapper = new ObjectMapper();
-                Reward reward = mapper.readValue(task.getReward(), Reward.class);
-                this.rewardDao.get(role, reward, "任务领取<" + task.getName() + ">", FinanceLog.STATUS_TASK_GET, result);
-
-                return this.success(result);
             }
         }
 

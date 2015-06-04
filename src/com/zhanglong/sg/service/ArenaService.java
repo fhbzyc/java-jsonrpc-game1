@@ -12,7 +12,9 @@ import java.util.Random;
 
 import javax.annotation.Resource;
 
+import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import org.hibernate.Criteria;
@@ -708,6 +710,57 @@ public class ArenaService extends BaseService {
         return this.success(result.toMap());
     }
 
+    /**
+     * 杀怪排行榜
+     * @return
+     * @throws Exception
+     */
+    public Object killRank() throws Exception {
+
+        int roleId = this.roleId();
+        int serverId = this.serverId();
+
+    	// 等级排行
+        List<Role> list = this.roleDao.killTop20(serverId);
+
+        List<Integer> roleIds = new ArrayList<Integer>();
+        for (Role r : list) {
+        	roleIds.add(r.getRoleId());
+		}
+
+        long myRank = 0;
+        List<HashMap<String, Object>> newPlayers = new ArrayList<HashMap<String, Object>>();
+        for (int i = 0 ; i < list.size() ; i++) {
+
+        	if (list.get(i).getRoleId() == roleId) {
+        		myRank = i + 1;
+        	}
+
+        	HashMap<String, Object> player = new HashMap<String, Object>();
+        	player.put("rank", i + 1);
+        	player.put("roleId", list.get(i).getRoleId());
+        	player.put("name", list.get(i).name);
+        	player.put("avatar", list.get(i).avatar);
+        	player.put("level", list.get(i).level);
+        	player.put("kill", list.get(i).killNum);
+			newPlayers.add(player);
+		}
+
+        HashMap<String, Object> map = new HashMap<String, Object>();
+        map.put("players", newPlayers);
+
+        if (myRank == 0) {
+        	Role role = this.roleDao.findOne(roleId);
+        	myRank = this.roleDao.countKillAfter(role.killNum, serverId) + 1;
+        }
+
+        map.put("myrank", myRank);
+
+        Result result = new Result();
+        result.setValue("rank", map);
+        return this.success(result.toMap());
+    }
+
     // 清除时间的
     private int gold1(int roleId) {
 
@@ -726,7 +779,7 @@ public class ArenaService extends BaseService {
 		return gold;
     }
 
-    private void addGold1(int roleId) {
+    private void addGold1(int roleId) throws JsonParseException, JsonMappingException, IOException {
 
     	DateNumModel dateNumModel = this.dateNumDao.findOne(roleId);
 
@@ -755,7 +808,7 @@ public class ArenaService extends BaseService {
 		return gold;
     }
 
-    private void addGold2(int roleId) {
+    private void addGold2(int roleId) throws JsonParseException, JsonMappingException, IOException {
 
     	DateNumModel dateNumModel = this.dateNumDao.findOne(roleId);
     	dateNumModel.buyArenaNum += 1;

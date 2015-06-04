@@ -12,7 +12,7 @@ import javax.persistence.Table;
 
 @Entity
 @Table(name = "role_items" , indexes = {@Index(columnList="role_id" , unique = false)})
-public class Item implements Serializable {
+public class Item implements Serializable ,Cloneable {
 	/**
 	 * 
 	 */
@@ -76,5 +76,10 @@ public class Item implements Serializable {
 	public void setItemId(Integer itemId) {
 		this.itemId = itemId;
 	}
-	
+
+	@Override
+	public Item clone() throws CloneNotSupportedException {
+		// TODO Auto-generated method stub
+		return (Item) super.clone();
+	}
 }

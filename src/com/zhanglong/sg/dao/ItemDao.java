@@ -80,7 +80,7 @@ public class ItemDao extends BaseDao {
         return item;
     }
 
-    public Item additem(int roleId, int itemId, int num, Result result) throws Exception {
+    private Item additem(int roleId, int itemId, int num, Result result) throws Exception {
 
         Item item = this.findOneByItemId(roleId, itemId);
 

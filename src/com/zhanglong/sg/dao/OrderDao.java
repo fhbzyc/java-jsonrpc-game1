@@ -7,6 +7,7 @@ import java.util.List;
 import org.hibernate.Criteria;
 import org.hibernate.SQLQuery;
 import org.hibernate.Session;
+import org.hibernate.criterion.Projections;
 import org.hibernate.criterion.Restrictions;
 import org.springframework.stereotype.Repository;
 
@@ -30,6 +31,19 @@ public class OrderDao extends BaseDao {
 		Criteria criteria = session.createCriteria(Order.class);
 		@SuppressWarnings("unchecked")
 		List<Order> list = criteria.add(Restrictions.eq("roleId", roleId)).add(Restrictions.eq("status", Order.STATUS_SUCCESS)).list();
+		return list;
+	}
+
+	public List<Integer> group(int roleId) {
+
+		Session session = this.getSessionFactory().getCurrentSession();
+		Criteria criteria = session.createCriteria(Order.class);
+		@SuppressWarnings("unchecked")
+		List<Integer> list = criteria
+		.add(Restrictions.eq("roleId", roleId))
+		.add(Restrictions.eq("status", Order.STATUS_SUCCESS))
+		.setProjection(Projections.projectionList().add(Projections.groupProperty("money")))
+		.list();
 		return list;
 	}
 

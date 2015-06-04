@@ -9,9 +9,12 @@ import java.util.Random;
 
 import javax.annotation.Resource;
 
-import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.connection.jedis.JedisConnection;
+import org.springframework.data.redis.connection.jedis.JedisConnectionFactory;
 import org.springframework.stereotype.Repository;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.zhanglong.sg.entity2.BaseItemShop;
 import com.zhanglong.sg.model.ItemShopModel;
 import com.zhanglong.sg.utils.Utils;
@@ -19,13 +22,15 @@ import com.zhanglong.sg.utils.Utils;
 @Repository
 public class ItemShopDao extends BaseDao {
 
-	private static String RedisKey = "ITEM_SHOP1_";
+	private static String RedisKey = "ITEM_SHOP_";
 
 	@Resource
 	private BaseItemShopDao baseItemShopDao;
 
+//	@Resource
+//	private RedisTemplate<String, ItemShopModel> redisTemplate;
 	@Resource
-	private RedisTemplate<String, ItemShopModel> redisTemplate;
+    private JedisConnectionFactory jedisConnectionFactory;
 
 	public ItemShopDao() {
 	}
@@ -41,7 +46,16 @@ public class ItemShopDao extends BaseDao {
 
 	public ItemShopModel getShopByType(int roleId, int type) throws Exception {
 
-		ItemShopModel itemShopModel = (ItemShopModel) this.redisTemplate.opsForHash().get(RedisKey + type, roleId);
+    	JedisConnection jedisConnection = this.jedisConnectionFactory.getConnection();
+    	String json = jedisConnection.getNativeConnection().get(ItemShopDao.RedisKey + type + roleId);
+    	jedisConnection.close();
+
+    	ItemShopModel itemShopModel = null;
+
+    	if (json != null) {
+    		ObjectMapper objectMapper = new ObjectMapper();
+    		itemShopModel = objectMapper.readValue(json, ItemShopModel.class);
+    	}
 
 		if (itemShopModel == null || System.currentTimeMillis() >= itemShopModel.getRefreshTime()) {
 
@@ -156,7 +170,7 @@ public class ItemShopDao extends BaseDao {
         return result;
     }
 
-    private void save(int roleId, int type, ItemShopModel itemShopModel) throws ParseException {
+    private void save(int roleId, int type, ItemShopModel itemShopModel) throws ParseException, JsonProcessingException {
 
         long nowUnixTime = System.currentTimeMillis();
 
@@ -190,7 +204,11 @@ public class ItemShopDao extends BaseDao {
 
         itemShopModel.setRefreshTime(setTime);
 
-    	this.redisTemplate.opsForHash().put(RedisKey + type, roleId, itemShopModel);
-    }
+    	ObjectMapper objectMapper = new ObjectMapper();
+		String json = objectMapper.writeValueAsString(itemShopModel);
 
+    	JedisConnection jedisConnection = this.jedisConnectionFactory.getConnection();
+    	jedisConnection.getNativeConnection().set(ItemShopDao.RedisKey  + type + roleId, json);
+    	jedisConnection.close();
+    }
 }

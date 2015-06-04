@@ -5,6 +5,7 @@ import java.util.List;
 import javax.annotation.Resource;
 
 import org.hibernate.Session;
+import org.hibernate.criterion.Order;
 import org.hibernate.criterion.Restrictions;
 import org.springframework.stereotype.Repository;
 
@@ -46,7 +47,10 @@ public class StoryDao extends BaseDao {
     	Session session = this.getSessionFactory().getCurrentSession();
 
     	@SuppressWarnings("unchecked")
-		List<Story> list = session.createCriteria(Story.class).add(Restrictions.eq("aRoleId", roleId)).list();
+		List<Story> list = session.createCriteria(Story.class)
+		.add(Restrictions.eq("aRoleId", roleId))
+		.addOrder(Order.asc("storyId"))
+		.list();
 
     	for (Story story : list) {
     		story.init();
@@ -89,19 +93,11 @@ public class StoryDao extends BaseDao {
 
         if (story.getType() == BaseStory.COPY_TYPE) {
         	this.dailyTaskDao.addCopy(role, num, result);
-        	try {
-        		this.missionDao.checkStory(role, story.getStoryId(), num, result);
-			} catch (Throwable e) {
-				// TODO: handle exception
-			}
-        	
+        	this.missionDao.checkStory(role, story.getStoryId(), num, result);
+
         } else if (story.getType() == BaseStory.HERO_COPY_TYPE) {
         	this.dailyTaskDao.addHeroCopy(role, num, result);
-        	try {
-        		this.missionDao.checkHeroStory(role, story.getStoryId(), num, result);
-			} catch (Throwable e) {
-				// TODO: handle exception
-			}
+        	this.missionDao.checkHeroStory(role, story.getStoryId(), num, result);
         }
 
         this.save(story, result);

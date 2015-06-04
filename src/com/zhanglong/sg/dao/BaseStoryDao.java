@@ -48,7 +48,7 @@ public class BaseStoryDao extends BaseDao2 {
 	}
 
 	public List<BaseStory> copys() {
-		
+
 		List<BaseStory> list = new ArrayList<BaseStory>();
 		
 		for (BaseStory baseStory : findAll()) {
@@ -60,7 +60,7 @@ public class BaseStoryDao extends BaseDao2 {
 	}
 
 	public List<BaseStory> heroCopys() {
-		
+
 		List<BaseStory> list = new ArrayList<BaseStory>();
 		
 		for (BaseStory baseStory : findAll()) {
@@ -72,7 +72,7 @@ public class BaseStoryDao extends BaseDao2 {
 	}
 
 	public List<BaseStory> specialCopys() {
-		
+
 		List<BaseStory> list = new ArrayList<BaseStory>();
 		
 		for (BaseStory baseStory : findAll()) {
@@ -235,7 +235,8 @@ public class BaseStoryDao extends BaseDao2 {
      * @return
      * @throws Exception
      */
-    private ArrayList<int[]> randomItems(BaseStory baseStory, boolean doubleTime) throws Exception {
+    @SuppressWarnings("unchecked")
+	private ArrayList<int[]> randomItems(BaseStory baseStory, boolean doubleTime) throws Exception {
 
         int[][] li = this.itemIds(baseStory);
         ArrayList<int[]> items = new ArrayList<int[]>();
@@ -326,12 +327,12 @@ public class BaseStoryDao extends BaseDao2 {
 
     private boolean isDoubleTime(BaseStory baseStory) {
         
-        String baseStoryType = "";
-        if (baseStory.getType() == BaseStory.COPY_TYPE) {
-            baseStoryType = "copy_double";
-        } else if (baseStory.getType() == BaseStory.HERO_COPY_TYPE) {
-            baseStoryType = "hero_copy_double";
-        }
+//        String baseStoryType = "";
+//        if (baseStory.getType() == BaseStory.COPY_TYPE) {
+//            baseStoryType = "copy_double";
+//        } else if (baseStory.getType() == BaseStory.HERO_COPY_TYPE) {
+//            baseStoryType = "hero_copy_double";
+//        }
 
 //        ArrayList<DailyTask> activityList = BaseActivityInstance.getActivityList();
 //        for (DailyTask baseActivity : activityList) {

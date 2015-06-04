@@ -6,11 +6,14 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Random;
 
+import javax.annotation.Resource;
+
 import org.springframework.stereotype.Service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-
+import com.zhanglong.sg.dao.BaseMissionDao;
 import com.zhanglong.sg.entity.FinanceLog;
+import com.zhanglong.sg.entity.Mission;
 import com.zhanglong.sg.entity.Role;
 import com.zhanglong.sg.entity2.BaseDailyTask;
 import com.zhanglong.sg.entity2.BaseMission;
@@ -22,24 +25,31 @@ import com.zhanglong.sg.utils.Utils;
 @Service
 public class MissionService extends BaseService {
 
+	@Resource
+	private BaseMissionDao baseMissionDao;
+
     /**
      * 任务列表
-     * @param tokenS
      * @return
-     * @throws Throwable
+     * @throws Exception
      */
-    public Object taskList() throws Throwable {
+    public Object taskList() throws Exception {
 
     	int roleId = this.roleId();
 
         Role role = this.roleDao.findOne(roleId);
 
-        List<BaseMission> list = this.missionDao.findAll(role);
+        List<Mission> list = this.missionDao.findAll(role);
 
         Result result = new Result();
-        for (BaseMission mission : list) {
+        for (Mission mission : list) {
+
 			if (!mission.getComplete()) {
-				result.addMission(mission);
+
+				BaseMission baseMission = this.baseMissionDao.findOne(mission.getMissionId());
+				baseMission.setNum(mission.getNum());
+
+				result.addMission(baseMission);
 			}
 		}
 
@@ -49,6 +59,7 @@ public class MissionService extends BaseService {
         if (r.get("task") == null) {
         	r.put("task", new Object[]{});
         }
+
         return this.success(r);
     }
 
@@ -56,39 +67,43 @@ public class MissionService extends BaseService {
      * 领取奖励
      * @param taskId
      * @return
-     * @throws Throwable
+     * @throws Exception
      */
-    public Object completeTask(int missionId) throws Throwable {
+    public Object completeTask(int missionId) throws Exception {
 
     	int roleId = this.roleId();
 
         Role role = this.roleDao.findOne(roleId);
 
-        List<BaseMission> list = this.missionDao.findAll(role);
+        List<Mission> list = this.missionDao.findAll(role);
+
+        Result result = new Result();
 
         boolean find = false;
         BaseMission task = new BaseMission();
-        for (BaseMission mission : list) {
-            if (mission.getId() == missionId) {
+        for (Mission mission : list) {
+            if (mission.getMissionId() == missionId) {
 
-                if (mission.getNum() < mission.getGoal()) {
-                    return this.returnError(this.lineNum(), "目标数量还未达成");
+            	BaseMission baseMission = this.baseMissionDao.findOne(mission.getMissionId());
+
+                if (mission.getNum() < baseMission.getGoal()) {
+                	return this.returnError(this.lineNum(), "数量不足");
+                	//return this.success(result.toMap());
                 }
 
                 if (mission.getComplete()) {
                 	return this.success(new Result().toMap());
                 }
 
-                task = mission;
+                task = baseMission;
                 find = true;
             }
         }
 
         if (!find) {
-            return this.returnError(this.lineNum(), "参数出错,没有领这个任务");
+        	return this.returnError(this.lineNum(), "不存在");
+        	//return this.success(result.toMap());
         }
-
-        Result result = new Result();
 
         this.missionDao.complete(role, missionId, result);
         this.missionDao.newMission(role, result);
@@ -107,9 +122,9 @@ public class MissionService extends BaseService {
     /**
      * 
      * @return
-     * @throws Throwable
+     * @throws Exception
      */
-    public Object dailyTaskList() throws Throwable {
+    public Object dailyTaskList() throws Exception {
 
     	int roleId = this.roleId();
 
@@ -135,12 +150,11 @@ public class MissionService extends BaseService {
 
     /**
      * 领取日常任务
-     * @param tokenS
      * @param taskId
      * @return
-     * @throws Throwable
+     * @throws Exception
      */
-	public Object completeDailyTask(int taskId) throws Throwable {
+	public Object completeDailyTask(int taskId) throws Exception {
 
     	int roleId = this.roleId();
 
@@ -212,9 +226,9 @@ public class MissionService extends BaseService {
      * 点金手
      * @param times
      * @return
-     * @throws Throwable
+     * @throws Exception
      */
-    public Object getCoin(int times) throws Throwable {
+    public Object getCoin(int times) throws Exception {
 
     	int roleId = this.roleId();
 
@@ -290,14 +304,6 @@ public class MissionService extends BaseService {
         return this.success(result.toMap());
     }
 
-//    private int vipWipeOutItemNum(int vip) {
-//
-//    	if (vip < 1) {
-//    		vip = 1;
-//    	}
-//    	return 20 + (vip - 1) * 10;
-//    }
-    
     public static int getCoinNeedGold(int times) {
 	  	int n = times / 2;
 	  	int gold = (int)(10 * Math.pow(2, n));

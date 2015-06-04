@@ -13,12 +13,12 @@ import javax.persistence.Table;
 import javax.persistence.Transient;
 
 @Entity
-@Table(name = "role" , indexes = {@Index(columnList="role_exp" , unique = false) , @Index(columnList="user_id" , unique = false)})
+@Table(name = "role" , indexes = {@Index(columnList="role_exp" , unique = false) , @Index(columnList="user_id" , unique = false) , @Index(columnList="role_name" , unique = false) , @Index(columnList="role_kill_num" , unique = false)})
 public class Role implements Serializable {
 
     private static final long serialVersionUID = 521595721195578568L;
 
-    public static int ActionCoolTime = 6 * 60; // 毫秒
+    public static int ActionCoolTime = 6 * 60;
 
     public static int ANum = 59; // 体力最大值 - 等级
     
@@ -106,6 +106,9 @@ public class Role implements Serializable {
 
     @Column(name = "role_card_time" , nullable = false , columnDefinition = "int default 0")
     public int cardTime;
+
+    @Column(name = "role_kill_num" , nullable = false , columnDefinition = "int default 0")
+    public int killNum;
 
 	public Role() {
     }
@@ -310,6 +313,14 @@ public class Role implements Serializable {
 
 	public void setCardTime(int cardTime) {
 		this.cardTime = cardTime;
+	}
+
+	public int getKillNum() {
+		return killNum;
+	}
+
+	public void setKillNum(int killNum) {
+		this.killNum = killNum;
 	}
 
 	/**
