@@ -118,6 +118,13 @@ public class ActivityService extends BaseService {
 	            	if (s >= entry.getKey()) {
 	            		reward.setHas(true);
 	            	}
+	            } else if (baseAct.getType().equals("holiday")) {
+	            	int days = Integer.valueOf(Utils.date());
+	            	if (days == (int)entry.getKey()) {
+	            		reward.setHas(true);
+	            	} else if (days > (int)entry.getKey()) {
+	            		iter.remove();
+	            	}
 	            }
 
 	            for (Activity activity : myActs) {
@@ -128,13 +135,15 @@ public class ActivityService extends BaseService {
 				}
 	        }
 
-	        if (rewards.size() == 0 && !baseAct.getType().equals("notice") && !baseAct.getType().equals("pk_rank") && !baseAct.getType().equals("lv_rank")) {
-	        	continue;
-	        }
+//	        if (rewards.size() == 0 && !baseAct.getType().equals("notice") && !baseAct.getType().equals("pk_rank") && !baseAct.getType().equals("lv_rank")) {
+//	        	continue;
+//	        }
 
-	        if (baseAct.getType().equals("pk_rank") || baseAct.getType().equals("lv_rank")) {
+	        if (baseAct.getType().equals("pk_rank") || baseAct.getType().equals("lv_rank") || baseAct.getType().equals("soul_double")) {
 	        	baseAct.setType("notice");
 	        	rewards.clear();
+	        } else if (rewards.size() == 0 && !baseAct.getType().equals("notice")) {
+	        	continue;
 	        }
 
 	        baseAct.setReward(mapper.writeValueAsString(rewards));

@@ -16,7 +16,7 @@ public class NoticeDao extends BaseDao {
         String sql = "SELECT * FROM base_notice WHERE NOW() BETWEEN notice_begin_time AND notice_end_time";
 
         @SuppressWarnings("unchecked")
-		List<Notice> list = session.createSQLQuery(sql).list();
+		List<Notice> list = session.createSQLQuery(sql).addEntity(Notice.class).list();
         if (list.size() == 0) {
         	return null;
         }

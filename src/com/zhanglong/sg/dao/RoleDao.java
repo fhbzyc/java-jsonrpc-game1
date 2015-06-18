@@ -100,7 +100,7 @@ public class RoleDao extends BaseDao {
 
 	public int addPillage(int num) {
 
-		String sql = "UPDATE role SET role_pillage_num = role_pillage_num + " + num + " WHERE role_level >= 25 AND role_pillage_num < 100";
+		String sql = "UPDATE role SET role_pillage_num = role_pillage_num + " + num + " WHERE role_level >= 25 AND role_pillage_num < 20";
 
 		Session session = this.getSessionFactory().getCurrentSession();
 		SQLQuery query = session.createSQLQuery(sql);
@@ -349,24 +349,19 @@ public class RoleDao extends BaseDao {
         }
 
         role.level = newLevel;
-
-//        if (oldExp != this.exp) {
-//        	this.changeExp = true;
-//        }	
     }
 
 	public void addAp(Role role, int ap, Result result) {
 		int newAp = ap + role.ap();
 		role.setNewAp(newAp);
-		result.setPhysicalStrength(newAp, role.apCoolTime());
+		result.setAp(newAp, role.apCoolTime());
     }
 
 	public void subAp(Role role, int ap, Result result) {
 		int newAp = role.ap() - ap;
 		role.setNewAp(newAp);
-		result.setPhysicalStrength(newAp, role.apCoolTime());
+		result.setAp(newAp, role.apCoolTime());
     }
-
 
     public Role getByServerId(int userId, int serverId) {
 

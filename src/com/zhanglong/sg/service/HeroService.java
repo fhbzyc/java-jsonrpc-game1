@@ -14,7 +14,7 @@ import javax.annotation.Resource;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import websocket.handler.EchoHandler;
+import websocket.handler.Broadcast;
 
 import com.zhanglong.sg.model.DateNumModel;
 import com.zhanglong.sg.protocol.Response;
@@ -710,7 +710,8 @@ public class HeroService extends BaseService {
             		r.setValue("msgs", msgs);
             		String msg = Response.marshalSuccess(0, r.toMap());
             		int serverId = role.getServerId();
-            		EchoHandler.broadcast(serverId, msg);
+            		Broadcast broadcast = new Broadcast();
+            		broadcast.send(serverId, msg);
             	}
             	
             } else {
@@ -768,18 +769,10 @@ public class HeroService extends BaseService {
 
         if (type == TYPE_GOLD_RANDOM) {
 
-        	List<Hero> generals = this.heroDao.findAll(roleId);
-
-        	boolean find = false;
-        	for (Hero generalTable : generals) {
-				if (this.baseHeroDao.findOne(generalTable.getHeroId()).getStar() == 3) {
-					find = true;
-					break;
-				}
-			}
+        	int c = this.financeLogDao.count(roleId, FinanceLog.STATUS_RANDOM_GEN_TEN_TIMES_GOLD);
 
     		// 元宝10连抽  第一次花元宝必给一个3星英雄
-    		if (!find) {
+    		if (c == 0) {
     			int genId = this.baseHeroShopDao.randomGeneral(3)[0];
     			randomResult[0] = new int[]{genId , 1};
     			
@@ -860,7 +853,8 @@ public class HeroService extends BaseService {
 	            		r.setValue("msgs", msgs);
 	            		String msg = Response.marshalSuccess(0, r.toMap());
 	            		int serverId = role.getServerId();
-	            		EchoHandler.broadcast(serverId, msg);
+	            		Broadcast broadcast = new Broadcast();
+	            		broadcast.send(serverId, msg);
 	            	}
         		}
 
@@ -1073,8 +1067,29 @@ public class HeroService extends BaseService {
         
     	int[][] itemIds = new int[countNum][]; // [[itemId , num]...]
 
+    	DateNumModel dateNumModel = this.dateNumDao.findOne(roleId);
+    	int dateNum = dateNumModel.soulShopNum;
+
     	// 第一个是武将或魂石
-    	int soulIndex = Utils.randomGetOne(soulRateArray);
+    	int soulIndex = 0;
+        if (dateNum < 20) {
+        	// 第一个是武将或魂石
+        	soulIndex = Utils.randomGetOne(soulRateArray);
+
+        	while (soulIndex == 0 && dateNum < 8) {
+        		soulIndex = Utils.randomGetOne(soulRateArray);
+    		}
+        }
+
+        if (soulIndex == 0) {
+        	dateNum = 0;
+        } else {
+        	dateNum++;
+        }
+
+        dateNumModel.soulShopNum = dateNum;
+        this.dateNumDao.save(roleId, dateNumModel);
+        
     	BaseHeroShop item = soulList.get(soulIndex);
     	int num = random.nextInt(item.getMaxNum() - item.getMinNum() + 1) + item.getMinNum();
     	itemIds[0] = new int[]{item.getItemId() , num};
@@ -1096,8 +1111,8 @@ public class HeroService extends BaseService {
     	for (int[] idAndNum : itemIds) {
     		if (idAndNum[0] >= 10000) {
     			int heroId = idAndNum[0];
-				Hero general = this.heroDao.findOne(roleId, heroId);
-				if (general == null) {
+				Hero hero = this.heroDao.findOne(roleId, heroId);
+				if (hero == null) {
 					this.heroDao.create(role, heroId, result);
 					desc += "<"+this.baseHeroDao.findOne(heroId).getName() + "x1>,";
 				} else {
@@ -1105,7 +1120,7 @@ public class HeroService extends BaseService {
 					int itemNum = this.heroDao.soulNumByStar(heroId);
 
 					desc += "<"+ this.baseItemDao.findOne(itemId).getName() + "x"+ itemNum + ">,";
-					this.itemDao.addItem(roleId, itemId, itemNum, result);
+					this.itemDao.addSoul(roleId, itemId, itemNum, result);
 				}
     		} else {
     			desc += "<"+ this.baseItemDao.findOne(idAndNum[0]).getName() + "x"+ idAndNum[1] + ">,";

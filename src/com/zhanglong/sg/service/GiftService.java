@@ -39,6 +39,13 @@ public class GiftService extends BaseService {
 
         GiftTemplate giftTemplate = this.giftDao.findOne(gift.getGiftId());
 
+        if (giftTemplate.getType() == GiftTemplate.TYPE_1) {
+        	long c = this.giftDao.countLogs(roleId, giftTemplate.getId());
+        	if (c != 0) {
+        		return this.returnError(this.lineNum(), "不可重复领取");
+        	}
+        }
+
         String giftName = giftTemplate.getName();
 
     	ObjectMapper mapper = new ObjectMapper();
@@ -49,7 +56,7 @@ public class GiftService extends BaseService {
 
         	Role role = this.roleDao.findOne(roleId);
         	this.rewardDao.get(role, reward, "兑换码领取<" + giftName + ">", FinanceLog.STATUS_CODE_GET, result);
-        	
+
         	this.giftDao.insertLog(role, giftTemplate, code);
         }
 

@@ -119,6 +119,9 @@ public class HeroDao extends BaseDao {
 
     	if (hero.getExp() < maxExp) {
         	hero.setExp(hero.getExp() + exp);
+        	if (hero.getExp() > maxExp) {
+        		hero.setExp(maxExp);
+        	}
         	hero.setLevel(hero.level());
     	}
 

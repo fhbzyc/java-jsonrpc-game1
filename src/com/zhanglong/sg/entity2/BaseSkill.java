@@ -18,16 +18,19 @@ public class BaseSkill implements Serializable {
 	private Integer id;
 
 	@Column(name = "skill_name" , nullable = false , columnDefinition = "varchar(255) default ''" , length = 255)
-	private String name; //
+	private String name;
 
 	@Column(name = "skill_max_level" , nullable = false , columnDefinition = "int default 0")
-	private Integer maxLevel; //
+	private int maxLevel;
 
 	@Column(name = "skill_base_coin" , nullable = false , columnDefinition = "int default 0")
-	private Integer baseCoin; //
+	private int baseCoin;
 
 	@Column(name = "skill_levelup_coin" , nullable = false , columnDefinition = "int default 0")
-	private Integer levelupCoin; //
+	private int levelupCoin;
+
+	@Column(name = "skill_is_combo" , nullable = false , columnDefinition = "boolean default FALSE")
+	private boolean combo;
 
 	public BaseSkill() {
 	}
@@ -40,15 +43,15 @@ public class BaseSkill implements Serializable {
 		this.name = name;
 	}
 
-	public void setMaxLevel(Integer maxLevel) {
+	public void setMaxLevel(int maxLevel) {
 		this.maxLevel = maxLevel;
 	}
 
-	public void setBaseCoin(Integer baseCoin) {
+	public void setBaseCoin(int baseCoin) {
 		this.baseCoin = baseCoin;
 	}
 
-	public void setLevelupCoin(Integer levelupCoin) {
+	public void setLevelupCoin(int levelupCoin) {
 		this.levelupCoin = levelupCoin;
 	}
 
@@ -60,16 +63,24 @@ public class BaseSkill implements Serializable {
 		return this.name;
 	}
 
-	public Integer getMaxLevel() {
+	public int getMaxLevel() {
 		return this.maxLevel;
 	}
 
-	public Integer getBaseCoin() {
+	public int getBaseCoin() {
 		return this.baseCoin;
 	}
 
-	public Integer getLevelupCoin() {
+	public int getLevelupCoin() {
 		return this.levelupCoin;
+	}
+
+	public boolean getCombo() {
+		return combo;
+	}
+
+	public void setCombo(boolean combo) {
+		this.combo = combo;
 	}
 }
 

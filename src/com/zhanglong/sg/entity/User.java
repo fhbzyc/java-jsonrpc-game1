@@ -32,8 +32,8 @@ public class User implements Serializable , Cloneable {
     @Column(name = "user_imei" , nullable = false , columnDefinition = "varchar(64) default ''")
     private String imei;
 
-    @Column(name = "user_mac" , nullable = false , columnDefinition = "varchar(32) default ''")
-    private String mac;
+//    @Column(name = "user_mac" , nullable = false , columnDefinition = "varchar(32) default ''")
+//    private String mac;
 
     @Column(name = "platform_id" , nullable = false , columnDefinition = "int default 0")
     private int platformId;
@@ -46,6 +46,9 @@ public class User implements Serializable , Cloneable {
 
     @Column(name = "user_register_time" , columnDefinition = "timestamp default CURRENT_TIMESTAMP")
     private Timestamp time;
+
+    @Column(name = "user_signin_time" , columnDefinition = "timestamp default CURRENT_TIMESTAMP")
+    private Timestamp signinTime;
 
     @Transient
     public String token = "";
@@ -77,13 +80,13 @@ public class User implements Serializable , Cloneable {
 		this.imei = imei;
 	}
 
-	public String getMac() {
-		return mac;
-	}
-
-	public void setMac(String mac) {
-		this.mac = mac;
-	}
+//	public String getMac() {
+//		return mac;
+//	}
+//
+//	public void setMac(String mac) {
+//		this.mac = mac;
+//	}
 
 	public int getPlatformId() {
 		return platformId;
@@ -115,6 +118,14 @@ public class User implements Serializable , Cloneable {
 
 	public void setTime(Timestamp time) {
 		this.time = time;
+	}
+
+	public Timestamp getSigninTime() {
+		return signinTime;
+	}
+
+	public void setSigninTime(Timestamp signinTime) {
+		this.signinTime = signinTime;
 	}
 
 	@Override

@@ -189,7 +189,9 @@ public class CrusadeService extends BaseService {
         	if (i >= 4) {
         		break;
         	}
-			list.add(heros2.get(i).toArray());
+        	Hero hero = heros2.get(i);
+        	hero.setLevel(hero.level());
+			list.add(hero.toArray());
 		}
 
         Result result = new Result();

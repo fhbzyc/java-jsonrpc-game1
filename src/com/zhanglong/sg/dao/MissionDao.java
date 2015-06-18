@@ -84,9 +84,9 @@ public class MissionDao extends BaseDao {
     	List<Mission> list = this.findAll(role);
 
         for (Mission mission : list) {
-        	if (mission.getType().equals(type)) {
+        	if (!mission.getComplete() && mission.getType().equals(type)) {
     			mission.setNum(mission.getNum() + num);
-    			
+
     			BaseMission baseMission = this.baseMissionDao.findOne(mission.getMissionId());
     			baseMission.setNum(mission.getNum());
     			result.addMission(baseMission);

@@ -24,7 +24,7 @@ import org.hibernate.criterion.Order;
 import org.hibernate.criterion.Restrictions;
 import org.springframework.stereotype.Service;
 
-import websocket.handler.EchoHandler;
+import websocket.handler.Broadcast;
 
 import com.zhanglong.sg.dao.ArenaDao;
 import com.zhanglong.sg.dao.ArenaLogDao;
@@ -492,13 +492,15 @@ public class ArenaService extends BaseService {
     		Result r = new Result();
     		r.setValue("msgs", msgs);
     		String msg = Response.marshalSuccess(0, r.toMap());
-    		EchoHandler.broadcast(serverId, msg);
+    		Broadcast broadcast = new Broadcast();
+    		broadcast.send(serverId, msg);
         } else if (wins == 3) {
     		String msgs = role.name + "在竞技场获得3连胜,上升势头强劲";
     		Result r = new Result();
     		r.setValue("msgs", msgs);
     		String msg = Response.marshalSuccess(0, r.toMap());
-    		EchoHandler.broadcast(serverId, msg);
+    		Broadcast broadcast = new Broadcast();
+    		broadcast.send(serverId, msg);
         }
 
         result.setValue("win", true);
@@ -904,23 +906,6 @@ public class ArenaService extends BaseService {
 
 			int[] itemId = new int[]{config[7]};
 			int[] itemNum = new int[]{config[8]};
-
-			if (config[0] == 1) {
-				itemId = new int[]{config[7] , 4018};
-				itemNum = new int[]{config[8] , 30};
-			} else if (config[0] == 2) {
-				itemId = new int[]{config[7] , 4013};
-				itemNum = new int[]{config[8] , 20};
-			} else if (config[0] == 3) {
-				itemId = new int[]{config[7] , 4018};
-				itemNum = new int[]{config[8] , 20};
-			} else if (config[0] == 4) {
-				itemId = new int[]{config[7] , 4013};
-				itemNum = new int[]{config[8] , 10};
-			} else if (config[0] == 5) {
-				itemId = new int[]{config[7] , 4001};
-				itemNum = new int[]{config[8] , 10};
-			}
 
 			Reward reward = new Reward();
 			reward.setCoin(config[5]);

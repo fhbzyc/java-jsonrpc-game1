@@ -24,7 +24,17 @@ public class UserDao extends BaseDao {
 
     	Timestamp timestamp = new Timestamp(System.currentTimeMillis());
     	user.setTime(timestamp);
+    	user.setSigninTime(timestamp);
     	session.save(user);
+    }
+
+    public void update(User user) {
+
+    	Session session = this.getSessionFactory().getCurrentSession();
+
+    	Timestamp timestamp = new Timestamp(System.currentTimeMillis());
+    	user.setSigninTime(timestamp);
+    	session.update(user);
     }
 
     public User getByUsername(String username) {

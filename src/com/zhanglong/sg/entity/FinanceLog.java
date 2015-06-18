@@ -174,9 +174,6 @@ public class FinanceLog implements Serializable {
     }
 
     public void setMoneyType(Integer moneyType) {
-        if (moneyType != 1) {
-            moneyType = 2;
-        }
         this.moneyType = moneyType;
     }
 

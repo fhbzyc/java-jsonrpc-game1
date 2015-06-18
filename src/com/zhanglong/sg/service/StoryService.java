@@ -325,7 +325,7 @@ public class StoryService extends BaseService {
 
         result.setValue("battle_id", battleLogTable.getId());
 
-        List<int[]> rand = this.baseStoryDao.randomItems(roleId, baseStory, 1).get(0);
+        List<int[]> rand = this.baseStoryDao.randomItems(roleId, baseStory, 1, this.serverId()).get(0);
         List<int[]> items = new ArrayList<int[]>();
         for (int[] is : rand) {
             items.add(new int[]{is[0] , is[1] , 100});
@@ -577,7 +577,7 @@ public class StoryService extends BaseService {
 
         int[][][] item_result = new int[times][][];
 
-        ArrayList<ArrayList<int[]>> aItemList = this.baseStoryDao.randomItems(roleId, baseStory, times);
+        ArrayList<ArrayList<int[]>> aItemList = this.baseStoryDao.randomItems(roleId, baseStory, times, this.serverId());
 
         for(int i = 0 ; i < aItemList.size() ; i++) {
             ArrayList<int[]> aItems = aItemList.get(i);

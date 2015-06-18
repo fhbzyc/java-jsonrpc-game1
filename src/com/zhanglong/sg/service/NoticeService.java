@@ -7,6 +7,7 @@ import javax.annotation.Resource;
 import org.springframework.stereotype.Service;
 
 import com.zhanglong.sg.dao.NoticeDao;
+import com.zhanglong.sg.entity.Notice;
 
 @Service
 public class NoticeService extends BaseService {
@@ -15,6 +16,11 @@ public class NoticeService extends BaseService {
     private NoticeDao noticeDao;
 
     public Object notice() throws IOException {
-    	return this.success(this.noticeDao.findOne());
+    	Notice notice = this.noticeDao.findOne();
+    	if (notice != null) {
+    		return this.success(this.noticeDao.findOne());
+    	} else {
+    		return this.success(false);
+    	}
     }
 }

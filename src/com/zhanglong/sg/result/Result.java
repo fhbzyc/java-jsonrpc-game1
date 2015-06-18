@@ -101,7 +101,7 @@ public class Result {
         this.dailyTaskList.add(dailyTask);
     }
 
-    public void setPhysicalStrength(int physicalStrength, long coolTime) {
+    public void setAp(int physicalStrength, long coolTime) {
         this.physicalStrength = new int[]{physicalStrength, (int)coolTime};
     }
 

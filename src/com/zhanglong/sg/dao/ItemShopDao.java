@@ -27,22 +27,11 @@ public class ItemShopDao extends BaseDao {
 	@Resource
 	private BaseItemShopDao baseItemShopDao;
 
-//	@Resource
-//	private RedisTemplate<String, ItemShopModel> redisTemplate;
 	@Resource
     private JedisConnectionFactory jedisConnectionFactory;
 
 	public ItemShopDao() {
 	}
-
-//	public static ItemShopDao instance(int roleId, int type) {
-//		@SuppressWarnings("resource")
-//		ClassPathXmlApplicationContext applicationContext = new ClassPathXmlApplicationContext("beans.xml");
-//		ItemShopDao itemShopDao = (ItemShopDao) applicationContext.getBean("itemShopDao");
-//		itemShopDao.setRoleId(roleId);
-//		itemShopDao.setType(type);
-//		return itemShopDao;
-//	}
 
 	public ItemShopModel getShopByType(int roleId, int type) throws Exception {
 
@@ -124,16 +113,32 @@ public class ItemShopDao extends BaseDao {
 
         int begin = 0;
 
-        if (type == BaseItemShop.SHOP_TYPE_3) {
-        	ArrayList<BaseItemShop> delIdList = new ArrayList<BaseItemShop>();
+        if (type == BaseItemShop.MONEY_TYPE_3) {
+        	List<BaseItemShop> delIdList = new ArrayList<BaseItemShop>();
         	for (int i = 0 ; i < shopItemList.size() ; i++) {
         		BaseItemShop item = shopItemList.get(i);
             	int itemId = item.getItemId();
-            	if (itemId == 4016 || itemId == 4017) {
-            		// 固定给4016 大乔魂石 和 4017 孟获魂石
-            		
-//            		item.setPrice(item.getPrice() * discount / 100);
-//            		item.setQuality(discount / 10);
+            	if (itemId == 4017 || itemId == 4020) {
+            		// 前两个固定灵魂石
+
+            		result[begin] = item;
+ 
+            		begin++;
+            		delIdList.add(item);
+            		continue;
+            	}
+        	}
+
+            for (BaseItemShop delId : delIdList) {
+            	shopItemList.remove(delId);
+			}
+        } else if (type == BaseItemShop.SHOP_TYPE_4) {
+        	List<BaseItemShop> delIdList = new ArrayList<BaseItemShop>();
+        	for (int i = 0 ; i < shopItemList.size() ; i++) {
+        		BaseItemShop item = shopItemList.get(i);
+            	int itemId = item.getItemId();
+            	if (itemId == 4005 || itemId == 4010) {
+
             		result[begin] = item;
  
             		begin++;

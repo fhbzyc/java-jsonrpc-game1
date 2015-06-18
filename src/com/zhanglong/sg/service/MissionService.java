@@ -136,6 +136,16 @@ public class MissionService extends BaseService {
         for (BaseDailyTask dailyTask : list) {
 
         	if (!dailyTask.getComplete()) {
+
+                if (dailyTask.getType().equals("card")) {
+                    ObjectMapper mapper = new ObjectMapper();
+                    Reward reward = mapper.readValue(dailyTask.getReward(), Reward.class);
+                	int[] item_num = reward.getItem_num();
+                	item_num[0] = this.vipWipeOutNum(role.vip);
+                	reward.setItem_num(item_num);
+                	dailyTask.setReward(mapper.writeValueAsString(reward));
+                }
+
         		result.addDailyTask(dailyTask);
         	}
 		}
@@ -217,6 +227,13 @@ public class MissionService extends BaseService {
 
         ObjectMapper mapper = new ObjectMapper();
         Reward reward = mapper.readValue(task.getReward(), Reward.class);
+
+        if (task.getType().equals("card")) {
+        	int[] item_num = reward.getItem_num();
+        	item_num[0] = this.vipWipeOutNum(role.vip);
+        	reward.setItem_num(item_num);
+        }
+
         this.rewardDao.get(role, reward, "任务领取<" + task.getName() + ">", FinanceLog.STATUS_TASK_GET, result);
 
         return this.success(result.toMap());
@@ -316,4 +333,12 @@ public class MissionService extends BaseService {
     public static int getMinCoin(int level, int times) {
     	return 20000 + level * 100 + times * 1500;
 	}
+
+    public int vipWipeOutNum(int vip) {
+
+    	if (vip < 1) {
+    		vip = 1;
+    	}
+    	return 20 + (vip - 1) * 10;
+    }
 }

@@ -13,6 +13,9 @@ import javax.persistence.Table;
 @Table(name = "gift_template")
 public class GiftTemplate implements Serializable {
 
+	public static int TYPE_0 = 0; // 可重复
+	public static int TYPE_1 = 1;
+
 	/**
 	 * 
 	 */
@@ -25,6 +28,9 @@ public class GiftTemplate implements Serializable {
 
     @Column(name = "gift_name" , nullable = false , columnDefinition = "varchar(255) default ''")
     private String name;
+
+    @Column(name = "gift_type" , nullable = false , columnDefinition = "smallint default 0")
+    private int type;
 
     @Column(name = "gift_reward" , nullable = false , columnDefinition = "text")
     private String reward;
@@ -51,5 +57,13 @@ public class GiftTemplate implements Serializable {
 
 	public void setReward(String reward) {
 		this.reward = reward;
+	}
+
+	public int getType() {
+		return type;
+	}
+
+	public void setType(int type) {
+		this.type = type;
 	}
 }

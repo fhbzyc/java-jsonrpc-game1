@@ -5667,15 +5667,15 @@ public class RoleService extends BaseService {
     /**
      * 
      * @param serverId
-     * @param youmengToken
+     * @param s
      * @return
      * @throws Exception 
      */
-    public Object getPlayer(int serverId, String youmengToken) throws Exception {
+    public Object getPlayer(int serverId, String s) throws Exception {
 
     	int userId = this.userId();
     	if (userId == 0) {
-    		return this.returnError(2, "连接无效");
+    		return this.returnError(-1,  "Session disconnect");
     	}
 
     	Token token = this.tokenDao.findOne(this.tokenDao.getTokenByUserId(userId));
@@ -5717,11 +5717,11 @@ public class RoleService extends BaseService {
 
         	roleId = role.getRoleId();
 
-            List<Hero> queryList = this.heroDao.findAll(roleId);
+            List<Hero> heroList = this.heroDao.findAll(roleId);
 
             // 新手引导未完成  数据重置
             if (role.getProgress() < 49) {
-                if (queryList.size()  > 1) {
+                if (heroList.size()  > 1) {
 
                 	DateNumModel dateNumModel = this.dateNumDao.findOne(roleId);
                 	dateNumModel.setBarCoinNum(0);
@@ -5732,22 +5732,22 @@ public class RoleService extends BaseService {
 
                 	// this.roleDao.update(role, result);
 
-                    List<Hero> newGeneralList = new ArrayList<Hero>();
+                    List<Hero> heros = new ArrayList<Hero>();
 
-                    for (Hero hero : queryList) {
+                    for (Hero hero : heroList) {
                         if (hero.getHeroId() != 10002) {
                         	this.heroDao.delete(hero);
                         } else {
-                            newGeneralList.add(hero);
+                        	heros.add(hero);
                         }
                     }
 
-                    queryList = newGeneralList;
+                    heroList = heros;
                 }
             }
 
-            for (Hero general : queryList) {
-                result.addHero(general);
+            for (Hero hero : heroList) {
+                result.addHero(hero);
             }
         }
 
@@ -5761,7 +5761,7 @@ public class RoleService extends BaseService {
 
         this.tokenDao.setToken(token);
 
-        result.setPhysicalStrength(role.ap(), role.apCoolTime());
+        result.setAp(role.ap(), role.apCoolTime());
         result.setMoney(role.getCoin(), role.getGold());
         result.setTeam(role.getExp());
 
@@ -5851,6 +5851,8 @@ public class RoleService extends BaseService {
 
         result.setValue("name", role.getName());
         result.setValue("role_id", role.getRoleId());
+        result.setValue("avatar", role.getAvatar());
+        result.setValue("gender", role.getAvatar());
 
         OnlineService onlineService = (OnlineService) SpringContextUtils.getBean(OnlineService.class);
         int online_num = onlineService.getNum(role);
@@ -6018,5 +6020,14 @@ public class RoleService extends BaseService {
 
     	// this.roleDao.update(role, new Result());
     	return this.success(true);
+    }
+
+    public Object data() throws Exception {
+
+    	Role role = this.roleDao.findOne(this.roleId());
+
+    	Result result = new Result();
+    	result.setAp(role.ap(), role.apCoolTime());
+    	return this.success(result.toMap());
     }
 }

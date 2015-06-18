@@ -14,6 +14,7 @@ import org.springframework.stereotype.Repository;
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.zhanglong.sg.entity.BaseActivity;
 import com.zhanglong.sg.entity2.BaseStory;
 import com.zhanglong.sg.model.DateNumModel;
 
@@ -25,6 +26,9 @@ public class BaseStoryDao extends BaseDao2 {
 	
 	@Resource
 	private DateNumDao dateNumDao;
+	
+	@Resource
+	private BaseActivityDao baseActivityDao;
 
 	private static List<BaseStory> copys;
 	
@@ -106,7 +110,7 @@ public class BaseStoryDao extends BaseDao2 {
      * @return
      * @throws Exception
      */
-    public ArrayList<ArrayList<int[]>> randomItems(int roleId, BaseStory baseStory, int times) throws Exception {
+    public ArrayList<ArrayList<int[]>> randomItems(int roleId, BaseStory baseStory, int times, int serverId) throws Exception {
 
         int[][] ite = itemIds(baseStory);
         int[] must = ite[0];
@@ -214,7 +218,7 @@ public class BaseStoryDao extends BaseDao2 {
                    is[1] *= 2;
 				}
             }
-        } else if (isSoulDoubleTime()) {
+        } else if (this.isSoulDoubleTime(serverId)) {
             for (ArrayList<int[]> items : result) {
 
             	for (int[] is : items) {
@@ -352,24 +356,22 @@ public class BaseStoryDao extends BaseDao2 {
     }
 
     /**
-     * 双倍灵魂石活动
+     * 双倍魂石
+     * @param serverId
      * @return
+     * @throws CloneNotSupportedException
      */
-    public boolean isSoulDoubleTime() {
+    public boolean isSoulDoubleTime(int serverId) throws CloneNotSupportedException {
 
-//        String baseStoryType = "activity_soul_double";
-//        ArrayList<DailyTask> activityList = BaseActivityInstance.getActivityList();
-//        for (DailyTask baseActivity : activityList) {
-//
-//            if (baseActivity.getType().equals(baseStoryType)) {
-//                
-//                long time = System.currentTimeMillis();
-//                if (time >= baseActivity.getStartTime() && time < baseActivity.getEndTime()) {
-//
-//                    return true;
-//                }
-//            }
-//        }
-        return false;
+    	List<BaseActivity> list = this.baseActivityDao.findAll(serverId);
+
+    	boolean find = false;
+    	for (BaseActivity baseActivity : list) {
+			if (baseActivity.getType().equals("soul_double")) {
+				find = true;
+			}
+		}
+
+        return find;
     }
 }

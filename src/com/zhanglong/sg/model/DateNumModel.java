@@ -80,6 +80,9 @@ public class DateNumModel implements Serializable {
 	@JsonSerialize(include = Inclusion.NON_NULL)
 	public int dropItemNum = 0;
 
+	@JsonSerialize(include = Inclusion.NON_NULL)
+	public int soulShopNum = 0;
+
 	public int getDate() {
 		return date;
 	}
@@ -294,6 +297,14 @@ public class DateNumModel implements Serializable {
 
 	public void setDropItemNum(int dropItemNum) {
 		this.dropItemNum = dropItemNum;
+	}
+
+	public int getSoulShopNum() {
+		return soulShopNum;
+	}
+
+	public void setSoulShopNum(int soulShopNum) {
+		this.soulShopNum = soulShopNum;
 	}
 
 	public int buyApNeedGold() {

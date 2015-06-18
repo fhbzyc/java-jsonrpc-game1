@@ -291,7 +291,6 @@ public class Hero implements Serializable {
 		this.level = level;
 	}
 
-    @JsonIgnore
     public int getLevel() {
     	return this.level;
     }

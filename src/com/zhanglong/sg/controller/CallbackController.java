@@ -65,7 +65,7 @@ public class CallbackController {
 
 		order.setStatus(Order.STATUS_SUCCESS);
 
-		role.countGold += order.getGold() + order.getAddGold();
+		role.countGold += order.getGold();
 
 		if (role.countGold >= Role.VIP_GOLD[Role.VIP_GOLD.length - 1]) {
 			role.vip = Role.VIP_GOLD.length;

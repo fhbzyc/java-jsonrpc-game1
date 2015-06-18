@@ -7,7 +7,7 @@ import javax.annotation.Resource;
 
 import org.springframework.stereotype.Service;
 
-import com.zhanglong.sg.controller.VController;
+import com.zhanglong.sg.dao.WhiteListDao;
 import com.zhanglong.sg.dao.ServerDao;
 import com.zhanglong.sg.entity.Server;
 import com.zhanglong.sg.model.Token;
@@ -16,11 +16,14 @@ import com.zhanglong.sg.model.Token;
 public class ServerService extends BaseService {
 
 	@Resource
+	private WhiteListDao imeiDao;
+
+	@Resource
 	private ServerDao serverDao;
 
 	public Object list(String imei) throws Throwable {
 
-		boolean find = VController.inWriteList(imei);
+		boolean find = this.imeiDao.find(imei);
 
 		List<Server> list = this.serverDao.findAll();
 		List<Server> servers = new ArrayList<Server>();

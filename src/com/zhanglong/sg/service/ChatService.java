@@ -2,6 +2,7 @@ package com.zhanglong.sg.service;
 
 import org.springframework.stereotype.Service;
 
+import websocket.handler.Broadcast;
 import websocket.handler.EchoHandler;
 
 import com.zhanglong.sg.entity.Role;
@@ -34,7 +35,8 @@ public class ChatService extends BaseService {
 		result.setValue("chat", chat);
 		msg = Response.marshalSuccess(0, result.toMap());
 
-		EchoHandler.broadcast(this.serverId(), msg);
+		Broadcast broadcast = new Broadcast();
+		broadcast.send(this.serverId(), msg);
 	}
 
 	public Object pri(int playerId, String msg) throws Exception {

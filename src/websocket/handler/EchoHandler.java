@@ -29,11 +29,18 @@ public class EchoHandler extends TextWebSocketHandler {
     private static Map<String, Handler> sessionMap = new ConcurrentHashMap<>();
 
     public static void broadcast(int serverId, String msg) throws JsonParseException, JsonMappingException, IOException {
+
         for (Iterator<Map.Entry<String, Handler>> iter = EchoHandler.sessionMap.entrySet().iterator(); iter.hasNext();) {
             Map.Entry<String, Handler> entry = iter.next();
             Handler handler = entry.getValue();
             if (handler.serverId == serverId) {
-            	handler.getSession().sendMessage(new TextMessage(msg));
+
+        	   	try {
+        	   		handler.getSession().sendMessage(new TextMessage(msg));
+
+        	   	} catch (Exception e) {
+
+        	   	}
             }
 		}
     }
@@ -82,7 +89,7 @@ public class EchoHandler extends TextWebSocketHandler {
 	   	try {
 	   		// 解析请求
 			request = this.unmarshal(content);
-			
+
 	   	} catch (Exception e) {
 			try {
 				session.sendMessage(new TextMessage(Response.marshalError(0, -32600, "Invalid Request")));
@@ -178,14 +185,17 @@ public class EchoHandler extends TextWebSocketHandler {
     	return mapper.readValue(content, Request.class);
     }
 
-    public static void close(WebSocketSession session, int roleId) throws IOException {
+    public static void close(WebSocketSession session, int roleId) {
         for (Iterator<Map.Entry<String, Handler>> iter = EchoHandler.sessionMap.entrySet().iterator(); iter.hasNext();) {
             Map.Entry<String, Handler> entry = iter.next();
             Handler handler = entry.getValue();
-            if (!session.getId().equals(handler.getSession().getId()) && handler.roleId == roleId) {
-            	String str = Response.marshalError(0, -1, "Session disconnect");
-            	handler.getSession().sendMessage(new TextMessage(str));
-            	handler.getSession().close();
+            if (!session.getId().equals(handler.getSession().getId()) && handler.roleId == roleId && handler.getSession().isOpen()) {
+				try {
+					String str = Response.marshalError(0, -1, "Session disconnect");
+	            	handler.getSession().sendMessage(new TextMessage(str));
+	            	handler.getSession().close();
+				} catch (Exception e) {
+				}
             }
         }
     }

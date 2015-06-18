@@ -5,7 +5,6 @@ import java.util.Random;
 import javax.annotation.Resource;
 
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import com.zhanglong.sg.dao.TokenDao;
 import com.zhanglong.sg.dao.UserDao;
@@ -22,7 +21,6 @@ public class LoginService extends BaseService {
 	@Resource
 	private UserDao userDao;
 
-	@Transactional(rollbackFor = Throwable.class)
 	public Object register(String username, String password, String imei) throws Exception {
 
         username.replace(" ", "");
@@ -47,7 +45,7 @@ public class LoginService extends BaseService {
 		user.setUserName(username);
 		user.setPassword(MD5.digest(password));
 		user.setImei(imei);
-		user.setMac("");
+		//user.setMac("");
 
 		this.userDao.create(user);
 
@@ -64,6 +62,8 @@ public class LoginService extends BaseService {
 
 			return this.returnError(this.lineNum(), "密码错误");
 		}
+
+		this.userDao.update(user);
 
 		this.getHandler().userId = user.getId();
 
@@ -86,6 +86,8 @@ public class LoginService extends BaseService {
 
 		User user = this.userDao.getByImei(imei);
 		if (user != null) {
+
+			this.userDao.update(user);
 
 			User user2 = user.clone();
 			user2.token = this.tokenDao.create(user2.getId()).getTokenS();
@@ -112,7 +114,7 @@ public class LoginService extends BaseService {
 		user.setUserName(username);
 		user.setPassword(MD5.digest(password));
 		user.setImei(imei);
-		user.setMac("");
+		//user.setMac("");
 		user.setRegisterType(User.QUICK_REG);
 
 		this.userDao.create(user);
@@ -144,7 +146,7 @@ public class LoginService extends BaseService {
 			user.setUserName(username);
 			user.setPassword(MD5.digest(""));
 			user.setImei(imei);
-			user.setMac("");
+			//user.setMac("");
 			user.setPlatformId(platform);
 
 			this.userDao.create(user);
@@ -174,7 +176,7 @@ public class LoginService extends BaseService {
 			user.setUserName(username);
 			user.setPassword(MD5.digest(""));
 			user.setImei(imei);
-			user.setMac("");
+			//user.setMac("");
 			user.setPlatformId(platform);
 
 			this.userDao.create(user);
@@ -204,7 +206,67 @@ public class LoginService extends BaseService {
 			user.setUserName(username);
 			user.setPassword(MD5.digest(""));
 			user.setImei(imei);
-			user.setMac("");
+			//user.setMac("");
+			user.setPlatformId(platform);
+
+			this.userDao.create(user);
+		}
+
+		return this.signin(username, "");
+	}
+
+	/**
+	 * 
+	 * @param imei
+	 * @param uniqueId
+	 * @param passId
+	 * @param session
+	 * @return
+	 * @throws Exception
+	 */
+	public Object mm(String imei, String uniqueId, String passId, String token) throws Exception {
+
+		int platform = 5;
+
+		String username = String.valueOf(passId);
+
+		User user = this.userDao.getByUsername(platform, username);
+
+		if (user == null) {
+			user = new User();
+			user.setUserName(username);
+			user.setPassword(MD5.digest(""));
+			user.setImei(imei);
+			//user.setMac("");
+			user.setPlatformId(platform);
+
+			this.userDao.create(user);
+		}
+
+		return this.signin(username, "");
+	}
+
+	/**
+	 * 小皮
+	 * @param imei
+	 * @param token
+	 * @return
+	 * @throws Exception
+	 */
+	public Object xp(String imei, String token) throws Exception {
+
+		int platform = 6;
+
+		String username = token;
+
+		User user = this.userDao.getByUsername(platform, username);
+
+		if (user == null) {
+			user = new User();
+			user.setUserName(username);
+			user.setPassword(MD5.digest(""));
+			user.setImei(imei);
+			//user.setMac("");
 			user.setPlatformId(platform);
 
 			this.userDao.create(user);

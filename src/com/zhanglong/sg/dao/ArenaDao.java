@@ -14,7 +14,7 @@ import org.hibernate.criterion.Restrictions;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Repository;
 
-import websocket.handler.EchoHandler;
+import websocket.handler.Broadcast;
 
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -100,7 +100,8 @@ public class ArenaDao extends BaseDao {
     		Result r = new Result();
     		r.setValue("msgs", msgs);
     		String msg = Response.marshalSuccess(0, r.toMap());
-    		EchoHandler.broadcast(serverId, msg);
+    		Broadcast broadcast = new Broadcast();
+    		broadcast.send(serverId, msg);
 		}
 	}
 

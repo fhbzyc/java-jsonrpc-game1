@@ -14,12 +14,21 @@ public class BaseSkillDao extends BaseDao2 {
 
 	public List<BaseSkill> findAll() {
 
-		if (skills == null) {
+		if (BaseSkillDao.skills == null) {
 			Session session = this.getBaseSessionFactory().getCurrentSession();
 			@SuppressWarnings("unchecked")
 			List<BaseSkill> list = session.createCriteria(BaseSkill.class).list();
-			skills = list;
+			BaseSkillDao.skills = list;
 		}
-		return skills;
+		return BaseSkillDao.skills;
     }
+
+	public BaseSkill findOne(int skillId) throws Exception {
+		for (BaseSkill baseSkill : BaseSkillDao.skills) {
+			if (baseSkill.getId() == skillId) {
+				return baseSkill;
+			}
+		}
+		throw new Exception("不存在的技能[:" + skillId + "]");
+	}
 }

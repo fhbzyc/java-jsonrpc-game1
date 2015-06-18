@@ -7,12 +7,15 @@ import java.util.Random;
 import javax.annotation.Resource;
 
 import org.hibernate.Session;
+import org.hibernate.criterion.Order;
 import org.springframework.stereotype.Repository;
 
 import com.zhanglong.sg.entity2.BaseHeroShop;
 
 @Repository
 public class BaseHeroShopDao extends BaseDao2 {
+
+	private static long myTime = 0l;
 
 	private static List<BaseHeroShop> list;
 
@@ -22,9 +25,13 @@ public class BaseHeroShopDao extends BaseDao2 {
 	@SuppressWarnings("unchecked")
 	public List<BaseHeroShop> findAll() {
 
-		if (BaseHeroShopDao.list == null) {
+		long time = System.currentTimeMillis();
+		if (BaseHeroShopDao.list == null ||  time - BaseHeroShopDao.myTime > 5l * 60l * 1000l) {
+
+			BaseHeroShopDao.myTime = time;
+
 			Session session = this.getBaseSessionFactory().getCurrentSession();
-			BaseHeroShopDao.list = session.createCriteria(BaseHeroShop.class).list();
+			BaseHeroShopDao.list = session.createCriteria(BaseHeroShop.class).addOrder(Order.asc("id")).list();
 		}
 
 		return BaseHeroShopDao.list;

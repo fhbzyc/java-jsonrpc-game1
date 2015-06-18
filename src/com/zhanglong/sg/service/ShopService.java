@@ -64,6 +64,7 @@ public class ShopService extends BaseService {
         result.setValue("refresh_money", this.gold(itemShopModel.getRefreshNum()));
         result.setValue("discount", itemShopModel.getDiscount());
         result.setValue("money3", role.getMoney3());
+        result.setValue("arena_money", role.getMoney3());
         return this.success(result.toMap());
     }
 
@@ -152,9 +153,10 @@ public class ShopService extends BaseService {
         result.setValue("refresh_money", this.gold(itemShopModel.getRefreshNum()));
         result.setValue("discount", itemShopModel.getDiscount());
         result.setValue("money3", role.getMoney3());
+        result.setValue("arena_money", role.getMoney3());
+
         return this.success(result.toMap());
     }
-
 
     /**
      * 
@@ -189,7 +191,6 @@ public class ShopService extends BaseService {
         return this.success(result.toMap());
     }
 
-    
     /**
      * 竞技场商城购买道具
      * @param index
@@ -222,14 +223,14 @@ public class ShopService extends BaseService {
 
         if (unit == BaseItemShop.MONEY_TYPE_COIN) {
             if(role.getCoin() < shopItem.getPrice()) {
-            	return this.returnError(this.lineNum(), "金币不足");
+            	return this.returnError(this.lineNum(), "铜币不足");
             } else {
             	this.roleDao.subCoin(role, shopItem.getPrice(), "普通商店购买道具<" + this.baseItemDao.findOne(shopItem.getItemId()).getName() + ">", FinanceLog.STATUS_SHOP_BUY_COIN, result);
             //	this.roleDao.update(role, result);
             }
 
         } else if (unit == BaseItemShop.MONEY_TYPE_GOLD) {
-            if(role.getCoin() < shopItem.getPrice()) {
+            if(role.getGold() < shopItem.getPrice()) {
             	return this.returnError(2, ErrorResult.NotEnoughGold);
             } else {
 
@@ -299,6 +300,7 @@ public class ShopService extends BaseService {
         shopItemList = itemShopModel.getItemList();
         result.setValue("items", new BaseItemShop[]{shopItemList.get(index - 1)});
         result.setValue("money3", role.getMoney3());
+        result.setValue("arena_money", role.getMoney3());
         return this.success(result.toMap());
     }
 
