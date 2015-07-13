@@ -3,10 +3,7 @@ package com.zhanglong.sg.service;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
-import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 
 import javax.annotation.Resource;
 
@@ -257,15 +254,24 @@ public class BossService extends BaseService {
 
 		int serverId = this.serverId();
 
-		int date = Integer.valueOf(Utils.date());
-		List<BossDamage> list = this.bossDamageDao.findAll(date, serverId);
+		int day = Integer.valueOf(Utils.date());
+		
+		Date date = new Date();
+		int hour = date.getHours();
+		if (hour < 20 || (hour == 20 && date.getMinutes() < 30)) {
+			SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyyMMdd");
+			String str = simpleDateFormat.format(new Date(System.currentTimeMillis() - 86400l * 1000l));
+			day = Integer.valueOf(str);
+		}
+
+		List<BossDamage> list = this.bossDamageDao.findAll(day, serverId);
 
 		Result result = new Result();
 		result.setValue("boss_rank", list);
 
 		int roleId = this.roleId();
 
-		BossDamage bossDamage = this.bossDamageDao.findOne(roleId, date);
+		BossDamage bossDamage = this.bossDamageDao.findOne(roleId, day);
 		if (bossDamage == null) {
 			result.setValue("myrank", 0);
 		} else {
@@ -335,26 +341,6 @@ public class BossService extends BaseService {
 
 		int date = Integer.valueOf(Utils.date());
 
-		HashMap<Integer, Integer> map = this.baseBossDao.getDamagesMap();
-
-		for (Iterator<Map.Entry<Integer, Integer>> iter = map.entrySet().iterator(); iter.hasNext();) {
-			Map.Entry<Integer, Integer> entry = iter.next();
-			BossDamage bossDamage = new BossDamage();
-
-			int roleId = entry.getKey();
-
-			Role role = this.roleDao.findOne(roleId);
-
-			bossDamage.setDate(date);
-			bossDamage.setRoleId(roleId);
-			bossDamage.setName(role.getName());
-			bossDamage.setAvatar(role.getAvatar());
-			bossDamage.setServerId(role.getServerId());
-			bossDamage.setDamage(entry.getValue());
-
-			this.bossDamageDao.save(bossDamage);
-		}
-		
 		List<Server> servers = this.serverDao.findAll();
 		for (Server server : servers) {
 			int serverId = server.getId();

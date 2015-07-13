@@ -165,6 +165,16 @@
        <property name="cronExpression" value="0 */5 * * * ?" />
     </bean>
 
+    <bean id="job5" class="org.springframework.scheduling.quartz.JobDetailFactoryBean">
+        <property name="durability" value="true" />  
+        <property name="jobClass" value="com.zhanglong.sg.task.Boss"></property>
+    </bean>
+
+    <bean id="cronTrigger5" class="org.springframework.scheduling.quartz.CronTriggerFactoryBean">
+       <property name="jobDetail" ref="job5" />
+       <property name="cronExpression" value="0 30 20 * * ?" />
+    </bean>
+
     <bean class="org.springframework.scheduling.quartz.SchedulerFactoryBean">
         <property name="triggers">
             <list>
@@ -172,6 +182,7 @@
                 <ref bean="cronTrigger2" />
                 <ref bean="cronTrigger3" />
                 <ref bean="cronTrigger4" />
+                <ref bean="cronTrigger5" />
             </list>
         </property>
     </bean>

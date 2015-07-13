@@ -34,7 +34,7 @@ public class OnlineService extends BaseService {
 
 		return this.success(result.toMap());
 	}
-	
+
 	/**
 	 * 
 	 * @return
@@ -100,7 +100,7 @@ public class OnlineService extends BaseService {
 
 		return gold;
 	}
-	
+
 	public int getNum(Role role) throws JsonParseException, JsonMappingException, IOException {
 
 		long createTime = role.getCreateTime().getTime();

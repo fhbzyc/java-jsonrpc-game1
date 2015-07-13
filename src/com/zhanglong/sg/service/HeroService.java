@@ -818,6 +818,7 @@ public class HeroService extends BaseService {
     		}
         }
 
+        int threeStar = 0;
         int heroNum = 0;
         for(int i = start ; i < times ; i++) {
 
@@ -828,7 +829,16 @@ public class HeroService extends BaseService {
             	int[] temp = this.baseHeroShopDao.goldRandom();
             	if (temp[0] >= 10000) {
 
-            		if (this.baseHeroDao.findOne(temp[0]).getStar() >=2) {
+            		int star = this.baseHeroDao.findOne(temp[0]).getStar();
+            		if (star == 3) {
+            			threeStar++;
+            			if (threeStar > 1) {
+            				threeStar--;
+            				i--;
+            				continue;
+            			}
+            		}
+            		if (star >=2) {
                     	if (heroNum >= 2) {
                     		i--;
                     		continue;
