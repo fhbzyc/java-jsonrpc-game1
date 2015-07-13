@@ -58,6 +58,9 @@ public class Order implements Serializable {
     @Column(name = "order_time" , columnDefinition = "timestamp")
     private Timestamp time;
 
+    @Column(name = "order_desc" , nullable = false , columnDefinition = "varchar(255) default ''")
+    private String desc;
+
     public Order() {
     }
 
@@ -147,5 +150,13 @@ public class Order implements Serializable {
 
 	public void setTime(Timestamp time) {
 		this.time = time;
+	}
+
+	public String getDesc() {
+		return desc;
+	}
+
+	public void setDesc(String desc) {
+		this.desc = desc;
 	}
 }

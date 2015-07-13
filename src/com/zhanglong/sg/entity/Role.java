@@ -77,6 +77,9 @@ public class Role implements Serializable {
     @Column(name = "role_money4" , nullable = false , columnDefinition = "int default 0")
     public int money4;
 
+    @Column(name = "role_money5" , nullable = false , columnDefinition = "int default 0")
+    public int money5;
+
     @Column(name = "role_level" , nullable = false , columnDefinition = "int default 0")
     public int level;
 
@@ -109,6 +112,12 @@ public class Role implements Serializable {
 
     @Column(name = "role_kill_num" , nullable = false , columnDefinition = "int default 0")
     public int killNum;
+
+    @Column(name = "role_disable_msg" , nullable = false , columnDefinition = "boolean default false")
+    public boolean disableMsg;
+
+    @Column(name = "role_crusade_num" , nullable = false , columnDefinition = "int default 0")
+    public int crusadeNum;
 
 	public Role() {
     }
@@ -323,6 +332,32 @@ public class Role implements Serializable {
 		this.killNum = killNum;
 	}
 
+	public boolean isDisableMsg() {
+		return disableMsg;
+	}
+
+	public void setDisableMsg(boolean disableMsg) {
+		this.disableMsg = disableMsg;
+	}
+
+	public int getCrusadeNum() {
+		return this.crusadeNum;
+	}
+
+	public void setCrusadeNum(int crusadeNum) {
+		this.crusadeNum = crusadeNum;
+	}
+
+	public int getMoney5() {
+		return money5;
+	}
+
+	public void setMoney5(int money5) {
+		this.money5 = money5;
+	}
+
+	/*---------------------------------------------------- other method ----------------------------------------------------*/
+
 	/**
 	 * 经验对应等级
 	 * @return
@@ -363,18 +398,8 @@ public class Role implements Serializable {
 
         int time2 = unixTime - num * ActionCoolTime - this.apTime;
 
-   //     long time2 = num * ActionCoolTime + this.apTime;
-
         this.apTime = unixTime - (newAp + 1) * ActionCoolTime + time2;
-
         this.ap = actionExtra;
-
-//        long coolTime = 0;
-//        if (physicalStrength < this.maxPhysicalStrength()) {
-//        	coolTime = ActionCoolTime - time2;
-//        }
-//
-//        return coolTime;
     }
 
 	public static int toLevel(int exp) {
@@ -384,47 +409,6 @@ public class Role implements Serializable {
 			}
 		}
     	return EXP.length;
-	}
-
-    /**
-     * 点金手最大次数
-     * @return
-     */
-    public int maxGetCoinTimes() {
-		int vip = this.vip;
-    	if (vip <= 0) {
-			return 2;
-		} else if (vip == 1) {
-			return 5;
-		} else if (vip == 2) {
-			return 20;
-		} else if (vip == 3) {
-			return 30;
-		} else if (vip == 4) {
-			return 40;
-		} else if (vip == 5) {
-			return 50;
-		} else if (vip == 6) {
-			return 60;
-		} else if (vip == 7) {
-			return 70;
-		} else if (vip == 8) {
-			return 80;
-		} else if (vip == 9) {
-			return 90;
-		} else if (vip == 10) {
-			return 100;
-		} else if (vip == 11) {
-			return 120;
-		} else if (vip == 12) {
-			return 150;
-		} else if (vip == 13) {
-			return 200;
-		} else if (vip == 14) {
-			return 250;
-		} else {
-			return 300;
-		}
 	}
 
     public int[] vip() {

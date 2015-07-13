@@ -11,6 +11,7 @@ import javax.annotation.Resource;
 import org.springframework.stereotype.Service;
 
 import com.zhanglong.sg.result.*;
+import com.zhanglong.sg.dao.AchievementDao;
 import com.zhanglong.sg.dao.BaseStoryDao;
 import com.zhanglong.sg.dao.BattleLogDao;
 import com.zhanglong.sg.dao.CopyStarDao;
@@ -23,6 +24,7 @@ import com.zhanglong.sg.entity.Hero;
 import com.zhanglong.sg.entity.Item;
 import com.zhanglong.sg.entity.Role;
 import com.zhanglong.sg.entity.Story;
+import com.zhanglong.sg.entity2.BaseAchievement;
 import com.zhanglong.sg.entity2.BaseStory;
 import com.zhanglong.sg.model.CopyStarModel;
 import com.zhanglong.sg.model.DateNumModel;
@@ -32,6 +34,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 @Service
 public class StoryService extends BaseService {
+
+	@Resource
+	private AchievementDao achievementDao;
 
 	@Resource
 	private StoryDao storyDao;
@@ -448,6 +453,7 @@ public class StoryService extends BaseService {
 
         Story story = this.storyDao.findOne(roleId, storyId, storyType);
 
+        boolean update = false;
         if (story == null) {
             story = new Story();
             story.setARoleId(roleId);
@@ -457,12 +463,29 @@ public class StoryService extends BaseService {
             story.setBuyNum(0);
             story.setDate(Integer.valueOf(Utils.date()));
             story.setNum(0);
+
+            update = true;
+            
         } else if (story.getStar() < star) {
             story.setStar(star);
+            update = true;
         }
 
         story.init();
         this.storyDao.addNum(role, story, 1, result);
+
+        if (update) {
+
+        	List<Story> storys = this.storyDao.findAll(roleId);
+        	int n = 0;
+        	 for (Story story2 : storys) {
+				if (story2.getType() == BaseStory.HERO_COPY_TYPE) {
+					n += story2.getStar();
+				}
+			}
+    		// 成就
+    		this.achievementDao.setNum(roleId, BaseAchievement.TYPE_STAR, 0, n, result);
+        }
 
         BaseStory next = this.baseStoryDao.findOne(storyId + 1, storyType);
         // 是否开启下一关卡

@@ -22,6 +22,9 @@ public class BaseHeroShopDao extends BaseDao2 {
 	@Resource
 	private BaseHeroDao baseHeroDao;
 
+	@Resource
+	private BaseItemDao baseItemDao;
+
 	@SuppressWarnings("unchecked")
 	public List<BaseHeroShop> findAll() {
 
@@ -85,7 +88,7 @@ public class BaseHeroShopDao extends BaseDao2 {
 			}
 		}
 
-        return randomFromList(randomList);
+        return this.randomFromList(randomList);
     }
 
     public int[] goldRandom() {
@@ -122,7 +125,7 @@ public class BaseHeroShopDao extends BaseDao2 {
 			}
 		}
 
-        return randomFromList(randomList);
+        return this.randomFromList(randomList);
     }
 
     private int[] randomFromList(List<int[]> randomList) {
@@ -163,7 +166,7 @@ public class BaseHeroShopDao extends BaseDao2 {
 			}
 		}
 
-    	return randomFromList(goldRandom6);
+    	return this.randomFromList(goldRandom6);
     }
 
     public int[] randomGeneral(int star) throws Exception {
@@ -181,6 +184,24 @@ public class BaseHeroShopDao extends BaseDao2 {
 			}
 		}
 
-    	return randomFromList(goldRandom6);
+    	return this.randomFromList(goldRandom6);
+    }
+
+    public int[] randomBlueItem() throws Exception {
+
+    	List<int[]> coinRandom3 = new ArrayList<int[]>();
+
+		List<BaseHeroShop> list = this.findAll("coin");
+
+		int c3 = 0;
+
+		for (BaseHeroShop item : list) {
+			if (item.getItemId() >= 10000 || this.baseItemDao.findOne(item.getItemId()).getColor() >= 2) {
+				c3 += item.getWeight();
+				coinRandom3.add(new int[]{c3 , Integer.valueOf(item.getItemId()) , item.getMinNum() , item.getMaxNum()});
+			}
+		}
+
+    	return this.randomFromList(coinRandom3);
     }
 }

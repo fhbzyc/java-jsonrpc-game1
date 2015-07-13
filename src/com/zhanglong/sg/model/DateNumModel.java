@@ -83,6 +83,15 @@ public class DateNumModel implements Serializable {
 	@JsonSerialize(include = Inclusion.NON_NULL)
 	public int soulShopNum = 0;
 
+	@JsonSerialize(include = Inclusion.NON_NULL)
+	public int chatNum = 0;
+
+	@JsonSerialize(include = Inclusion.NON_NULL)
+	public int boss = 0;
+
+	@JsonSerialize(include = Inclusion.NON_NULL)
+	public int buyBoss = 0;
+
 	public int getDate() {
 		return date;
 	}
@@ -307,6 +316,30 @@ public class DateNumModel implements Serializable {
 		this.soulShopNum = soulShopNum;
 	}
 
+	public int getChatNum() {
+		return chatNum;
+	}
+
+	public void setChatNum(int chatNum) {
+		this.chatNum = chatNum;
+	}
+
+	public int getBoss() {
+		return boss;
+	}
+
+	public void setBoss(int boss) {
+		this.boss = boss;
+	}
+
+	public int getBuyBoss() {
+		return buyBoss;
+	}
+
+	public void setBuyBoss(int buyBoss) {
+		this.buyBoss = buyBoss;
+	}
+
 	public int buyApNeedGold() {
     	int n = this.buyApNum / 2;
     	int gold = (int)(50 * Math.pow(2, n));
@@ -315,4 +348,12 @@ public class DateNumModel implements Serializable {
 		}
 		return gold;
     }
+
+	public int chatNum() {
+		int n = 10 - this.chatNum;
+		if (n < 0) {
+			n = 0;
+		}
+		return n;
+	}
 }

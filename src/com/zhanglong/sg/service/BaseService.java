@@ -1,11 +1,9 @@
 package com.zhanglong.sg.service;
 
 import java.io.IOException;
-import java.lang.reflect.Method;
 
 import javax.annotation.Resource;
 
-import org.springframework.util.ReflectionUtils;
 import org.springframework.web.socket.TextMessage;
 import org.springframework.stereotype.Service;
 
@@ -82,12 +80,12 @@ public class BaseService {
 		return Thread.currentThread().getStackTrace()[2].getLineNumber();
 	}
 
-    protected Object returnError(int lineNum, String msg) throws JsonParseException, JsonMappingException, IOException  {
+    protected Object returnError(int lineNum, String msg) throws JsonParseException, JsonMappingException, IOException {
 
     	String str = Response.marshalError(this.getHandler().requestId, lineNum, msg);
     	try {
 			this.getHandler().session.sendMessage(new TextMessage(str));
-		} catch (IOException e) {
+		} catch (Exception e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
@@ -95,12 +93,7 @@ public class BaseService {
     	return null;
 	}
 
-    protected Object success(Object result) throws JsonParseException, JsonMappingException, IOException  {
-
-    	if (result.getClass() == Result.class) {
-    		Method mh = ReflectionUtils.findMethod(result.getClass(), "toMap", new Class[]{});
-    		result = ReflectionUtils.invokeMethod(mh, result, new Object[]{});
-    	}
+    protected Object success(Object result) throws JsonParseException, JsonMappingException, IOException {
 
     	Handler handler = this.getHandler();
     	
@@ -108,11 +101,27 @@ public class BaseService {
     	String str = Response.marshalSuccess(request, result);
     	try {
 			this.getHandler().session.sendMessage(new TextMessage(str));
-		} catch (IOException e) {
+		} catch (Exception e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 
     	return null;
 	}
+
+    protected Object success(Result result) throws JsonParseException, JsonMappingException, IOException {
+
+    	Handler handler = this.getHandler();
+
+    	int request = handler.requestId;
+    	String str = Response.marshalSuccess(request, result.toMap());
+    	try {
+			this.getHandler().session.sendMessage(new TextMessage(str));
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+
+    	return null;
+    }
 }

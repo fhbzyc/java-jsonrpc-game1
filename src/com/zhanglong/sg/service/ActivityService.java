@@ -16,6 +16,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.zhanglong.sg.dao.ActivityDao;
 import com.zhanglong.sg.dao.BaseActivityDao;
+import com.zhanglong.sg.dao.FinanceLogDao;
 import com.zhanglong.sg.dao.MailDao;
 import com.zhanglong.sg.dao.OrderDao;
 import com.zhanglong.sg.dao.ServerDao;
@@ -26,6 +27,7 @@ import com.zhanglong.sg.entity.Mail;
 import com.zhanglong.sg.entity.Role;
 import com.zhanglong.sg.entity.Server;
 import com.zhanglong.sg.model.Reward;
+import com.zhanglong.sg.result.ErrorResult;
 import com.zhanglong.sg.result.Result;
 import com.zhanglong.sg.utils.Utils;
 
@@ -47,6 +49,9 @@ public class ActivityService extends BaseService {
     @Resource
     private MailDao mailDao;
 
+    @Resource
+    private FinanceLogDao financeLogDao;
+
 	public Object list() throws Exception {
 
 		int roleId = this.roleId();
@@ -60,6 +65,9 @@ public class ActivityService extends BaseService {
         Role role = this.roleDao.findOne(roleId);
 
         List<BaseActivity> rep = new ArrayList<BaseActivity>();
+
+        int touzi_num = this.financeLogDao.count(roleId, FinanceLog.STATUS_TOUZIJIHUA);
+        boolean touzi = touzi_num > 0 ? true : false;
 
 		for (BaseActivity baseAct : list) {
 
@@ -114,7 +122,7 @@ public class ActivityService extends BaseService {
 	            		reward.setHas(true);
 	            	}
 	            } else if (baseAct.getType().equals("money")) {
-	            	int s = this.orderDao.sum(roleId);
+	            	int s = this.orderDao.sum(roleId, baseAct.getBeginTime().getTime());
 	            	if (s >= entry.getKey()) {
 	            		reward.setHas(true);
 	            	}
@@ -124,6 +132,21 @@ public class ActivityService extends BaseService {
 	            		reward.setHas(true);
 	            	} else if (days > (int)entry.getKey()) {
 	            		iter.remove();
+	            		continue;
+	            	}
+	            } else if (baseAct.getType().equals("vip")) {
+	            	if (role.vip >= entry.getKey()) {
+	            		reward.setHas(true);
+	            	}
+	            } else if (baseAct.getType().equals("gold")) {
+	            	int sum = this.financeLogDao.sum(roleId, 2, baseAct.getBeginTime());
+	            	if (sum >= entry.getKey()) {
+	            		reward.setHas(true);
+	            	}
+	            } else if (baseAct.getType().equals("touzi")) {
+	            	// 投资计划
+	            	if (touzi && role.level() >= entry.getKey()) {
+	            		reward.setHas(true);
 	            	}
 	            }
 
@@ -139,7 +162,8 @@ public class ActivityService extends BaseService {
 //	        	continue;
 //	        }
 
-	        if (baseAct.getType().equals("pk_rank") || baseAct.getType().equals("lv_rank") || baseAct.getType().equals("soul_double")) {
+	        String type = baseAct.getType();
+	        if (type.equals("pk_rank") || type.equals("lv_rank") || type.equals("kill_rank") || type.equals("soul_double")) {
 	        	baseAct.setType("notice");
 	        	rewards.clear();
 	        } else if (rewards.size() == 0 && !baseAct.getType().equals("notice")) {
@@ -152,10 +176,11 @@ public class ActivityService extends BaseService {
 
 	  	Result result = new Result();
 	  	result.setValue("activity", rep);
+	  	result.setValue("touzi", touzi);
 	  	return this.success(result.toMap());
 	}
 
-	public Object getReward(int actId, int key) throws Throwable {
+	public Object getReward(int actId, int key) throws Exception {
 
 		int roleId = this.roleId();
 		int serverId = this.serverId();
@@ -240,5 +265,61 @@ public class ActivityService extends BaseService {
 				}
 			}
 		}
+	}
+
+	/**
+	 * 投资计划
+	 * @return
+	 * @throws Exception
+	 */
+	public Object touzi() throws Exception {
+
+		int roleId = this.roleId();
+		Role role = this.roleDao.findOne(roleId);
+
+		int gold = 1000;
+
+		if (role.vip < 2) {
+			return this.returnError(this.lineNum(), "VIP2以上才能购买投资计划");
+		}
+		if (role.gold < gold) {
+			return this.returnError(2, ErrorResult.NotEnoughGold);
+		}
+
+		Result result = new Result();
+		this.roleDao.subGold(role, 1000, "", FinanceLog.STATUS_TOUZIJIHUA, result);
+
+		int serverId = this.serverId();
+		List<BaseActivity> list = this.baseActivityDao.findAll(serverId);
+
+        ObjectMapper mapper = new ObjectMapper();
+
+        List<BaseActivity> rep = new ArrayList<BaseActivity>();
+
+		for (BaseActivity baseAct : list) {
+
+			if (!baseAct.getType().equals("touzi")) {
+				continue;
+			}
+
+			HashMap<Integer, Reward> rewards = mapper.readValue(baseAct.getReward(), new TypeReference<Map<Integer, Reward>>(){});
+	        for (Iterator<Map.Entry<Integer, Reward>> iter = rewards.entrySet().iterator(); iter.hasNext();) {
+	            Map.Entry<Integer, Reward> entry = iter.next();
+	            Reward reward = entry.getValue();
+	            reward.setHas(false);
+
+            	if (role.level() >= entry.getKey()) {
+            		reward.setHas(true);
+            	}
+	        }
+
+	        baseAct.setReward(mapper.writeValueAsString(rewards));
+	        rep.add(baseAct);
+		}
+
+	  	result.setValue("activity", rep);
+		result.setValue("touzi", true);
+	
+		return this.success(result);
 	}
 }

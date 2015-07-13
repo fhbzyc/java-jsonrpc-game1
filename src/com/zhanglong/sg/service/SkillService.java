@@ -31,35 +31,9 @@ public class SkillService extends BaseService {
 	public Object list() throws Exception {
 
 		int roleId = this.roleId();
-		List<Skill> skills = this.skillDao.findAll(roleId);
-
-		List<BaseSkill> baseSkills = this.baseSkillDao.findAll();
-		for (BaseSkill baseSkill : baseSkills) {
-			if (baseSkill.getCombo()) {
-				boolean find = false;
-				for (Skill skill : skills) {
-					if ((int)skill.getSkillId() == (int)baseSkill.getId()) {
-						find = true;
-						break;
-					}
-				}
-				if (!find) {
-					Skill skill = new Skill();
-					skill.setARoleId(roleId);
-					skill.setLevel(1);
-					skill.setSkillId(baseSkill.getId());
-					skills.add(skill);
-				}
-			}
-		}
-
-		List<Object> list = new ArrayList<Object>();
-		for (Skill skill : skills) {
-			list.add(skill.toArray());
-		}
 
 		Result result = new Result();
-		result.setValue("combo_skill", list);
+		result.setValue("combo_skill", this.skillDao.comboSkills(roleId));
 
 		return this.success(result.toMap());
 	}

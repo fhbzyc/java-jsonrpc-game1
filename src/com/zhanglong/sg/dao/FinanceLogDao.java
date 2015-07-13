@@ -29,4 +29,23 @@ public class FinanceLogDao extends BaseDao {
 
 		return ((BigInteger) query.list().iterator().next()).intValue();
 	}
+
+	public int sum(int roleId, int moneyType, Timestamp beginTime) {
+
+		String sql = "SELECT SUM(finance_old_money - finance_new_money) FROM role_finance_log WHERE finance_money_type = ? AND role_id = ? AND finance_time > ? AND finance_old_money > finance_new_money";
+		Session session = this.getSessionFactory().getCurrentSession();
+		SQLQuery query = session.createSQLQuery(sql);
+
+		query.setParameter(0, moneyType);
+		query.setParameter(1, roleId);
+		query.setParameter(2, beginTime);
+
+		Object sum = query.list().get(0);
+		if (sum != null) {
+			return ((BigInteger) sum).intValue();
+		}
+
+		return 0;
+	}
+
 }

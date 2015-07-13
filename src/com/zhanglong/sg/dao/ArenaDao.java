@@ -101,7 +101,7 @@ public class ArenaDao extends BaseDao {
     		r.setValue("msgs", msgs);
     		String msg = Response.marshalSuccess(0, r.toMap());
     		Broadcast broadcast = new Broadcast();
-    		broadcast.send(serverId, msg);
+    		broadcast.send(roleId, serverId, msg);
 		}
 	}
 

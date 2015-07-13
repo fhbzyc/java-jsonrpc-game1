@@ -47,12 +47,14 @@ public class OrderDao extends BaseDao {
 		return list;
 	}
 
-	public int sum(int roleId) {
+	public int sum(int roleId, long beginTime) {
 
 		int s = 0;
 		List<Order> list = this.findComplateList(roleId);
 		for (Order order : list) {
-			s += order.getMoney();
+			if (order.getTime().getTime() >= beginTime) {
+				s += order.getMoney();
+			}
 		}
 		return s;
 	}

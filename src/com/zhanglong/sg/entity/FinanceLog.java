@@ -66,77 +66,18 @@ public class FinanceLog implements Serializable {
     public static final int STATUS_SHOP_BUY_MONEY4 = 71;
 
     public static final int STATUS_COIN_EQUIP_EXP = 72;
+    public static final int STATUS_CHAT = 73;
+    public static final int STATUS_TOUZIJIHUA = 74; // 投资计划
+    public static final int STATUS_ACH_GET = 75; // 成就获得
 
-    public static final String statusName(int status) {
-        switch (status) {
-//            case STATUS_GEN_SKILL_LEVELUP: return "技能升级";
-//            case STATUS_GEN_STAR_UP: return "升星";
-//            case STATUS_RANDOM_GEN_ONE_TIMES_COIN: return "酒馆钱币单抽";
-//            case STATUS_RANDOM_GEN_ONE_TIMES_GOLD: return "酒馆元宝单抽";
-//            case STATUS_RANDOM_GEN_TEN_TIMES_COIN: return "酒馆钱币十连抽";
-//            case STATUS_RANDOM_GEN_TEN_TIMES_GOLD: return "酒馆元宝十连抽";
-//            case STATUS_RESET_SKILL: return "技能重置";
-//            case STATUS_RESET_POINT: return "属性点重置";
-//            case STATUS_RANDOM_SOUL: return "魂石商店";
-//            case STATUS_EQUIP_MAKE: return "装备合成";
-//            case STATUS_ITEM_SELL: return "出售道具";
-//
-//            case STATUS_SIGN_GET_COIN: return "签到获得";
-//            case STATUS_SIGN_GET_GOLD: return "签到获得";
-//            case STATUS_PAY_GET_GOLD: return "付费充值";
-//            case STATUS_SHOP_REFRESH: return "刷新商店";
-//            case STATUS_SHOP_BUY_COIN: return "商店购买道具";
-//            case STATUS_SHOP_BUY_GOLD: return "商店购买道具";
-//            case STATUS_STORY_GET_COIN: return "关卡掉落";
-//            case STATUS_WIPE_OUT_GET: return "扫荡掉落";
-//            case STATUS_BUY_PHYSICAL_STRENGTHP: return "购买体力";
-//            case STATUS_TASK_GET_COIN: return "任务领取";
-//            case STATUS_TASK_GET_GOLD: return "任务领取";
-//
-//            case STATUS_GOLD_BUY_COIN: return "点金手";
-//
-//            case STATUS_MAIL_GET: return "邮件领取";
-//            case STATUS_ACTIVITY_PAY: return "充值活动";
-//            case STATUS_DAILY_TASK_GET: return "每日任务领取";
-//            case STATUS_BUY_WIPE_OUT: return "购买关卡挑战次数";
-//            case STATUS_CODE_GET: return "兑换码领取";
-//            case STATUS_TASK_GET: return "任务领取";
-	
-	        case STATUS_GEN_SKILL_LEVELUP: return "shengJiJiNeng";
-	        case STATUS_GEN_STAR_UP: return "shengXing";
-	        case STATUS_RANDOM_GEN_ONE_TIMES_COIN: return "jiuGuanTongQian1Ci";
-	        case STATUS_RANDOM_GEN_ONE_TIMES_GOLD: return "jiuGuanYuanBao1Ci";
-	        case STATUS_RANDOM_GEN_TEN_TIMES_COIN: return "jiuGuanTongQian10Ci";
-	        case STATUS_RANDOM_GEN_TEN_TIMES_GOLD: return "jiuGuanYuanBao10Ci";
-	        case STATUS_RESET_SKILL: return "jiNengChongZhi";
-	        case STATUS_RESET_POINT: return "shuXingDianChongZhi";
-	        case STATUS_RANDOM_SOUL: return "hunShiShangDian";
-	        case STATUS_EQUIP_MAKE: return "zhuangBeiHeCheng";
-	        case STATUS_ITEM_SELL: return "chuShouDaoJu";
-	        case STATUS_SIGN_GET_COIN: return "qianDaoJiangLi";
-	        case STATUS_SIGN_GET_GOLD: return "qianDaoJiangLi";
-	        case STATUS_PAY_GET_GOLD: return "chongZhi";
-	        case STATUS_SHOP_REFRESH: return "shuaXinShangDian";
-	        case STATUS_SHOP_BUY_COIN: return "shangDianGouWu";
-	        case STATUS_SHOP_BUY_GOLD: return "shangDianGouWu";
-	        case STATUS_STORY_GET_COIN: return "guanKaDiaoLuo";
-	        case STATUS_WIPE_OUT_GET: return "saoDangDiaoLuo";
-	        case STATUS_BUY_PHYSICAL_STRENGTHP: return "GouMaiTiLi";
-	        case STATUS_GOLD_BUY_COIN: return "dianJinShou";
-	        case STATUS_MAIL_GET: return "youJianHuoDe";
-	        case STATUS_ACTIVITY_PAY: return "chongZhiHuoDong";
-	        case STATUS_DAILY_TASK_GET: return "renWuJiangLi";
-	        case STATUS_BUY_WIPE_OUT: return "gouMaiGuanKaCiShu";
-	        case STATUS_CODE_GET: return "duiHuanMaLingQv";
-	        case STATUS_TASK_GET: return "renWuJiangLi";
-	        case STATUS_ARENA_BUY: return "jingJiChang";
-	        case STATUS_BATTLE_IN_WORLD: return "taoFaTianXia";
-        }
-        return "";
-    }
+    public static final int STATUS_BUY_ACH = 76; // 成就消费
+
+    public static final int STATUS_SHOP_BUY_MONEY5 = 77;
+
+    public static final int STATUS_RESET_BOSS = 78;
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY) //
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "finance_id")
     private Integer id;
 

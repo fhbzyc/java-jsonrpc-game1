@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 import com.zhanglong.sg.dao.ArenaDao;
 import com.zhanglong.sg.dao.BattleLogDao;
 import com.zhanglong.sg.dao.PowerDao;
+import com.zhanglong.sg.dao.SkillDao;
 import com.zhanglong.sg.entity.BattleLog;
 import com.zhanglong.sg.entity.Hero;
 import com.zhanglong.sg.entity.Role;
@@ -28,7 +29,10 @@ public class PillageService extends BaseService {
 
 	@Resource
 	private BattleLogDao battleLogDao;
-	
+
+	@Resource
+	private SkillDao skillDao;
+
 	/**
 	 * 可掠夺列表
 	 * @return
@@ -45,40 +49,38 @@ public class PillageService extends BaseService {
 		if (me.level() < 25) {
 			return this.returnError(this.lineNum(), "掠夺功能25级后开放");
 		}
-		
-		List<Role> roles = this.roleDao.get10player(roleId, Integer.valueOf(serverId), me.level(), itemId);
 
-		if (roles.size() < 10) {
-			List<Role> roles2 = this.roleDao.get100player(roleId, Integer.valueOf(serverId), me.level());
-			for (Role role2 : roles2) {
-				boolean find = false;
-				for (Role role : roles) {
-					if (role.getRoleId().equals(role2.getRoleId())) {
-						find = true;
-					}
-				}
-				if (!find) {
-					roles.add(role2);
-					if (roles.size() >= 10) {
-						break;
-					}
-				}
-			}
-		}
-
-		List<Integer> roleIds = new ArrayList<Integer>();
-		for (Role role : roles) {
-			roleIds.add(role.getRoleId());
-		}
+		List<Role> roles = this.roleDao.get10player(roleId, Integer.valueOf(serverId), me.level(), itemId, true);
 
 		List<PlayerModel> players = this.roleDao.getPlayers(roles);
 
-		if (players.size() < 10) {
-			this.players(players, me.level());
+		Random random = new Random();
+		int n = random.nextInt(3) + 3;
+		if (n > players.size()) {
+			n = n - players.size();
+		}
+
+		this.players(players, me.level() - 1, me.level() + 10, n);
+
+		roles = this.roleDao.get10player(roleId, Integer.valueOf(serverId), me.level(), itemId, false);
+		List<PlayerModel> players2 = this.roleDao.getPlayers(roles);
+
+		n = 10 - players.size();
+
+		for (PlayerModel playerModel : players2) {
+			players.add(playerModel);
+			n--;
+			if (n <= 0) {
+				break;
+			}
+		}
+
+		if (n > 0) {
+			this.players(players, me.level() - 10, me.level() - 2, n);
 		}
 
 		DateNumModel dateNumModel = this.dateNumDao.findOne(roleId);
-		
+
 		Result result = new Result();
 		result.setValue("players", players);
 		result.setValue("num", me.pillageNum);
@@ -86,6 +88,10 @@ public class PillageService extends BaseService {
 		result.setValue("gold", this.gold(dateNumModel.getPillageBuyNum()));
 
 		return this.success(result.toMap());
+	}
+
+	public Object BattleBegin(int playerId, int heroId1, int heroId2, int heroId3, int heroId4, int power) throws Exception {
+		return this.battleBegin(playerId, heroId1, heroId2, heroId3, heroId4, power);
 	}
 
 	/**
@@ -99,7 +105,7 @@ public class PillageService extends BaseService {
 	 * @return
 	 * @throws Exception
 	 */
-	public Object BattleBegin(int playerId, int heroId1, int heroId2, int heroId3, int heroId4, int power) throws Exception {
+	public Object battleBegin(int playerId, int heroId1, int heroId2, int heroId3, int heroId4, int power) throws Exception {
 
         int roleId = this.roleId();
 
@@ -159,6 +165,13 @@ public class PillageService extends BaseService {
 
         result.setValue("battle_id", battleLog.getId());
         result.setValue("num", role.pillageNum);
+        
+        if (this.roleDao.isPlayer(playerId)) {
+        	result.setValue("he_combo_skill", this.skillDao.comboSkills(playerId));
+        } else {
+        	result.setValue("he_combo_skill", new int[]{});
+        }
+
         return this.success(result.toMap());
 	}
 
@@ -287,7 +300,7 @@ public class PillageService extends BaseService {
 	}
 
 	public void addP() {
-		this.roleDao.addPillage(10);
+		this.roleDao.addPillage(5);
 	}
 
 	private int buyNum(int vip, int todayNum) {
@@ -307,27 +320,27 @@ public class PillageService extends BaseService {
     	return gold;
 	}
 
-	private void players(List<PlayerModel> players, int level) throws Exception {
+	private void players(List<PlayerModel> players, int beginLevel, int endLevel, int num) throws Exception {
 
 		List<Object[]> configs = this.configs();
 
 		List<Object[]> configs2 = new ArrayList<Object[]>();
 		for (Object[] objects : configs) {
 			int lv = (Integer)objects[1];
-			if (lv <= level + 10 && lv >= level - 10) {
+			if (lv <= endLevel && lv >= beginLevel) {
 				configs2.add(objects);
 			}
 		}
 
 		Collections.shuffle(configs2);
 
-		configs2 = configs2.subList(0, 10 - players.size());
+		configs2 = configs2.subList(0, num);
 
     	String[] firstName = RoleService.FirstName;
     	String[] lastName = RoleService.LastName;
 
     	ArenaDao arenaDao = new ArenaDao();
-    	
+
 		for (Object[] objects : configs2) {
 
 			int rId = (Integer)objects[0];

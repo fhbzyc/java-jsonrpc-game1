@@ -13,17 +13,22 @@ import org.springframework.web.bind.annotation.ResponseBody;
 
 import websocket.handler.EchoHandler;
 
+import com.zhanglong.sg.dao.AchievementDao;
 import com.zhanglong.sg.dao.DailyTaskDao;
 import com.zhanglong.sg.dao.OrderDao;
 import com.zhanglong.sg.dao.RoleDao;
 import com.zhanglong.sg.entity.FinanceLog;
 import com.zhanglong.sg.entity.Order;
 import com.zhanglong.sg.entity.Role;
+import com.zhanglong.sg.entity2.BaseAchievement;
 import com.zhanglong.sg.protocol.Response;
 import com.zhanglong.sg.result.Result;
 
 @Controller
 public class CallbackController {
+
+	@Resource
+	private AchievementDao achievementDao;
 
 	@Resource
 	private OrderDao orderDao;
@@ -67,6 +72,8 @@ public class CallbackController {
 
 		role.countGold += order.getGold();
 
+		int oldVip = role.vip;
+		
 		if (role.countGold >= Role.VIP_GOLD[Role.VIP_GOLD.length - 1]) {
 			role.vip = Role.VIP_GOLD.length;
 		}
@@ -79,10 +86,15 @@ public class CallbackController {
 				break;
 			}
 		}
-
+		
 		Result result = new Result();
+
 		if (role.vip > 0) {
 			this.dailyTaskDao.addVip(role, result);
+		}
+
+		if (role.vip > oldVip) {
+			this.achievementDao.setNum(roleId, BaseAchievement.TYPE_VIP, 0, role.vip, result);
 		}
 
 		result.setValue("vip", role.vip());

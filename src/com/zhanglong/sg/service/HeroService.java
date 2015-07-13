@@ -19,6 +19,7 @@ import websocket.handler.Broadcast;
 import com.zhanglong.sg.model.DateNumModel;
 import com.zhanglong.sg.protocol.Response;
 import com.zhanglong.sg.result.ErrorResult;
+import com.zhanglong.sg.dao.AchievementDao;
 import com.zhanglong.sg.dao.BaseHeroEquipDao;
 import com.zhanglong.sg.dao.BaseHeroShopDao;
 import com.zhanglong.sg.dao.BaseMakeItemDao;
@@ -27,6 +28,7 @@ import com.zhanglong.sg.entity.FinanceLog;
 import com.zhanglong.sg.entity.Hero;
 import com.zhanglong.sg.entity.Item;
 import com.zhanglong.sg.entity.Role;
+import com.zhanglong.sg.entity2.BaseAchievement;
 import com.zhanglong.sg.entity2.BaseHero;
 import com.zhanglong.sg.entity2.BaseHeroEquip;
 import com.zhanglong.sg.entity2.BaseHeroShop;
@@ -38,6 +40,9 @@ import com.zhanglong.sg.utils.Utils;
 
 @Service
 public class HeroService extends BaseService {
+
+	@Resource
+	private AchievementDao achievementDao;
 
     @Resource
     private BaseHeroShopDao baseHeroShopDao;
@@ -367,6 +372,17 @@ public class HeroService extends BaseService {
     		this.itemDao.addItem(roleId, material, num, result);
     	}
 
+    	int n = 0;
+    	List<Hero> heros = this.heroDao.findAll(roleId);
+    	for (Hero hero2 : heros) {
+			if (hero2.getCLASS() >= newClass) {
+				n++;
+			}
+		}
+
+        // 刷新成就
+		this.achievementDao.setNum(role.getRoleId(), BaseAchievement.TYPE_HERO_CLASS, newClass, n, result);
+
         // 进阶主线任务
         this.missionDao.checkHeroClass(role, newClass, 1, result);
 
@@ -605,6 +621,13 @@ public class HeroService extends BaseService {
             return this.returnError(this.lineNum(), "参数出错");
         }
 
+        Role role = this.roleDao.findOne(roleId);
+
+    	boolean needGold = false;
+    	if (type == TYPE_GOLD_RANDOM && (System.currentTimeMillis() / 1000 < role.getBarGoldTime())) {
+    		needGold = true;
+    	}
+
         int coin = 10000;
         int gold = 288; // 需要花费的元宝
 
@@ -624,7 +647,7 @@ public class HeroService extends BaseService {
             	rate = this.baseHeroShopDao.coinRandom();
             } else {
 
-            	if (this.financeLogDao.count(roleId, FinanceLog.STATUS_RANDOM_GEN_ONE_TIMES_GOLD) == 0) {
+            	if (needGold && this.financeLogDao.count(roleId, FinanceLog.STATUS_RANDOM_GEN_ONE_TIMES_GOLD) == 0) {
             		int heroId = this.baseHeroShopDao.randomGeneral(2)[0];
             		rate = new int[]{heroId , 1};
             	} else {
@@ -649,7 +672,7 @@ public class HeroService extends BaseService {
         }
         desc += ">";
 
-        Role role = this.roleDao.findOne(roleId);
+        
 
         DateNumModel dateNumModel = this.dateNumDao.findOne(roleId);
         Result result = new Result();
@@ -676,7 +699,15 @@ public class HeroService extends BaseService {
         	}
         } else {
 
-        	if (System.currentTimeMillis() / 1000 < role.getBarGoldTime()) {
+        	if (needGold) {
+
+              	if (itemId >= 10000) {
+            		int star = this.baseHeroDao.findOne(itemId).getStar();
+            		if (star > 2) {
+            			itemId = this.baseHeroShopDao.randomGeneral(2)[0];
+            		}
+            	}
+
                 if (role.getGold() < gold) {
                 	return this.returnError(2, ErrorResult.NotEnoughGold);
                 } else {
@@ -684,6 +715,14 @@ public class HeroService extends BaseService {
 
                 }
         	} else {
+
+              	if (itemId >= 10000) {
+            		int star = this.baseHeroDao.findOne(itemId).getStar();
+            		if (star > 1) {
+            			itemId = this.baseHeroShopDao.randomGeneral(1)[0];
+            		}
+            	}
+
             	// 酒馆免费元宝刷新冷却时间重置为1天
         		role.barGoldTime = (int)(System.currentTimeMillis() / 1000l + 86400l);
         	}
@@ -711,7 +750,7 @@ public class HeroService extends BaseService {
             		String msg = Response.marshalSuccess(0, r.toMap());
             		int serverId = role.getServerId();
             		Broadcast broadcast = new Broadcast();
-            		broadcast.send(serverId, msg);
+            		broadcast.send(roleId, serverId, msg);
             	}
             	
             } else {
@@ -739,7 +778,6 @@ public class HeroService extends BaseService {
      * @return
      * @throws Exception
      */
-    @Transactional(rollbackFor = Exception.class)
     public Object random10Times(int type) throws Exception {
 
     	int roleId = this.roleId();
@@ -820,6 +858,22 @@ public class HeroService extends BaseService {
         		int genId = this.baseHeroShopDao.randomGeneral(2)[0];
         		randomResult[index] = new int[]{genId , 1};
         	}
+        } else if (type == TYPE_COIN_RANDOM && times == 10) {
+        	boolean find = false;
+        	for (int[] is : randomResult) {
+				if (is[0] >= 10000) {
+					find = true;
+				} else if (this.baseItemDao.findOne(is[0]).getColor() >= 2) {
+					find = true;
+				}
+			}
+        	if (!find) {
+
+        		Random random = new Random();
+        		int index = random.nextInt(times);
+        		int[] blueItem = this.baseHeroShopDao.randomBlueItem();
+        		randomResult[index] = new int[]{blueItem[0] , blueItem[1]};
+        	}
         }
 
         Result result = new Result();
@@ -854,7 +908,7 @@ public class HeroService extends BaseService {
 	            		String msg = Response.marshalSuccess(0, r.toMap());
 	            		int serverId = role.getServerId();
 	            		Broadcast broadcast = new Broadcast();
-	            		broadcast.send(serverId, msg);
+	            		broadcast.send(roleId, serverId, msg);
 	            	}
         		}
 
@@ -1183,6 +1237,8 @@ public class HeroService extends BaseService {
 
         Result result = new Result();
 
+        List<Item> items = new ArrayList<Item>();
+        
         int exp = 0;
         for (int i = 0; i < ids.length; i++) {
 
@@ -1207,18 +1263,12 @@ public class HeroService extends BaseService {
 			if (item.getNum() < num) {
 				return this.returnError(this.lineNum(), baseItem.getName() + ">数量不足");
 			} else {
-				this.itemDao.subItem(item, num, result);
+				items.add(item);
+				//this.itemDao.subItem(item, num, result);
 			}
 
 			exp += baseItem.getExp() * num;
 		}
-
-        int coin = exp * 200;
-
-        Role role = this.roleDao.findOne(roleId);
-        if (role.coin < coin) {
-        	return this.returnError(this.lineNum(), "铜币不足");
-        }
 
     	Hero hero = this.heroDao.findOne(roleId, heroId);
 
@@ -1268,8 +1318,21 @@ public class HeroService extends BaseService {
         	return this.returnError(this.lineNum(), "参数出错");
         }
 
+        int coin = exp * 200;
+
+        Role role = this.roleDao.findOne(roleId);
+        if (role.coin < coin) {
+        	return this.returnError(this.lineNum(), "铜币不足");
+        }
+
         this.roleDao.subCoin(role, coin, hero.getCLASS() + "阶<" + this.baseHeroDao.findOne(heroId).getName() + ">锻造<" + index , FinanceLog.STATUS_COIN_EQUIP_EXP, result);
-        // this.roleDao.update(role, result);
+        this.roleDao.update(role, result);
+        
+        for (int i = 0; i < ids.length; i++) {
+        	Item item = items.get(i);
+        	int num = nums[i];
+        	this.itemDao.subItem(item, num, result);
+		}
 
         this.heroDao.update(hero, result);
 

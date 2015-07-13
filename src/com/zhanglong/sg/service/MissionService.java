@@ -259,7 +259,7 @@ public class MissionService extends BaseService {
 
         DateNumModel dateNumModel = this.dateNumDao.findOne(roleId);
         
-        if (dateNumModel.getBuyCoinNum() + times > role.maxGetCoinTimes()) {
+        if (dateNumModel.getBuyCoinNum() + times > MissionService.maxGetCoinTimes(role.vip)) {
 
             return this.returnError(2, "提升VIP等级，可增加每日点金次数，前去充值？");
         }
@@ -316,9 +316,17 @@ public class MissionService extends BaseService {
 
         this.dailyTaskDao.addCoin(role, times, result);
 
-        result.setValue("get_coin", new int[]{dateNumModel.getBuyCoinNum(), role.maxGetCoinTimes(), getCoinNeedGold(dateNumModel.getBuyCoinNum()), getMinCoin(role.level(), dateNumModel.getBuyCoinNum())});
+        result.setValue("get_coin", new int[]{dateNumModel.getBuyCoinNum(), MissionService.maxGetCoinTimes(role.vip), getCoinNeedGold(dateNumModel.getBuyCoinNum()), getMinCoin(role.level(), dateNumModel.getBuyCoinNum())});
         result.setValue("random_coin", random_coin);
         return this.success(result.toMap());
+    }
+
+    public int vipWipeOutNum(int vip) {
+
+    	if (vip < 1) {
+    		vip = 1;
+    	}
+    	return 20 + (vip - 1) * 10;
     }
 
     public static int getCoinNeedGold(int times) {
@@ -334,11 +342,44 @@ public class MissionService extends BaseService {
     	return 20000 + level * 100 + times * 1500;
 	}
 
-    public int vipWipeOutNum(int vip) {
+    /**
+     * 点金手最大次数
+     * @return
+     */
+    public static int maxGetCoinTimes(int vip) {
 
-    	if (vip < 1) {
-    		vip = 1;
-    	}
-    	return 20 + (vip - 1) * 10;
-    }
+    	if (vip <= 0) {
+			return 2;
+		} else if (vip == 1) {
+			return 5;
+		} else if (vip == 2) {
+			return 20;
+		} else if (vip == 3) {
+			return 30;
+		} else if (vip == 4) {
+			return 40;
+		} else if (vip == 5) {
+			return 50;
+		} else if (vip == 6) {
+			return 60;
+		} else if (vip == 7) {
+			return 70;
+		} else if (vip == 8) {
+			return 80;
+		} else if (vip == 9) {
+			return 90;
+		} else if (vip == 10) {
+			return 100;
+		} else if (vip == 11) {
+			return 120;
+		} else if (vip == 12) {
+			return 150;
+		} else if (vip == 13) {
+			return 200;
+		} else if (vip == 14) {
+			return 250;
+		} else {
+			return 300;
+		}
+	}
 }

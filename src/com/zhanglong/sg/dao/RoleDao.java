@@ -239,6 +239,8 @@ public class RoleDao extends BaseDao {
     	finance.setStatus(status);
 
 		role.setMoney3(role.getMoney3() + money3);
+		
+		result.setValue("money3", role.money3);
 
     	finance.setNewMoney(role.getMoney3());
 
@@ -279,6 +281,7 @@ public class RoleDao extends BaseDao {
     	finance.setStatus(status);
 
 		role.setMoney4(role.getMoney4() + money4);
+		result.setValue("money4", role.money4);
 
     	finance.setNewMoney(role.getMoney4());
 
@@ -300,6 +303,47 @@ public class RoleDao extends BaseDao {
 		role.setMoney4(role.getMoney4() - money4);
 
     	finance.setNewMoney(role.getMoney4());
+
+    	FinanceLogDao financeLogDao = new FinanceLogDao();
+    	financeLogDao.setSessionFactory(this.getSessionFactory());
+
+    	financeLogDao.create(finance);
+	}
+
+	public void addMoney5(Role role, int money5, String desc, int status, Result result) {
+
+		result.addRandomItem(new int[]{5 , money5});
+
+    	FinanceLog finance = new FinanceLog();
+    	finance.setRoleId(role.getRoleId());
+    	finance.setOldMoney(role.money5);
+    	finance.setMoneyType(5);
+    	finance.setDesc(desc);
+    	finance.setStatus(status);
+
+		role.money5 += money5;
+		result.setValue("money5", role.money5);
+
+    	finance.setNewMoney(role.money5);
+
+    	FinanceLogDao financeLogDao = new FinanceLogDao();
+    	financeLogDao.setSessionFactory(this.getSessionFactory());
+
+    	financeLogDao.create(finance);
+	}
+
+	public void subMoney5(Role role, int money5, String desc, int status) {
+
+    	FinanceLog finance = new FinanceLog();
+    	finance.setRoleId(role.getRoleId());
+    	finance.setOldMoney(role.money5);
+    	finance.setMoneyType(5);
+    	finance.setDesc(desc);
+    	finance.setStatus(status);
+
+    	role.money5 -= money5;
+
+    	finance.setNewMoney(role.money5);
 
     	FinanceLogDao financeLogDao = new FinanceLogDao();
     	financeLogDao.setSessionFactory(this.getSessionFactory());
@@ -376,53 +420,15 @@ public class RoleDao extends BaseDao {
     }
 
 	/**
-	 * 被掠夺的10人
-	 * @param roleId
-	 * @param mylevel
-	 * @return
-	 */
-	public List<Role> get100player(int roleId, int serverId, int mylevel) {
-
-		int num = 10;
-
-		//String sql = "SELECT * FROM role WHERE server_id = ? AND role_pillage_time < ? AND role_level BETWEEN ? AND ? ORDER BY role_level limit 100";
-		Session session = this.getSessionFactory().getCurrentSession();
-		Criteria criteria = session.createCriteria(Role.class);
-		@SuppressWarnings("unchecked")
-		List<Role> list = criteria.add(Restrictions.eq("serverId", serverId))
-		.add(Restrictions.lt("pillageTime", (int)(System.currentTimeMillis() / 1000)))
-		.add(Restrictions.gt("level", mylevel - num))	
-		.add(Restrictions.lt("level", mylevel + num))
-		.addOrder(Order.asc("level"))
-		.setMaxResults(100).list();
-
-		int index = -1;
-		for (int i = 0 ; i < list.size() ; i++) {
-			if (list.get(i).getRoleId().equals(roleId)) {
-				index = i;
-			}
-		}
-
-		if (index >= 0) {
-			list.remove(index);
-		}
-
-		if (list.size() > 0) {
-			Collections.shuffle(list);
-		}
-
-		return list;
-	}
-
-	/**
 	 * 
 	 * @param roleId
 	 * @param serverId
 	 * @param mylevel
 	 * @param itemId
+	 * @param isAfter
 	 * @return
 	 */
-	public List<Role> get10player(int roleId, int serverId, int mylevel, int itemId) {
+	public List<Role> get10player(int roleId, int serverId, int mylevel, int itemId, boolean isAfter) {
 
 		int num = 10;
 
@@ -430,12 +436,17 @@ public class RoleDao extends BaseDao {
 
 		Session session = this.getSessionFactory().getCurrentSession();
 		SQLQuery query = session.createSQLQuery(sql);
-		
+
 		query.setParameter(1 - 1, itemId);
 		query.setParameter(2 - 1, serverId);
 		query.setParameter(3 - 1, System.currentTimeMillis() / 1000);
-		query.setParameter(4 - 1, mylevel - num);
-		query.setParameter(5 - 1, mylevel + num);
+		if (isAfter) {
+			query.setParameter(4 - 1, mylevel - 1);
+			query.setParameter(5 - 1, mylevel + num);
+		} else {
+			query.setParameter(4 - 1, mylevel - num);
+			query.setParameter(5 - 1, mylevel - 2);
+		}
 
 		query.addEntity(Role.class);
 		@SuppressWarnings("unchecked")

@@ -28,6 +28,9 @@ public class Reward implements Serializable {
 	private Integer money4; // 讨伐天下的币
 
 	@JsonSerialize(include = Inclusion.NON_NULL)
+	private Integer money5; // 讨伐天下的币
+
+	@JsonSerialize(include = Inclusion.NON_NULL)
 	private Integer ap; // 体力
 
 	@JsonSerialize(include = Inclusion.NON_NULL)
@@ -75,6 +78,14 @@ public class Reward implements Serializable {
 
 	public void setMoney4(Integer money4) {
 		this.money4 = money4;
+	}
+
+	public Integer getMoney5() {
+		return money5;
+	}
+
+	public void setMoney5(Integer money5) {
+		this.money5 = money5;
 	}
 
 	public int[] getItem_id() {

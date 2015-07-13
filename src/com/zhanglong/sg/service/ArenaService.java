@@ -26,12 +26,14 @@ import org.springframework.stereotype.Service;
 
 import websocket.handler.Broadcast;
 
+import com.zhanglong.sg.dao.AchievementDao;
 import com.zhanglong.sg.dao.ArenaDao;
 import com.zhanglong.sg.dao.ArenaLogDao;
 import com.zhanglong.sg.dao.BaseActivityDao;
 import com.zhanglong.sg.dao.MailDao;
 import com.zhanglong.sg.dao.PowerDao;
 import com.zhanglong.sg.dao.ServerDao;
+import com.zhanglong.sg.dao.SkillDao;
 import com.zhanglong.sg.entity.ArenaLog;
 import com.zhanglong.sg.entity.BaseActivity;
 import com.zhanglong.sg.entity.BattleLog;
@@ -41,6 +43,7 @@ import com.zhanglong.sg.entity.Mail;
 import com.zhanglong.sg.entity.RankLog;
 import com.zhanglong.sg.entity.Role;
 import com.zhanglong.sg.entity.Server;
+import com.zhanglong.sg.entity2.BaseAchievement;
 import com.zhanglong.sg.model.ArenaPlayerModel;
 import com.zhanglong.sg.model.DateNumModel;
 import com.zhanglong.sg.model.Reward;
@@ -53,6 +56,9 @@ public class ArenaService extends BaseService {
 
     private static int MAXCHALLENGER_NUM = 5;
     private static long BATTLE_MAX_TIME = 240l * 1000l;
+
+	@Resource
+	private AchievementDao achievementDao;
 
     @Resource
     private ArenaDao arenaDao;
@@ -71,6 +77,9 @@ public class ArenaService extends BaseService {
 
     @Resource
     private MailDao mailDao;
+
+	@Resource
+	private SkillDao skillDao;
 
     /**
      * 
@@ -192,6 +201,36 @@ public class ArenaService extends BaseService {
         result.setValue("gold2", this.gold2(roleId));
 
         return this.success(result.toMap());
+    }
+
+    /**
+     * 玩家的防守阵容
+     * @param roleId
+     * @return
+     * @throws Exception
+     */
+    public Object hero(int roleId) throws Exception {
+
+		List<Object> heros = new ArrayList<Object>();
+		heros.add(null);
+		heros.add(null);
+		heros.add(null);
+		heros.add(null);
+
+		List<Hero> heroList = this.heroDao.findAll(roleId);
+
+		for (Hero hero : heroList) {
+			if (hero.getIsBattle()) {
+				if (hero.getPosition() > 0) {
+					heros.set(hero.getPosition() - 1, hero.toArray());
+				}
+			}
+		}
+
+        Result result = new Result();
+
+        result.setValue("hero", heros);
+        return this.success(result);
     }
 
     /**
@@ -395,9 +434,12 @@ public class ArenaService extends BaseService {
         ArenaPlayerModel arenaPlayerModel = new ArenaPlayerModel();
         arenaPlayerModel.roleId = heRoleId;
         arenaPlayerModel.rank = rank;
-        
+
+        Result result = new Result();
+
         if (!this.roleDao.isPlayer(heRoleId)) {
         	this.arenaDao.toPlayer(arenaPlayerModel, serverId);
+        	result.setValue("he_combo_skill", this.skillDao.comboSkills(heRoleId));
         } else {
     		ArrayList<Object> heHeros = new ArrayList<Object>();
     		heHeros.add(null);
@@ -415,6 +457,8 @@ public class ArenaService extends BaseService {
     			}
     		}
     		arenaPlayerModel.generalList = heHeros;
+
+    		result.setValue("he_combo_skill", new int[]{});
         }
 
         arenaLogTable.setAvatar2(arenaPlayerModel.avatar);
@@ -422,7 +466,6 @@ public class ArenaService extends BaseService {
 
         this.arenaLogDao.create(arenaLogTable);
 
-        Result result = new Result();
         result.setValue("hero", arenaPlayerModel.generalList);
         result.setValue("battle_id", arenaLogTable.getId());
         return this.success(result.toMap());
@@ -483,7 +526,16 @@ public class ArenaService extends BaseService {
 
         // 更改排名
         int serverId = this.serverId();
+        
+        int oldRank = role.getRank();
         this.arenaDao.changeIndex(roleId, log.getRoleId2(), serverId);
+
+        role = this.roleDao.findOne(roleId);
+        if (role.getRank() < oldRank) {
+
+            // 刷新成就
+    		this.achievementDao.setNum(role.getRoleId(), BaseAchievement.TYPE_PK, 0, role.getRank(), result);
+        }
 
         int wins = this.arenaLogDao.wins(roleId);
 
@@ -493,14 +545,14 @@ public class ArenaService extends BaseService {
     		r.setValue("msgs", msgs);
     		String msg = Response.marshalSuccess(0, r.toMap());
     		Broadcast broadcast = new Broadcast();
-    		broadcast.send(serverId, msg);
+    		broadcast.send(roleId, serverId, msg);
         } else if (wins == 3) {
     		String msgs = role.name + "在竞技场获得3连胜,上升势头强劲";
     		Result r = new Result();
     		r.setValue("msgs", msgs);
     		String msg = Response.marshalSuccess(0, r.toMap());
     		Broadcast broadcast = new Broadcast();
-    		broadcast.send(serverId, msg);
+    		broadcast.send(roleId, serverId, msg);
         }
 
         result.setValue("win", true);
@@ -849,6 +901,32 @@ public class ArenaService extends BaseService {
 
 				List<BaseActivity> activities = this.baseActivityDao.findAll(serverId);
 				for (BaseActivity baseAct : activities) {
+					
+					if (baseAct.getType().equals("kill_rank")) {
+						HashMap<Integer, Reward> rewards = objectMapper.readValue(baseAct.getReward(), new TypeReference<Map<Integer, Reward>>(){});
+
+						List<Role> roles = this.roleDao.killTop20(serverId);
+
+						for (int i = 0 ; i < 10 ; i++) {
+
+							int r = i + 1;
+
+							Reward reward = rewards.get(r);
+							if (reward != null) {
+
+								Mail mail = new Mail();
+								mail.setAttachment(objectMapper.writeValueAsString(reward));
+								mail.setFromName("GM");
+								mail.setRoleId(roles.get(i).getRoleId());
+								mail.setTitle("【横扫妖怪榜】奖励！");
+								mail.setContent("恭喜主公在【横扫妖怪榜】中奋勇杀怪，获得的名次是：" + r + "名；\n"+
+"特授予你以下奖励，请笑纳；\n\n"+
+"客服：萌小乔");
+					            this.mailDao.create(mail);
+					        }
+						}
+					}
+
 					if (baseAct.getType().equals("pk_rank")) {
 
 						HashMap<Integer, Reward> rewards = objectMapper.readValue(baseAct.getReward(), new TypeReference<Map<Integer, Reward>>(){});
@@ -871,10 +949,36 @@ public class ArenaService extends BaseService {
 					            this.mailDao.create(mail);
 					        }
 						}
-						break;
+						//break;
+					}
+
+					if (baseAct.getType().equals("lv_rank")) {
+
+						HashMap<Integer, Reward> rewards = objectMapper.readValue(baseAct.getReward(), new TypeReference<Map<Integer, Reward>>(){});
+						
+						List<Role> roles = this.roleDao.expTop20(serverId);
+
+						for (int i = 0 ; i < 10 ; i++) {
+
+							int r = i + 1;
+
+							Reward reward = rewards.get(r);
+							if (reward != null) {
+
+								Mail mail = new Mail();
+								mail.setAttachment(objectMapper.writeValueAsString(reward));
+								mail.setFromName("GM");
+								mail.setRoleId(roles.get(i).getRoleId());
+								mail.setTitle("【冲级活动】奖励！");
+								mail.setContent("恭喜主公战队等级快速提升，并且在【冲级活动】中获得好的名次：" + r + "名；\n"+
+"特授予你以下奖励。\n\n"+
+"客服：萌小乔");
+					            this.mailDao.create(mail);
+					        }
+						}
 					}
 				}
-				
+
 			} catch (Exception e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();

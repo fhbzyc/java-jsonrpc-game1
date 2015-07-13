@@ -13,6 +13,7 @@ import com.zhanglong.sg.entity.Hero;
 import com.zhanglong.sg.entity.Item;
 import com.zhanglong.sg.entity.Role;
 import com.zhanglong.sg.entity.Story;
+import com.zhanglong.sg.entity2.BaseAchievement;
 import com.zhanglong.sg.entity2.BaseDailyTask;
 import com.zhanglong.sg.entity2.BaseItem;
 import com.zhanglong.sg.entity2.BaseMission;
@@ -27,6 +28,8 @@ public class Result {
     private List<Object> itemList;
 
     private List<BaseMission> missionList;
+    
+    private List<BaseAchievement> achievements;
 
     private ArrayList<BaseDailyTask> dailyTaskList;
 
@@ -37,7 +40,7 @@ public class Result {
 
     private HashMap<String, Integer> money;
     private HashMap<String, Integer> team;
-    private int[] physicalStrength;
+    private long[] ap;
     
     private int addAp = 0;
 
@@ -101,8 +104,8 @@ public class Result {
         this.dailyTaskList.add(dailyTask);
     }
 
-    public void setAp(int physicalStrength, long coolTime) {
-        this.physicalStrength = new int[]{physicalStrength, (int)coolTime};
+    public void setAp(int ap, int coolTime) {
+        this.ap = new long[]{(long)ap, (long)coolTime * 1000l};
     }
 
     public void setCopyList(ArrayList<int[]> copyList) {
@@ -179,6 +182,13 @@ public class Result {
         }
     }
 
+    public void addAchievement(BaseAchievement ach) {
+        if (this.achievements == null) {
+            this.achievements = new ArrayList<BaseAchievement>();
+        }
+    	this.achievements.add(ach);
+    }
+
     public void setValue(String key, Object value) {
     	this.map.put(key, value);
     }
@@ -194,12 +204,22 @@ public class Result {
         if (this.generalList != null) {
             result.put("general", this.generalList);
         }
-        if (this.physicalStrength != null) {
-            result.put("mp", this.physicalStrength);
+        if (this.ap != null) {
+            result.put("mp", this.ap);
         }
 
         if (this.missionList != null) {
             result.put("task", this.missionList);
+        }
+
+        if (this.achievements != null) {
+
+        	List<Object> achs = new ArrayList<Object>();
+        	for (BaseAchievement ach : this.achievements) {
+        		achs.add(new Object[]{ach.getId() , ach.getName() , ach.getDesc() , ach.getType() , ach.getNum() ,  ach.getGoal() , ach.getMoneyType() , ach.getMoney() , ach.getReward() , ach.getOther()});
+			}
+
+            result.put("ach", achs);
         }
 
         if (this.dailyTaskList != null) {

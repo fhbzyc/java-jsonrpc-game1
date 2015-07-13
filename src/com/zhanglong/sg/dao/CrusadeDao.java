@@ -36,23 +36,30 @@ public class CrusadeDao {
 
 		int date = Integer.valueOf(Utils.date());
 
-		if (crusadeModel != null) {
+		if (crusadeModel == null) {
 
 
-			if (date != crusadeModel.getDate()) {
-				crusadeModel.setNum(0);
-				crusadeModel.setDate(date);
-			}
+			crusadeModel = new CrusadeModel();
+			crusadeModel.setRoleId(roleId);
+			crusadeModel.setDate(date);
+			crusadeModel.setNum(1);
+			crusadeModel.newPlayers(level, power);
+			this.save(roleId, crusadeModel);
+			
+//			if (date != crusadeModel.getDate()) {
+//				crusadeModel.setNum(0);
+//				crusadeModel.setDate(date);
+//			}
 
-			return crusadeModel;
+//			return crusadeModel;
 		}
 
-		crusadeModel = new CrusadeModel();
-		crusadeModel.setRoleId(roleId);
-		crusadeModel.setDate(date);
-		crusadeModel.setNum(0);
-		crusadeModel.newPlayers(level, power);
-		this.save(roleId, crusadeModel);
+//		crusadeModel = new CrusadeModel();
+//		crusadeModel.setRoleId(roleId);
+//		crusadeModel.setDate(date);
+//		crusadeModel.setNum(1);
+//		crusadeModel.newPlayers(level, power);
+//		this.save(roleId, crusadeModel);
 		return crusadeModel;
 	}
 

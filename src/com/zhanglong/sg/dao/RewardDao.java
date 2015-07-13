@@ -75,6 +75,12 @@ public class RewardDao extends BaseDao {
         	set = true;
         }
 
+        Integer money5 = reward.getMoney5();
+        if (money5 != null) {
+        	this.roleDao.addMoney5(role, money5, desc, financeStatus, result);
+        	set = true;
+        }
+
         Integer ap = reward.getAp();
         if (ap != null) {
         	this.roleDao.addAp(role, ap, result);

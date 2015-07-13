@@ -20,10 +20,12 @@ public class BaseItemShop implements Serializable , Cloneable {
 	public static int MONEY_TYPE_GOLD = 2;
 	public static int MONEY_TYPE_3 = 3; // 竞技场币
 	public static int MONEY_TYPE_4 = 4; // 远征币
+	public static int MONEY_TYPE_5 = 5; // 远征币
 
 	public static int SHOP_TYPE_1 = 1; // 普通商店
 	public static int SHOP_TYPE_3 = 3; // 竞技场商店
 	public static int SHOP_TYPE_4 = 4; // 远征商店
+	public static int SHOP_TYPE_5 = 5; // BOSS商店
 
 	/**
 	 * 

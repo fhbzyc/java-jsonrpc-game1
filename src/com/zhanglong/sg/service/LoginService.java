@@ -67,9 +67,16 @@ public class LoginService extends BaseService {
 
 		this.getHandler().userId = user.getId();
 
-		Token token2 = this.tokenDao.create(user.getId());
+		String tokenS = this.tokenDao.getTokenByUserId(user.getId());
+		if (tokenS != null) {
+			Token token = this.tokenDao.findOne(tokenS);
+			if (token.getServerId() == 0) {
+				return this.success(token.getTokenS());
+			}
+		}
 
-		return this.success(token2.getTokenS());
+		Token token = this.tokenDao.create(user.getId());
+		return this.success(token.getTokenS());
 	}
 
 	/**
@@ -258,6 +265,28 @@ public class LoginService extends BaseService {
 		int platform = 6;
 
 		String username = token;
+
+		User user = this.userDao.getByUsername(platform, username);
+
+		if (user == null) {
+			user = new User();
+			user.setUserName(username);
+			user.setPassword(MD5.digest(""));
+			user.setImei(imei);
+			//user.setMac("");
+			user.setPlatformId(platform);
+
+			this.userDao.create(user);
+		}
+
+		return this.signin(username, "");
+	}
+
+	public Object s4399(String imei, String uid) throws Exception {
+
+		int platform = 7;
+
+		String username = uid;
 
 		User user = this.userDao.getByUsername(platform, username);
 

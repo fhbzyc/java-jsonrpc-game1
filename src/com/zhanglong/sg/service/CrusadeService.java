@@ -9,22 +9,29 @@ import javax.annotation.Resource;
 
 import org.springframework.stereotype.Service;
 
+import com.zhanglong.sg.dao.AchievementDao;
 import com.zhanglong.sg.dao.BattleLogDao;
 import com.zhanglong.sg.dao.CrusadeDao;
 import com.zhanglong.sg.dao.PowerDao;
+import com.zhanglong.sg.dao.SkillDao;
 import com.zhanglong.sg.entity.BattleLog;
 import com.zhanglong.sg.entity.FinanceLog;
 import com.zhanglong.sg.entity.Hero;
 import com.zhanglong.sg.entity.Power;
 import com.zhanglong.sg.entity.Role;
+import com.zhanglong.sg.entity2.BaseAchievement;
 import com.zhanglong.sg.model.BattlePlayerModel;
 import com.zhanglong.sg.model.CrusadeModel;
 import com.zhanglong.sg.model.Reward;
 import com.zhanglong.sg.result.ErrorResult;
 import com.zhanglong.sg.result.Result;
+import com.zhanglong.sg.utils.Utils;
 
 @Service
 public class CrusadeService extends BaseService {
+
+	@Resource
+	private AchievementDao achievementDao;
 
 	@Resource
 	private PowerDao powerDao;
@@ -35,12 +42,15 @@ public class CrusadeService extends BaseService {
 	@Resource
 	private BattleLogDao battleLogDao;
 
+	@Resource
+	private SkillDao skillDao;
+
     /**
      * 
      * @return
-     * @throws Throwable
+     * @throws Exception
      */
-    public Object players() throws Throwable {
+    public Object players() throws Exception {
 
         int roleId = this.roleId();
 
@@ -95,9 +105,14 @@ public class CrusadeService extends BaseService {
             res.add(map);
         }
 
+        int n = battleInWorldModel.getNum();
+        if (Integer.valueOf(Utils.date()) != battleInWorldModel.getDate()) {
+        	n = 0;
+        }
+
         Result result = new Result();
         result.setValue("players", res);
-        result.setValue("num", battleInWorldModel.getNum());
+        result.setValue("num", n);
         result.setValue("myhp", battleInWorldModel.getHpMap());
         result.setValue("mycd", battleInWorldModel.getCdMap());
         return this.success(result.toMap());
@@ -112,9 +127,9 @@ public class CrusadeService extends BaseService {
      * @param heroId4
      * @param power
      * @return
-     * @throws Throwable
+     * @throws Exception
      */
-    public Object battleBegin(int index, int heroId1, int heroId2, int heroId3, int heroId4, int power) throws Throwable {
+    public Object battleBegin(int index, int heroId1, int heroId2, int heroId3, int heroId4, int power) throws Exception {
 
         if (index <= 0 || index > 15) {
             return this.returnError(this.lineNum(), "参数出错");
@@ -159,7 +174,8 @@ public class CrusadeService extends BaseService {
         Power p = this.powerDao.findOne(roleId);
 
         CrusadeModel battleInWorldModel = this.crusadeDao.findOne(roleId, role.level(), p.getPower());
-        
+
+        int heRoleId = 0;
         if (index > 1) {
 
             BattlePlayerModel player = battleInWorldModel.getList().get(index - 2);
@@ -169,6 +185,8 @@ public class CrusadeService extends BaseService {
                     return this.returnError(this.lineNum(), "你丫前一关还没赢呢！ ");
                 }
             }
+            
+            heRoleId = player.getRoleId();
         }
 
         BattleLog battleLog = new BattleLog();
@@ -199,6 +217,13 @@ public class CrusadeService extends BaseService {
         result.setValue("myhp", battleInWorldModel.getHpMap());
         result.setValue("mycd", battleInWorldModel.getCdMap());
         result.setValue("heHeros", list);
+
+        if (this.roleDao.isPlayer(heRoleId)) {
+        	result.setValue("he_combo_skill", this.skillDao.comboSkills(heRoleId));
+        } else {
+        	result.setValue("he_combo_skill", new int[]{});
+        }
+
         return this.success(result.toMap());
     }
 
@@ -222,9 +247,9 @@ public class CrusadeService extends BaseService {
      * @param time3
      * @param time4
      * @return
-     * @throws Throwable
+     * @throws Exception
      */
-    public Object battleEnd(int battleId, int myHp1, int myHp2, int myHp3, int myHp4, int hp1, int hp2, int hp3, int hp4, float mytime1, float mytime2, float mytime3, float mytime4, float time1, float time2, float time3, float time4) throws Throwable {
+    public Object battleEnd(int battleId, int myHp1, int myHp2, int myHp3, int myHp4, int hp1, int hp2, int hp3, int hp4, float mytime1, float mytime2, float mytime3, float mytime4, float time1, float time2, float time3, float time4) throws Exception {
 
         int roleId = this.roleId();
 
@@ -299,6 +324,7 @@ public class CrusadeService extends BaseService {
         Result result = new Result();
         
         if (isWin) {
+        	role.crusadeNum++;
             this.roleDao.addCoin(role, coin, "讨伐天下第<" + battleLog.getStoryId() + ">关", 0, result);
 
             if (battleInWorldModel.getNum() < 2) {
@@ -306,6 +332,10 @@ public class CrusadeService extends BaseService {
                 result.addRandomItem(new int[]{4 , money4});
                 this.roleDao.update(role, result);
             }
+
+            // 刷新成就
+    		this.achievementDao.setNum(role.getRoleId(), BaseAchievement.TYPE_CRUSADE, 0, role.crusadeNum, result);
+
         } else {
         	result.setValue("random_result", new int[]{});
         }
@@ -360,9 +390,9 @@ public class CrusadeService extends BaseService {
     /**
      * 
      * @return
-     * @throws Throwable
+     * @throws Exception
      */
-    public Object reset() throws Throwable {
+    public Object reset() throws Exception {
     	
     	int roleId = this.roleId();
 
@@ -377,17 +407,26 @@ public class CrusadeService extends BaseService {
 
         CrusadeModel crusadeModel = this.crusadeDao.findOne(roleId, role.level(), p);
 
-        if (crusadeModel.getNum() >= 2) {
-        	return this.returnError(this.lineNum(), "重置两次不能再重置");
-        }
-
         crusadeModel.newPlayers(role.level(), p);
 
         if (role.getVip() < 8) {
         	//
         }
 
-        crusadeModel.setNum(crusadeModel.getNum() + 1);
+        int num = 1;
+        int date = Integer.valueOf(Utils.date());
+        if (date != crusadeModel.getDate()) {
+        	crusadeModel.setDate(date);
+        } else {
+        	
+            if (crusadeModel.getNum() >= 2) {
+            	return this.returnError(this.lineNum(), "重置两次不能再重置");
+            }
+
+        	num = crusadeModel.getNum() + 1;
+        }
+
+        crusadeModel.setNum(num);
         crusadeModel.setHpMap(new HashMap<Integer, Integer>());
         crusadeModel.setCdMap(new HashMap<Integer, Float>());
         this.crusadeDao.save(roleId, crusadeModel);
@@ -400,9 +439,9 @@ public class CrusadeService extends BaseService {
      * @param index 关卡位置
      * @param index2 宝箱位置
      * @return
-     * @throws Throwable
+     * @throws Exception
      */
-    public Object getReward(int index, int index2) throws Throwable {
+    public Object getReward(int index, int index2) throws Exception {
 
         if (index <= 0 || index > 15) {
             return this.returnError(this.lineNum(), "参数出错");

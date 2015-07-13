@@ -6,6 +6,7 @@ import org.springframework.scheduling.quartz.QuartzJobBean;
 
 import com.zhanglong.sg.service.ActivityService;
 import com.zhanglong.sg.service.ArenaService;
+import com.zhanglong.sg.service.BossService;
 import com.zhanglong.sg.utils.SpringContextUtils;
 
 public class ArenaMail extends QuartzJobBean {
@@ -20,6 +21,14 @@ public class ArenaMail extends QuartzJobBean {
 		ActivityService activityService = (ActivityService) SpringContextUtils.getBean(ActivityService.class);
 		try {
 			activityService.task();
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+
+		BossService bossService = (BossService) SpringContextUtils.getBean(BossService.class);
+		try {
+			bossService.updateRank();
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();

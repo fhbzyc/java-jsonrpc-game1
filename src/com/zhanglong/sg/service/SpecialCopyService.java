@@ -13,6 +13,8 @@ import org.springframework.stereotype.Service;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.zhanglong.sg.dao.AchievementDao;
+import com.zhanglong.sg.dao.BaseAchievementDao;
 import com.zhanglong.sg.dao.BaseSpecialCopyDao;
 import com.zhanglong.sg.dao.BaseStoryDao;
 import com.zhanglong.sg.dao.BattleLogDao;
@@ -20,6 +22,7 @@ import com.zhanglong.sg.dao.PowerDao;
 import com.zhanglong.sg.entity.BattleLog;
 import com.zhanglong.sg.entity.Hero;
 import com.zhanglong.sg.entity.Role;
+import com.zhanglong.sg.entity2.BaseAchievement;
 import com.zhanglong.sg.entity2.BaseSpecialCopy;
 import com.zhanglong.sg.entity2.BaseStory;
 import com.zhanglong.sg.model.DateNumModel;
@@ -43,6 +46,12 @@ public class SpecialCopyService extends BaseService {
 
 	@Resource
 	private BaseSpecialCopyDao baseSpecialCopyDao;
+
+	@Resource
+	private BaseAchievementDao baseAchievementDao;
+
+	@Resource
+	private AchievementDao achievementDao;
 
     public Object list() throws Exception {
 
@@ -717,7 +726,18 @@ public class SpecialCopyService extends BaseService {
         return this.success(result.toMap());
     }
 
-    public Object battleEnd2(int battleId, int coin, int[] itemIds, int[] itemNums, int n, String sign) throws Exception {
+    /**
+     * 
+     * @param battleId
+     * @param coin
+     * @param itemIds
+     * @param itemNums
+     * @param killNum 杀怪数
+     * @param sign
+     * @return
+     * @throws Exception
+     */
+    public Object battleEnd2(int battleId, int coin, int[] itemIds, int[] itemNums, int killNum, String sign) throws Exception {
 
     	if (itemIds == null) {
     		itemIds = new int[]{};
@@ -733,7 +753,7 @@ public class SpecialCopyService extends BaseService {
     		str += i;
 		}
 
-    	str += n;
+    	str += killNum;
     	str += "20150602";
 
     	if (!MD5.digest(str).equals(sign)) {
@@ -775,7 +795,11 @@ public class SpecialCopyService extends BaseService {
 
         } else if (battleLog.getStoryId() < 700) {
 
-        	role.killNum += n;
+        	if (killNum > role.killNum) {
+        		role.killNum = killNum;
+
+        		this.achievementDao.setNum(roleId, BaseAchievement.TYPE_KILL_NUM, 0, killNum, result);
+        	}
 
         	type = 6;
             dateNum.setSpecialCopy6(dateNum.getSpecialCopy6() + 1);
