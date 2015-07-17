@@ -585,8 +585,8 @@ public class StoryService extends BaseService {
         	this.itemDao.subItem(item, times, result);
         } else {
 
-            if (role.getVip() < 1) {
-            	return this.returnError(2, "【剿匪令】数量不足，要开启元宝扫荡，请升级到VIP1用户，前去充值？");
+            if (role.getVip() < 2) {
+            	return this.returnError(2, "【剿匪令】数量不足，要开启元宝扫荡，请升级到VIP2用户，前去充值？");
             }
 
             if (role.getGold() < times) {

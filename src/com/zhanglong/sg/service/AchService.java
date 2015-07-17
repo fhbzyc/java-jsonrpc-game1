@@ -11,6 +11,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.zhanglong.sg.dao.AchievementDao;
 import com.zhanglong.sg.dao.ArenaDao;
 import com.zhanglong.sg.dao.BaseAchievementDao;
+import com.zhanglong.sg.dao.KillRankDao;
 import com.zhanglong.sg.dao.StoryDao;
 import com.zhanglong.sg.entity.Achievement;
 import com.zhanglong.sg.entity.FinanceLog;
@@ -37,6 +38,9 @@ public class AchService extends BaseService {
 
     @Resource
     private StoryDao storyDao;
+
+	@Resource
+	private KillRankDao killRankDao;
 
     /**
      * 成就列表
@@ -84,7 +88,7 @@ public class AchService extends BaseService {
 
 			} else if (baseAchievement.getType().equals(BaseAchievement.TYPE_KILL_NUM)) {
 
-				baseAchievement.setNum(role.killNum);
+				baseAchievement.setNum(this.killRankDao.findOne(role).getNum());
 
 			} else if (baseAchievement.getType().equals(BaseAchievement.TYPE_PK)) {
 

@@ -1,29 +1,28 @@
 package com.zhanglong.sg.entity;
 
+import java.io.Serializable;
+import java.sql.Timestamp;
+
 import javax.persistence.Column;
 import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
 import javax.persistence.Id;
-import javax.persistence.Index;
 import javax.persistence.Table;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-
 @Entity
-@Table(name = "role_friend_ap" , indexes = {@Index(columnList="role_id" , unique = false) , @Index(columnList="role_id2" , unique = false)})
-public class FriendAp {
+@Table(name = "role_kill_rank")
+public class KillRank implements Serializable {
+
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 1L;
 
 	@Id
-	@GeneratedValue(strategy = GenerationType.IDENTITY)
-	private Integer id;
-
-	@JsonIgnore
 	@Column(name="role_id" , nullable = false , columnDefinition = "int default 0")
     private Integer roleId;
 
-	@Column(name="role_id2" , nullable = false , columnDefinition = "int default 0")
-    private Integer roleId2;
+	@Column(name = "server_id" , nullable = false , columnDefinition = "int default 0")
+	private int serverId;
 
     @Column(name = "role_name" , nullable = false , columnDefinition = "varchar(255) default ''")
     private String name;
@@ -34,19 +33,13 @@ public class FriendAp {
     @Column(name = "role_level" , nullable = false , columnDefinition = "int default 0")
     private int level;
 
-    @JsonIgnore
-    @Column(name = "date" , nullable = false , columnDefinition = "int default 0")
-    private int date;
+	@Column(name = "kill_num" , nullable = false , columnDefinition = "int default 0")
+	private int num;
 
-    public FriendAp() {
-    }
+	@Column(name = "kill_time" , nullable = false , columnDefinition = "timestamp")
+	private Timestamp time;
 
-	public Integer getId() {
-		return id;
-	}
-
-	public void setId(Integer id) {
-		this.id = id;
+	public KillRank() {
 	}
 
 	public Integer getRoleId() {
@@ -57,12 +50,12 @@ public class FriendAp {
 		this.roleId = roleId;
 	}
 
-	public Integer getRoleId2() {
-		return roleId2;
+	public int getServerId() {
+		return serverId;
 	}
 
-	public void setRoleId2(Integer roleId2) {
-		this.roleId2 = roleId2;
+	public void setServerId(int serverId) {
+		this.serverId = serverId;
 	}
 
 	public String getName() {
@@ -89,11 +82,19 @@ public class FriendAp {
 		this.level = level;
 	}
 
-	public int getDate() {
-		return date;
+	public int getNum() {
+		return num;
 	}
 
-	public void setDate(int date) {
-		this.date = date;
+	public void setNum(int num) {
+		this.num = num;
+	}
+
+	public Timestamp getTime() {
+		return time;
+	}
+
+	public void setTime(Timestamp time) {
+		this.time = time;
 	}
 }

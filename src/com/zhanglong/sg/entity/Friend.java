@@ -4,14 +4,13 @@ import java.io.Serializable;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
 import javax.persistence.Id;
-import javax.persistence.Index;
+import javax.persistence.IdClass;
 import javax.persistence.Table;
 
 @Entity
-@Table(name = "role_friends" , indexes = {@Index(columnList="role_id" , unique = false) , @Index(columnList="role_id2" , unique = false)})
+@IdClass(FriendPK.class)
+@Table(name = "role_friends")
 public class Friend implements Serializable {
 
 	/**
@@ -20,24 +19,14 @@ public class Friend implements Serializable {
 	private static final long serialVersionUID = 1L;
 
 	@Id
-	@GeneratedValue(strategy = GenerationType.IDENTITY)
-	private Integer id;
-
-	@Column(name="role_id" , nullable = false , columnDefinition = "int default 0")
+	@Column(name="role_id")
     private Integer roleId;
 
-	@Column(name="role_id2" , nullable = false , columnDefinition = "int default 0")
+	@Id
+	@Column(name="role_id2")
     private Integer roleId2;
 
 	public Friend() {
-	}
-
-	public Integer getId() {
-		return id;
-	}
-
-	public void setId(Integer id) {
-		this.id = id;
 	}
 
 	public Integer getRoleId() {

@@ -20,7 +20,7 @@ public class BossKillerDao extends BaseDao {
 
 		Date date = new Date();
 		int hour = date.getHours();
-		if (hour < 20 || (hour == 20 && date.getMinutes() < 30)) {
+		if (hour < 20) {
 			SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyyMMdd");
 			String str = simpleDateFormat.format(new Date(System.currentTimeMillis() - 86400l * 1000l));
 			day = Integer.valueOf(str);

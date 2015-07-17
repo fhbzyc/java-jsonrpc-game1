@@ -803,6 +803,9 @@ public class HeroService extends BaseService {
         int start = 0;
         int times = 10; // 10次
 
+        int threeStar = 0;
+        int heroNum = 0;
+        
         int[][] randomResult = new int[times][];
 
         if (type == TYPE_GOLD_RANDOM) {
@@ -811,15 +814,16 @@ public class HeroService extends BaseService {
 
     		// 元宝10连抽  第一次花元宝必给一个3星英雄
     		if (c == 0) {
-    			int genId = this.baseHeroShopDao.randomGeneral(3)[0];
+    			int genId = this.baseHeroShopDao.diyici();
+
     			randomResult[0] = new int[]{genId , 1};
     			
     			start = 1;
+    			threeStar += 1;
+    			heroNum += 1;
     		}
         }
 
-        int threeStar = 0;
-        int heroNum = 0;
         for(int i = start ; i < times ; i++) {
 
             if (type == TYPE_COIN_RANDOM) {
@@ -829,22 +833,28 @@ public class HeroService extends BaseService {
             	int[] temp = this.baseHeroShopDao.goldRandom();
             	if (temp[0] >= 10000) {
 
+            		if (threeStar > 0) {
+            			i--;
+            			continue;
+            		}
+
+            		if (heroNum >= 2) {
+            			i--;
+            			continue;
+            		}
+            		
+            		heroNum++;
+
             		int star = this.baseHeroDao.findOne(temp[0]).getStar();
             		if (star == 3) {
-            			threeStar++;
-            			if (threeStar > 1) {
-            				threeStar--;
+ 
+            			if (heroNum > 1) {
             				i--;
+            				heroNum--;
             				continue;
+            			} else {
+            				threeStar++;
             			}
-            		}
-            		if (star >=2) {
-                    	if (heroNum >= 2) {
-                    		i--;
-                    		continue;
-                    	} else {
-                    		heroNum++;
-                    	}
             		}
             	}
 
@@ -1221,7 +1231,7 @@ public class HeroService extends BaseService {
 			if (baseHero.getId() == 10024) {
 				continue;
 			} else if (baseHero.getId() == 10025) {
-				continue;
+				// continue;
 			}
 			result.add(baseHero);
 		}

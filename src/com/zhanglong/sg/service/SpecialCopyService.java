@@ -18,9 +18,11 @@ import com.zhanglong.sg.dao.BaseAchievementDao;
 import com.zhanglong.sg.dao.BaseSpecialCopyDao;
 import com.zhanglong.sg.dao.BaseStoryDao;
 import com.zhanglong.sg.dao.BattleLogDao;
+import com.zhanglong.sg.dao.KillRankDao;
 import com.zhanglong.sg.dao.PowerDao;
 import com.zhanglong.sg.entity.BattleLog;
 import com.zhanglong.sg.entity.Hero;
+import com.zhanglong.sg.entity.KillRank;
 import com.zhanglong.sg.entity.Role;
 import com.zhanglong.sg.entity2.BaseAchievement;
 import com.zhanglong.sg.entity2.BaseSpecialCopy;
@@ -52,6 +54,9 @@ public class SpecialCopyService extends BaseService {
 
 	@Resource
 	private AchievementDao achievementDao;
+
+	@Resource
+	private KillRankDao killRankDao;
 
     public Object list() throws Exception {
 
@@ -795,8 +800,9 @@ public class SpecialCopyService extends BaseService {
 
         } else if (battleLog.getStoryId() < 700) {
 
-        	if (killNum > role.killNum) {
-        		role.killNum = killNum;
+        	KillRank killRank = this.killRankDao.findOne(role);
+        	if (killNum > killRank.getNum()) {
+        		this.killRankDao.update(role, killNum);
 
         		this.achievementDao.setNum(roleId, BaseAchievement.TYPE_KILL_NUM, 0, killNum, result);
         	}

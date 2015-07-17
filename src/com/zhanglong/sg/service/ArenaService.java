@@ -30,6 +30,7 @@ import com.zhanglong.sg.dao.AchievementDao;
 import com.zhanglong.sg.dao.ArenaDao;
 import com.zhanglong.sg.dao.ArenaLogDao;
 import com.zhanglong.sg.dao.BaseActivityDao;
+import com.zhanglong.sg.dao.KillRankDao;
 import com.zhanglong.sg.dao.MailDao;
 import com.zhanglong.sg.dao.PowerDao;
 import com.zhanglong.sg.dao.ServerDao;
@@ -39,6 +40,7 @@ import com.zhanglong.sg.entity.BaseActivity;
 import com.zhanglong.sg.entity.BattleLog;
 import com.zhanglong.sg.entity.FinanceLog;
 import com.zhanglong.sg.entity.Hero;
+import com.zhanglong.sg.entity.KillRank;
 import com.zhanglong.sg.entity.Mail;
 import com.zhanglong.sg.entity.RankLog;
 import com.zhanglong.sg.entity.Role;
@@ -80,6 +82,9 @@ public class ArenaService extends BaseService {
 
 	@Resource
 	private SkillDao skillDao;
+
+	@Resource
+	private KillRankDao killRankDao;
 
     /**
      * 
@@ -775,12 +780,12 @@ public class ArenaService extends BaseService {
         int serverId = this.serverId();
 
     	// 等级排行
-        List<Role> list = this.roleDao.killTop20(serverId);
+        List<KillRank> list = this.killRankDao.top20(serverId);
 
-        List<Integer> roleIds = new ArrayList<Integer>();
-        for (Role r : list) {
-        	roleIds.add(r.getRoleId());
-		}
+//        List<Integer> roleIds = new ArrayList<Integer>();
+//        for (KillRank r : list) {
+//        	roleIds.add(r.getRoleId());
+//		}
 
         long myRank = 0;
         List<HashMap<String, Object>> newPlayers = new ArrayList<HashMap<String, Object>>();
@@ -793,10 +798,10 @@ public class ArenaService extends BaseService {
         	HashMap<String, Object> player = new HashMap<String, Object>();
         	player.put("rank", i + 1);
         	player.put("roleId", list.get(i).getRoleId());
-        	player.put("name", list.get(i).name);
-        	player.put("avatar", list.get(i).avatar);
-        	player.put("level", list.get(i).level);
-        	player.put("kill", list.get(i).killNum);
+        	player.put("name", list.get(i).getName());
+        	player.put("avatar", list.get(i).getAvatar());
+        	player.put("level", list.get(i).getLevel());
+        	player.put("kill", list.get(i).getNum());
 			newPlayers.add(player);
 		}
 
@@ -805,7 +810,7 @@ public class ArenaService extends BaseService {
 
         if (myRank == 0) {
         	Role role = this.roleDao.findOne(roleId);
-        	myRank = this.roleDao.countKillAfter(role.killNum, serverId) + 1;
+        	myRank = this.killRankDao.countAfter(this.killRankDao.findOne(role).getNum(), serverId) + 1;
         }
 
         map.put("myrank", myRank);
@@ -905,7 +910,7 @@ public class ArenaService extends BaseService {
 					if (baseAct.getType().equals("kill_rank")) {
 						HashMap<Integer, Reward> rewards = objectMapper.readValue(baseAct.getReward(), new TypeReference<Map<Integer, Reward>>(){});
 
-						List<Role> roles = this.roleDao.killTop20(serverId);
+						List<KillRank> roles = this.killRankDao.top20(serverId);
 
 						for (int i = 0 ; i < 10 ; i++) {
 

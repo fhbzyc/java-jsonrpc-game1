@@ -47,8 +47,10 @@ public class OnlineService extends BaseService {
 		Role role = this.roleDao.findOne(roleId);
 		int num = getNum(role);
 
-		if (num >= 3) {
-			return this.returnError(this.lineNum(), "最多了领三次");
+		if (num == 4) {
+			return this.returnError(this.lineNum(), "新手七天已过");
+		} else if (num >= 3) {
+			return this.returnError(this.lineNum(), "每天最多领三次");
 		}
 
 		this.setNum(roleId, num + 1);

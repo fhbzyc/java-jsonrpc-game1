@@ -351,7 +351,7 @@ public class MissionService extends BaseService {
     	if (vip <= 0) {
 			return 2;
 		} else if (vip == 1) {
-			return 5;
+			return 2;
 		} else if (vip == 2) {
 			return 20;
 		} else if (vip == 3) {

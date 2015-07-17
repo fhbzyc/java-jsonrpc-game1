@@ -169,6 +169,33 @@ public class BaseHeroShopDao extends BaseDao2 {
     	return this.randomFromList(goldRandom6);
     }
 
+    /**
+     * 第一次10连抽 必给3星 不给华佗
+     * @return
+     * @throws Exception
+     */
+    public int diyici() throws Exception {
+
+		ArrayList<int[]> goldRandom6 = new ArrayList<int[]>();
+
+		List<BaseHeroShop> list = this.findAll("gold");
+
+		int g6 = 0;
+
+		for (BaseHeroShop item : list) {
+			if (item.getItemId() == 10014) {
+				continue;
+			}
+
+			if (item.getQuality() == 6 && this.baseHeroDao.findOne(item.getItemId()).getStar() == 3) {
+				g6 += item.getWeight();
+				goldRandom6.add(new int[]{g6 , Integer.valueOf(item.getItemId()) , item.getMinNum() , item.getMaxNum()});
+			}
+		}
+
+    	return this.randomFromList(goldRandom6)[0];
+    }
+    
     public int[] randomGeneral(int star) throws Exception {
 
 		ArrayList<int[]> goldRandom6 = new ArrayList<int[]>();

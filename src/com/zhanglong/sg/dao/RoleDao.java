@@ -62,17 +62,17 @@ public class RoleDao extends BaseDao {
 		return list;
 	}
 
-	public List<Role> killTop20(int serverId) {
-
-		Session session = this.getSessionFactory().getCurrentSession();
-		@SuppressWarnings("unchecked")
-		List<Role> list = session.createCriteria(Role.class)
-				.add(Restrictions.eq("serverId", serverId))
-				.add(Restrictions.gt("killNum", 0))
-				.addOrder(Order.desc("killNum"))
-				.setMaxResults(20).list();
-		return list;
-	}
+//	public List<Role> killTop20(int serverId) {
+//
+//		Session session = this.getSessionFactory().getCurrentSession();
+//		@SuppressWarnings("unchecked")
+//		List<Role> list = session.createCriteria(Role.class)
+//				.add(Restrictions.eq("serverId", serverId))
+//				.add(Restrictions.gt("killNum", 0))
+//				.addOrder(Order.desc("killNum"))
+//				.setMaxResults(20).list();
+//		return list;
+//	}
 
 	public int countExpAfter(int exp, int serverId) {
 
@@ -86,17 +86,17 @@ public class RoleDao extends BaseDao {
 		return ((BigInteger) query.list().iterator().next()).intValue();
 	}
 
-	public long countKillAfter(int killNum, int serverId) {
-
-		Session session = this.getSessionFactory().getCurrentSession();
-		@SuppressWarnings("unchecked")
-		List<Long> list = session.createCriteria(Role.class)
-				.add(Restrictions.eq("serverId", serverId))
-				.add(Restrictions.gt("killNum", killNum))
-				.setProjection(Projections.projectionList().add(Projections.count("roleId")))
-				.list();
-		return list.get(0);
-	}
+//	public long countKillAfter(int killNum, int serverId) {
+//
+//		Session session = this.getSessionFactory().getCurrentSession();
+//		@SuppressWarnings("unchecked")
+//		List<Long> list = session.createCriteria(Role.class)
+//				.add(Restrictions.eq("serverId", serverId))
+//				.add(Restrictions.gt("killNum", killNum))
+//				.setProjection(Projections.projectionList().add(Projections.count("roleId")))
+//				.list();
+//		return list.get(0);
+//	}
 
 	public int addPillage(int num) {
 
@@ -418,6 +418,20 @@ public class RoleDao extends BaseDao {
 		}
 		return list.get(0);
     }
+
+	public List<Role> get100ByLevel(int serverId, int level) {
+
+		Session session = this.getSessionFactory().getCurrentSession();
+		Criteria criteria = session.createCriteria(Role.class);
+		@SuppressWarnings("unchecked")
+		List<Role> list = criteria
+			.add(Restrictions.gt("level", level - 10))
+			.add(Restrictions.lt("level", level + 10))
+			.add(Restrictions.eq("serverId", serverId))
+			.setMaxResults(100).list();
+
+		return list;
+	}
 
 	/**
 	 * 

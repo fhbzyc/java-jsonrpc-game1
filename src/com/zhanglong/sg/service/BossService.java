@@ -7,8 +7,6 @@ import java.util.List;
 
 import javax.annotation.Resource;
 
-import org.hibernate.SQLQuery;
-import org.hibernate.Session;
 import org.springframework.stereotype.Service;
 
 import websocket.handler.BossBroadcast;
@@ -86,6 +84,7 @@ public class BossService extends BaseService {
 			result.setValue("heros", new int[]{});
 		}
 
+		result.setValue("top3", this.bossDamageDao.top3(this.serverId()));
 		return this.success(result);
 	}
 
@@ -178,16 +177,20 @@ public class BossService extends BaseService {
 		int roleId = this.roleId();
 		EchoHandler.bossRemove(this.serverId(), roleId);
 
+		BossDamage bossDamage = this.bossDamageDao.findOne(roleId);
+
 		Integer damage = BaseBossDao.damages.get(roleId);
 		if (damage != null) {
-			BossDamage bossDamage = this.bossDamageDao.findOne(roleId);
+			
 			if (damage > bossDamage.getDamage()) {
 				bossDamage.setDamage(damage);
 				this.bossDamageDao.save(bossDamage);
 			}
 		}
 
-		return this.success(new Result());
+		Result result = new Result();
+		result.setValue("damage", bossDamage.getDamage());
+		return this.success(result);
 	}
 
 	public Object subHp(int hp) throws Exception {
@@ -258,7 +261,7 @@ public class BossService extends BaseService {
 		
 		Date date = new Date();
 		int hour = date.getHours();
-		if (hour < 20 || (hour == 20 && date.getMinutes() < 30)) {
+		if (hour < 20) {
 			SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyyMMdd");
 			String str = simpleDateFormat.format(new Date(System.currentTimeMillis() - 86400l * 1000l));
 			day = Integer.valueOf(str);
@@ -341,139 +344,88 @@ public class BossService extends BaseService {
 
 		int date = Integer.valueOf(Utils.date());
 
+		ObjectMapper objectMapper = new ObjectMapper();
+		
+		List<int[]> configs = this.rewards();
+		
 		List<Server> servers = this.serverDao.findAll();
 		for (Server server : servers) {
 			int serverId = server.getId();
-			
-			
-			List<int[]> configs = this.rewards();
 
 			List<BossDamage> list = this.bossDamageDao.findAll(date, serverId);
 
-	        Session session = this.bossDamageDao.getSessionFactory().getCurrentSession();
+			for (int i = 0 ; i < list.size() ; i++) {
+				int rand = i + 1;
 
-			ObjectMapper objectMapper = new ObjectMapper();
+				for (int[] config : configs) {
 
-			String time = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date());
+					if (rand >= config[0] && rand <= config[1]) {
+						int[] itemId = new int[]{config[4]};
+						int[] itemNum = new int[]{config[5]};
 
-			for (int[] config : configs) {
+						Reward reward = new Reward();
+						reward.setCoin(config[2]);
+						reward.setMoney5(config[3]);
+						reward.setItem_id(itemId);
+						reward.setItem_num(itemNum);
 
-				int[] itemId = new int[]{config[4]};
-				int[] itemNum = new int[]{config[5]};
-
-				Reward reward = new Reward();
-				reward.setCoin(config[2]);
-				reward.setMoney5(config[3]);
-				reward.setItem_id(itemId);
-				reward.setItem_num(itemNum);
-
-				String json = objectMapper.writeValueAsString(reward);
-
-				int max = config[2];
-				if (max > list.size()) {
-					max = list.size();
-				}
-
-				if (max < config[1]) {
-					break;
-				}
-
-				String sql = "";
-
-				String from_name = "GM";
-				String title = "竞技场每日排名奖励";
-
-				int parameters = 0;
-
-				for (int rank = config[1] ; rank <= max; rank++) {
-
-					int roleId = list.get(rank - 1).getRoleId();
-
-			    	String content = "你好，你在对世界BOSS的战斗中造成的伤害为：" + list.get(rank - 1).getDamage() + "，由于你的英勇表现。\n" + 
+						String json = objectMapper.writeValueAsString(reward);
+						
+						Mail mail = new Mail();
+						mail.setAttachment(json);
+						mail.setRoleId(list.get(i).getRoleId());
+						mail.setFromName("GM");
+						mail.setTitle("世界BOSS伤害奖励!");
+						mail.setContent("主公你好，你在对世界BOSS的战斗中造成的伤害为：" + list.get(i).getDamage() + "，由于你的英勇表现。\n" + 
 			    			"世界BOSS联盟将给于你以下奖励。\n\n" + 
-			    			"世界BOSS盟主：曹操";
+			    			"世界BOSS盟主：曹操");
+						this.mailDao.create(mail);
 
-					if (sql.equals("")) {
-						sql = String.format("INSERT INTO role_mail(mail_status,mail_attchment,mail_content,mail_from_name,mail_time,mail_title,role_id) VALUES (0,'%s','%s','%s','%s','%s','%s')",
-								json, content, from_name, time, title, roleId);
-					} else {
-						sql += String.format(",(0,'%s','%s','%s','%s','%s','%s')", json, content, from_name, time, title, roleId);
-					}
-
-					parameters++;
-
-					if (parameters >= 500) {
-						// 1000条拼成一条
-						SQLQuery query = session.createSQLQuery(sql);
-
-						query.executeUpdate();
-		
-						sql = "";
-						parameters = 0;
+						break;
 					}
 				}
-
-				if (sql.equals("")) {
-					continue;
-				}
-
-				SQLQuery query = session.createSQLQuery(sql);
-
-			    query.executeUpdate();
 			}
-			
 		}
 	}
 
-//	private int bossNum(int roleId) throws JsonParseException, JsonMappingException, IOException {
-//
-//		DateNumModel dateNumModel = this.dateNumDao.findOne(roleId);
-//		
-//		Role role = this.roleDao.findOne(roleId);
-//		if (role.vip >= 5) {
-//			return 3 - dateNumModel.boss;
-//		} else {
-//			return 1 - dateNumModel.boss;
-//		}
-//	}
-
 	private List<int[]> rewards() {
+
 		List<int[]> arrayList = new ArrayList<int[]>();
 		arrayList.add(new int[]{1 , 1 , 60000 , 500 , 4231 , 12});
 		arrayList.add(new int[]{2 , 2 , 50000 , 455 , 4231 , 10});
-		arrayList.add(new int[]{3 , 3 , 90000 , 400 , 4231 , 9});
-		arrayList.add(new int[]{4 , 4 , 85000 , 390 , 4231 , 7});
-		arrayList.add(new int[]{5 , 5 , 80000 , 380 , 4231 , 6});
-		arrayList.add(new int[]{6 , 6 , 75000 , 370 , 4231 , 5});
-		arrayList.add(new int[]{7 , 7 , 70000 , 360 , 4231 , 4});
-		arrayList.add(new int[]{8 , 8 , 65000 , 350 , 4231 , 4});
-		arrayList.add(new int[]{9 , 9 , 60000 , 340 , 4231 , 3});
-		arrayList.add(new int[]{10 , 10 , 55000 , 330 , 4231 , 3});
-		arrayList.add(new int[]{11 , 20 , 50000 , 325 , 4231 , 2});
-		arrayList.add(new int[]{21 , 30 , 45000 , 320 , 4231 , 2});
-		arrayList.add(new int[]{31 , 40 , 40000 , 315 , 4231 , 2});
-		arrayList.add(new int[]{41 , 50 , 35000 , 310 , 4231 , 1});
-		arrayList.add(new int[]{51 , 70 , 30000 , 305 , 4231 , 1});
-		arrayList.add(new int[]{71 , 100 , 27500 , 300 , 4231 , 1});
-		arrayList.add(new int[]{101 , 200 , 25000 , 295 , 4231 , 1});
-		arrayList.add(new int[]{201 , 300 , 22500 , 285 , 4231 , 1});
-		arrayList.add(new int[]{301 , 400 , 20000 , 275 , 4231 , 1});
-		arrayList.add(new int[]{401 , 500 , 18000 , 265 , 4231 , 1});
-		arrayList.add(new int[]{501 , 700 , 16000 , 255 , 4231 , 1});
-		arrayList.add(new int[]{701 , 1000 , 14000 , 245 , 4231 , 1});
-		arrayList.add(new int[]{1001 , 1200 , 12000 , 235 , 4231 , 1});
-		arrayList.add(new int[]{1201 , 1400 , 10000 , 220 , 4231 , 1});
-		arrayList.add(new int[]{1401 , 1600 , 9000 , 205 , 4231 , 1});
-		arrayList.add(new int[]{1601 , 1800 , 8000 , 190 , 4231 , 1});
-		arrayList.add(new int[]{1801 , 2000 , 7000 , 175 , 4231 , 1});
-		arrayList.add(new int[]{2001 , 3000 , 5000 , 160 , 4231 , 1});
-		arrayList.add(new int[]{3001 , 4000 , 3000 , 145 , 4231 , 1});
-		arrayList.add(new int[]{4001 , 5000 , 2000 , 130 , 4231 , 1});
-		arrayList.add(new int[]{5001 , 6000 , 2000 , 115 , 4231 , 1});
-		arrayList.add(new int[]{6001 , 7000 , 2000 , 100 , 4231 , 1});
+		arrayList.add(new int[]{3 , 3 , 49000 , 400 , 4231 , 9});
+		arrayList.add(new int[]{4 , 4 , 48000 , 390 , 4231 , 7});
+		arrayList.add(new int[]{5 , 5 , 47000 , 380 , 4231 , 6});
+		arrayList.add(new int[]{6 , 6 , 46000 , 370 , 4231 , 5});
+		arrayList.add(new int[]{7 , 7 , 45000 , 360 , 4231 , 4});
+		arrayList.add(new int[]{8 , 8 , 44000 , 350 , 4231 , 4});
+		arrayList.add(new int[]{9 , 9 , 43000 , 340 , 4231 , 3});
+		arrayList.add(new int[]{10 , 10 , 42000 , 330 , 4231 , 3});
+		arrayList.add(new int[]{11 , 20 , 40500 , 325 , 4231 , 2});
+		arrayList.add(new int[]{21 , 30 , 39000 , 320 , 4231 , 2});
+		arrayList.add(new int[]{31 , 40 , 37500 , 315 , 4231 , 2});
+		arrayList.add(new int[]{41 , 50 , 36000 , 310 , 4231 , 1});
+		arrayList.add(new int[]{51 , 70 , 34500 , 305 , 4231 , 1});
+		arrayList.add(new int[]{71 , 100 , 33000 , 300 , 4231 , 1});
+		arrayList.add(new int[]{101 , 200 , 31500 , 295 , 4231 , 1});
+		arrayList.add(new int[]{201 , 300 , 29500 , 285 , 4231 , 1});
+		arrayList.add(new int[]{301 , 400 , 27500 , 275 , 4231 , 1});
+		arrayList.add(new int[]{401 , 500 , 25500 , 265 , 4231 , 1});
+		arrayList.add(new int[]{501 , 700 , 23500 , 255 , 4231 , 1});
+		arrayList.add(new int[]{701 , 1000 , 21500 , 245 , 4231 , 1});
+		arrayList.add(new int[]{1001 , 1200 , 19500 , 235 , 4231 , 1});
+		arrayList.add(new int[]{1201 , 1400 , 16500 , 220 , 4231 , 1});
+		arrayList.add(new int[]{1401 , 1600 , 13500 , 205 , 4231 , 1});
+		arrayList.add(new int[]{1601 , 1800 , 10500 , 190 , 4231 , 1});
+		arrayList.add(new int[]{1801 , 2000 , 7500 , 175 , 4231 , 1});
+		arrayList.add(new int[]{2001 , 3000 , 4500 , 160 , 4231 , 1});
+		arrayList.add(new int[]{3001 , 4000 , 4000 , 145 , 4231 , 1});
+		arrayList.add(new int[]{4001 , 5000 , 3500 , 130 , 4231 , 1});
+		arrayList.add(new int[]{5001 , 6000 , 3000 , 115 , 4231 , 1});
+		arrayList.add(new int[]{6001 , 7000 , 2500 , 100 , 4231 , 1});
 		arrayList.add(new int[]{7001 , 8000 , 2000 , 85 , 4231 , 1});
-		arrayList.add(new int[]{8001 , 99999 , 2000 , 70 , 4231 , 1});
-		
+		arrayList.add(new int[]{8001 , 15000 , 2000 , 70 , 4231 , 1});
+
 		return arrayList;
 	}
 }

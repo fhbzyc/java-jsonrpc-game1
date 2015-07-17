@@ -9,7 +9,7 @@ import javax.persistence.Index;
 import javax.persistence.Table;
 
 @Entity
-@Table(name = "role_friend_msg" , indexes = {@Index(columnList="role_id" , unique = false)})
+@Table(name = "role_friend_msg" , indexes = {@Index(columnList="role_id" , unique = false) , @Index(columnList="role_id2" , unique = false)})
 public class FriendMsg {
 
 	@Id
