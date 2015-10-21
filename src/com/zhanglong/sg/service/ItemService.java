@@ -5,7 +5,6 @@ import java.util.List;
 import javax.annotation.Resource;
 
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import com.zhanglong.sg.dao.BaseMakeItemDao;
 import com.zhanglong.sg.entity.FinanceLog;
@@ -63,7 +62,7 @@ public class ItemService extends BaseService {
 				} else if (item.getNum() < baseMakeItem.getNum()) {
 					return this.returnError(this.lineNum(), "合成材料:" + this.baseItemDao.findOne(materialId).getName() + " , 数量不足");
 				} else {
-					this.itemDao.subItem(item, baseMakeItem.getNum(), result);
+					//this.itemDao.subItem(item, baseMakeItem.getNum(), result);
 				}
 			}
 		}
@@ -71,6 +70,17 @@ public class ItemService extends BaseService {
         if (!find) {
         	return this.returnError(this.lineNum(), "这个道具没有合成配方");
         }
+
+        for (BaseMakeItem baseMakeItem : items) {
+			if (baseMakeItem.getPk().getBaseItem().getBaseId() == itemId) {
+
+				int materialId = baseMakeItem.getPk().getMaterial().getBaseId();
+
+				Item item = this.itemDao.findOneByItemId(roleId, materialId);
+
+				this.itemDao.subItem(item, baseMakeItem.getNum(), result);
+			}
+		}
 
         this.itemDao.addItem(roleId, itemId, 1, result);
 
@@ -82,10 +92,9 @@ public class ItemService extends BaseService {
      * @param itemId
      * @param num
      * @return
-     * @throws Throwable
+     * @throws Exception
      */
-    @Transactional(rollbackFor = Throwable.class)
-    public Object sellItem(int id, int num) throws Throwable {
+    public Object sellItem(int id, int num) throws Exception {
 
     	int roleId = this.roleId();
 
@@ -120,9 +129,9 @@ public class ItemService extends BaseService {
      * @param itemIds
      * @param nums
      * @return
-     * @throws Throwable
+     * @throws Exception
      */
-    public Object sellItems(int[]itemIds, int[]nums) throws Throwable {
+    public Object sellItems(int[]itemIds, int[]nums) throws Exception {
 
     	int roleId = this.roleId();
 
@@ -135,6 +144,9 @@ public class ItemService extends BaseService {
         for (int i = 0  ; i < itemIds.length ; i++) {
 
         	Item item = this.itemDao.findOne(itemIds[i]);
+        	if (item == null) {
+        		continue;
+        	}
 
         	int num = nums[i];
         	if (item.getNum() < num) {
@@ -149,8 +161,10 @@ public class ItemService extends BaseService {
             descString += baseItem.getName() + "x" + num + ",";
 		}
 
-        this.roleDao.addCoin(role, coin, descString, FinanceLog.STATUS_ITEM_SELL, result);
-        this.roleDao.update(role, result);
+        if (coin > 0) {
+            this.roleDao.addCoin(role, coin, descString, FinanceLog.STATUS_ITEM_SELL, result);
+            this.roleDao.update(role, result);
+        }
 
         return this.success(result.toMap());
     }
@@ -161,9 +175,9 @@ public class ItemService extends BaseService {
      * @param itemId
      * @param num
      * @return
-     * @throws Throwable
+     * @throws Exception
      */
-    public Object useExpBook(int heroId, int id, int num) throws Throwable {
+    public Object useExpBook(int heroId, int id, int num) throws Exception {
 
     	int roleId = this.roleId();
 
